@@ -1,0 +1,141 @@
+{
+  "265d6c": {
+    "elementKey": "265d6c",
+    "sectionIndex": 1,
+    "originalText": "Nguyen \nTan Vinh",
+    "left": 341.41790771484375,
+    "fontSize": 100,
+    "width": 948.8683940857638,
+    "height": 97.94776153564453,
+    "top": 598.4260836928638,
+    "type": "textbox",
+    "asset": {
+        "selected": "AF01J3PFV429770TKBA751TP04AC",
+        "available": [
+            "AF01J3PFV429770TKBA751TP04AC"
+        ]
+    },
+    "transformMatrix": [
+        0.7071067811865476,
+        0.7071067811865474,
+        -0.7071067811865474,
+        0.7071067811865476,
+        663.5159519138199,
+        -267.603006489913
+    ],
+    "fontFamily": "font-ptlxvvrkph",
+    "styles": {
+        "0": {
+            "0": {
+                "fill": "#B71010"
+            },
+            "1": {
+                "fill": "#B71010"
+            },
+            "2": {
+                "fill": "#B71010"
+            },
+            "3": {
+                "fill": "#B71010"
+            },
+            "4": {
+                "fill": "#B71010"
+            },
+            "5": {
+                "fill": "#B71010"
+            }
+        },
+        "1": {
+            "2": {
+                "fill": "#3823BD"
+            },
+            "3": {
+                "fill": "#3823BD"
+            },
+            "4": {
+                "fill": "#3823BD"
+            }
+        }
+    },
+    "backstage": {
+        "corjl1Styles": {}
+    },
+    "angle": 45,
+    "scaleX": 1,
+    "scaleY": 1,
+    "cropX": 0,
+    "cropY": 0,
+    "originX": "left",
+    "originY": "top",
+    "flipX": false,
+    "flipY": false,
+    "opacity": 1,
+    "skewX": 0,
+    "skewY": 0,
+    "fill": "#000000",
+    "selectable": true,
+    "visible": true,
+    "isMakeClippingMask": false,
+    "crossOrigin": "anonymous",
+    "outsideArtboard": false,
+    "textAlign": "center",
+    "resizeAsImage": false,
+    "lineHeight": 1,
+    "placeholder": "Enter Text Here",
+    "charSpacing": 0,
+    "wrapText": false,
+    "text": "Nguyen \nTan Vinh",
+    "strokeWidth": 0,
+    "canReplaceImage": false,
+    "lockSize": false,
+    "lockStyle": false
+  },
+  "dc8aab": {
+    "elementKey": "dc8aab",
+    "sectionIndex": 1,
+    "left": 353.8787841796875,
+    "top": 1953,
+    "type": "image",
+    "width": 331.9186604817708,
+    "height": 497.87799072265625,
+    "asset": {
+        "selected": "AG01JCMDWRZ9MM6B7PFCS8G1XKM7",
+        "available": [
+            "AG01JCMDWRZ9MM6B7PFCS8G1XKM7"
+        ]
+    },
+    "transformMatrix": [
+        1,
+        0,
+        0,
+        1,
+        225.8800521512386,
+        -1821.4146023468056
+    ],
+    "corjlFilters": [],
+    "scaleX": 1,
+    "scaleY": 1,
+    "cropX": 0,
+    "cropY": 0,
+    "originX": "left",
+    "originY": "top",
+    "flipX": false,
+    "flipY": false,
+    "opacity": 1,
+    "angle": 0,
+    "skewX": 0,
+    "skewY": 0,
+    "selectable": true,
+    "visible": true,
+    "isMakeClippingMask": false,
+    "crossOrigin": "anonymous",
+    "outsideArtboard": false,
+    "src": "https://dev.korjl.com/assets/org/GD01HHDZSMZQ57K00R3XXZ50CCT6/image/optimized/2b/2bb2741688ec17ad",
+    "thumbnail": "https://dev.korjl.com/assets/org/GD01HHDZSMZQ57K00R3XXZ50CCT6/image/thumb/6d/6dd61672afb5f8cd",
+    "isError": false,
+    "strokeWidth": 0,
+    "canReplaceImage": false,
+    "lockSize": false,
+    "lockStyle": false
+}
+}

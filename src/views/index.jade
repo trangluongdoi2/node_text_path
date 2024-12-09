@@ -1,0 +1,21 @@
+doctype html
+html
+  head
+    title SVG Text
+    style.
+      .container {
+        display: flex;
+        column-gap: 10px;
+      }
+  body
+    script.
+      function something() {
+        window.location.reload()
+      }
+    h1 Demo Render Text Path
+    button(onclick='something()') Click
+    .container
+      #svg-pure
+        != input
+      #svg-result
+        != output

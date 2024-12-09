@@ -1,0 +1,33 @@
+<svg id="fdaebf_canvas" width="500" height="500" xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:svgjs="http://svgjs.com/svgjs" viewBox="0 0 1500 1500" class="svg-main-canvas ready" preserveAspectRatio="none" transform="matrix(1,0,0,1,0,0)" style="transform: matrix(1, 0, 0, 1, 0, 0);" data-is_not_update_elements="false">
+<defs id="SvgjsDefs1002">
+</defs>
+<g id="fdaebf_canvas_group_background" transform="matrix(1,0,0,1,0,0)">
+<rect id="SvgjsRect1013" width="1500" height="1500" fill="#c59e98" y="0">
+</rect>
+</g>
+<g id="fdaebf_canvas_printarea" class="group_printarea">
+<!-- <rect id="fdaebf_canvas_rect_printarea_black" width="0" height="0" fill="none" pointer-events="visible" class="printable-demo-canvas-black" x="0" y="0" stroke="#000000" stroke-width="1" stroke-dasharray="2 5">
+</rect> -->
+<rect id="fdaebf_canvas_rect_printarea" width="0" height="0" fill="none" pointer-events="visible" class="printable-demo-canvas" x="0" y="0" stroke="#000000" stroke-width="1" stroke-dasharray="5 2">
+</rect>
+</g>
+<g id="fdaebf_canvas_group_elements" class="group_elements">
+<g id="fdaebf_canvas_group_element_1d07f4" class="not-select" pointer-events="" data-object_id="1d07f4">
+<g id="fdaebf_canvas_group_text_parent_1d07f4" transform="matrix(1,0,0,1,-316.0622311873398,-561.313532547985)" style="opacity: 1; mix-blend-mode: normal;">
+<g id="fdaebf_canvas_group_text_style_1d07f4" transform="matrix(1,0,0,1,0,0)"></g><g id="fdaebf_canvas_group_text_1d07f4">
+<text id="fdaebf_canvas_text_1d07f4" font-family="&quot;font_1&quot;, 'Arial', 'Noto Emoji'" x="935.6637878417969" y="568.9423717407257" fill="#000000" font-size="177.7219763391719px" letter-spacing="0" family="&quot;font-ptlxvvrkph&quot;, 'Arial', 'Noto Emoji'" size="177.7219763391719px" text-anchor="middle" transform="matrix(1,0,0,1,0,0)" data-svg-origin="935.6637878417969 561.3135375976562" style="translate: none; rotate: none; scale: none; transform-origin: 0px 0px;">
+<tspan id="SvgjsTspan2980" x="935.6637878417969" dy="157.80635447889847">Nguyen Tan Vinh</tspan></text></g></g>
+<!-- <rect id="fdaebf_canvas_rect_1d07f4" width="1239.203125" height="174.5001220703125" classPoints="svg_select_points_text" radius="0" fill="none" pointer-events="visible" x="316.0622253417969" y="561.3135375976562" transform="matrix(1,0,0,1,-316.0622311873398,-561.313532547985)" style="cursor: default;" data-resizing_multiple="false">
+</rect> -->
+</g><g id="SvgjsG3017" transform="matrix(1,0,0,1,-0.000005845542943916371,0.000005049671244705678)">
+<!-- <rect id="SvgjsRect3018" width="1239.203125" height="174.5001220703125" class="svg_select_boundingRect hidden">
+</rect></g></g> -->
+<g id="fdaebf_canvas_group_select_multiple_elements" class="group_select_multiple_elements" style="display: none;">
+<!-- <rect id="fdaebf_canvas_rect_select_multiple_elements" width="0" height="0" fill="none" pointer-events="visible" stroke="blue" data-object_ids_selected="[]">
+</rect></g> -->
+<g id="fdaebf_canvas_group_center_line_indicator" class="group_center_line_indicator">
+<line id="fdaebf_canvas_horizontally_center_line" x1="0" y1="750" x2="1500" y2="750" style="stroke: rgb(146, 146, 255); opacity: 0.5; stroke-width: 2.26619 !important; display: none;">
+</line><line id="fdaebf_canvas_vertically_center_line" x1="750.0000000000001" y1="0" x2="750.0000000000001" y2="1500" style="stroke: rgb(146, 146, 255); opacity: 0.5; stroke-width: 2.26619 !important; display: none;">
+</line></g><g id="fdaebf_canvas_group_alignment_lines"><line id="SvgjsLine1078" x1="0" y1="0" x2="0" y2="0" stroke-linecap="round" stroke="#ff00ff" stroke-width="2.2661870503597124" style="display: none;"></line>
+<line id="SvgjsLine1079" x1="0" y1="0" x2="0" y2="0" stroke-linecap="round" stroke="#ff00ff" stroke-width="2.2661870503597124" style="display: none;"></line><line id="SvgjsLine1080" x1="0" y1="0" x2="0" y2="0" stroke-linecap="round" stroke="#ff00ff" stroke-width="2.2661870503597124" style="display: none;"></line><line id="SvgjsLine1081" x1="0" y1="0" x2="0" y2="0" stroke-linecap="round" stroke="#ff00ff" stroke-width="2.2661870503597124" style="display: none;"></line><line id="SvgjsLine1082" x1="0" y1="0" x2="0" y2="0" stroke-linecap="round" stroke="#ff00ff" stroke-width="2.2661870503597124" style="display: none;"></line><line id="SvgjsLine1083" x1="0" y1="0" x2="0" y2="0" stroke-linecap="round" stroke="#ff00ff" stroke-width="2.2661870503597124" style="display: none;"></line></g><g id="fdaebf_canvas_printarea_brighter" style="display: none;">
+<path id="SvgjsPath1085" d="M0 0 V1500 H1500 V0 Z M0 0 H0 V0 H0 Z" opacity="0.2" style="pointer-events: none;"></path></g></svg>

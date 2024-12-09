@@ -1,0 +1,103 @@
+{
+    "d8ea13": {
+        "elementKey": "d8ea13",
+        "sectionIndex": 1,
+        "originalText": "Nguyen\nTanVinh",
+        "left": 256.7923278808594,
+        "fontSize": 174.804491964785,
+        "width": 1181.6041746563994,
+        "height": 170.1673126220703,
+        "top": 903.3069343404106,
+        "type": "textbox",
+        "fill": "#FFC0C0",
+        "asset": {
+            "selected": "AF01J3PFV429770TKBA751TP04AC",
+            "available": [
+                "AF01J3PFV429770TKBA751TP04AC"
+            ]
+        },
+        "transformMatrix": [
+            1,
+            0,
+            0,
+            1,
+            -97.59440265260946,
+            -19.60841099729987
+        ],
+        "fontFamily": "font-ptlxvvrkph",
+        "styles": {},
+        "backstage": {
+            "corjl1Styles": {}
+        },
+        "scaleX": 1,
+        "scaleY": 1,
+        "cropX": 0,
+        "cropY": 0,
+        "originX": "left",
+        "originY": "top",
+        "flipX": false,
+        "flipY": false,
+        "opacity": 1,
+        "angle": 0,
+        "skewX": 0,
+        "skewY": 0,
+        "selectable": true,
+        "visible": true,
+        "isMakeClippingMask": false,
+        "crossOrigin": "anonymous",
+        "outsideArtboard": false,
+        "textAlign": "center",
+        "resizeAsImage": false,
+        "lineHeight": 1,
+        "placeholder": "Enter Text Here",
+        "charSpacing": 0,
+        "wrapText": false,
+        "text": "Nguyen\nTanVinh",
+        "strokeWidth": 0,
+        "canReplaceImage": false,
+        "lockSize": false,
+        "lockStyle": false
+    },
+    "b7cbcf": {
+        "elementKey": "b7cbcf",
+        "sectionIndex": 1,
+        "left": 1114.85791015625,
+        "top": 1557,
+        "visible": true,
+        "selectable": true,
+        "type": "image",
+        "opacity": 1,
+        "angle": 0,
+        "width": 430.75348782919224,
+        "height": 646.1302490234375,
+        "scaleX": 1,
+        "scaleY": 1,
+        "originX": "left",
+        "originY": "top",
+        "asset": {
+            "selected": "AG01JCMDWRZ9MM6B7PFCS8G1XKM7",
+            "available": [
+                "AG01JCMDWRZ9MM6B7PFCS8G1XKM7"
+            ]
+        },
+        "transformMatrix": [
+            1,
+            0,
+            0,
+            1,
+            -561.2492685781159,
+            -1387.2147454651845
+        ],
+        "isAdd": true,
+        "crossOrigin": "anonymous",
+        "src": "https://dev.korjl.com/assets/org/GD01HHDZSMZQ57K00R3XXZ50CCT6/image/optimized/2b/2bb2741688ec17ad",
+        "thumbnail": "https://dev.korjl.com/assets/org/GD01HHDZSMZQ57K00R3XXZ50CCT6/image/thumb/6d/6dd61672afb5f8cd",
+        "isError": false,
+        "corjlFilters": [],
+        "strokeWidth": 0,
+        "canReplaceImage": false,
+        "lockSize": false,
+        "lockStyle": false,
+        "outsideArtboard": false
+    }
+}
