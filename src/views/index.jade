@@ -9,11 +9,11 @@ html
       }
   body
     script.
-      function something() {
+      function onReload() {
         window.location.reload()
       }
     h1 Demo Render Text Path
-    button(onclick='something()') Click
+    button(onclick='onReload()') Click
     .container
       #svg-pure
         != input

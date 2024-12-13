@@ -1,7 +1,8 @@
 import { JSDOM } from 'jsdom';
 import sharp from 'sharp';
 import fs from 'fs';
-import { TextPathService } from './textPathService.js';
+import { TextPathService } from './services/textPathService.js';
+import { TextService } from './services/textService.js';
 
 import {
   getContentByTag,
@@ -30,9 +31,8 @@ class HandlerSVGContent {
   groupElement;
   textPathService;
   data1;
-  data2;
   // temp
-  constructor(svgContent, data1, data2) {
+  constructor(svgContent, data1) {
     this.configs = {
       pageColumns: 1,
       pageRows: 1,
@@ -44,7 +44,7 @@ class HandlerSVGContent {
     this.filterGradientTags = getFilterGradientTags(svgContent);
     this.shapeClipPaths = getShapeClipPathTags(getContentByTag(svgContent, 'defs')?.[0] || '');
     this.data1 = data1;
-    this.data2 = data2;
+
 
     if (this.filterGradientTags?.length) {
       this.filterGradientTags.forEach((filterGradient, index) => {
@@ -280,15 +280,15 @@ class HandlerSVGContent {
     const { window } = new JSDOM(this.svgContent);
     formatSVGContent = window.document.body.innerHTML;
     this.svgContent = formatSVGContent;
-    console.log(this.elements.length, '==> this.elements.length...');
+
+    console.log(this.elements.length, '==> this.elements...');
 
     const elementsResult = await Promise.all(
       this.elements.map(async (element, index) => {
         const { innerHTML, outerHTML } = element;
         if (this.isTextElement(innerHTML)) {
           const elementData = Object.values(this.data1)[index];
-          const elementData2 = Object.values(this.data2)[index];
-          const textPathService = new TextPathService(innerHTML, outerHTML, elementData, elementData2).getInstance();
+          const textPathService = new TextService(innerHTML, outerHTML, elementData).getInstance();
           return await textPathService.exportPath();
         }
         if (this.isImageElement(innerHTML)) {
@@ -305,6 +305,7 @@ class HandlerSVGContent {
       let { elementTag, path, clippingMaskTag } = element;
       switch (element.type) {
         case 'TEXT':
+          console.log(elementTag, '==> elementTag...');
           this.svgContent = this.svgContent.replace(elementTag, path);
           break;
         case 'TEXT_CLIP_PATH':
@@ -318,24 +319,25 @@ class HandlerSVGContent {
         }
       }
 
-    const imageParentTags = getImageParentTags(this.svgContent);
-    imageParentTags.forEach((imageParentTag) => {
-      let newImageParentTag = imageParentTag;
-      const styles = getElemAttributesByImageWithRegex(imageParentTag);
-      const transform = getMatrixFromTransform(styles?.transform || '');
-      const translateX = (col === 1) ? bleedSize : 0;
-      const translateY = (row === 1) ? bleedSize : 0;
-      transform[4] = transform[4] + translateX;
-      transform[5] = transform[5] + translateY;
-      newImageParentTag = imageParentTag.replace(/transform="[^"]*"/, `transform="matrix(${transform.join(',')})"`);
-      this.svgContent = this.svgContent.replace(imageParentTag, newImageParentTag);
-    });
+    // const imageParentTags = getImageParentTags(this.svgContent);
+    // imageParentTags.forEach((imageParentTag) => {
+    //   let newImageParentTag = imageParentTag;
+    //   const styles = getElemAttributesByImageWithRegex(imageParentTag);
+    //   const transform = getMatrixFromTransform(styles?.transform || '');
+    //   const translateX = (col === 1) ? bleedSize : 0;
+    //   const translateY = (row === 1) ? bleedSize : 0;
+    //   transform[4] = transform[4] + translateX;
+    //   transform[5] = transform[5] + translateY;
+    //   newImageParentTag = imageParentTag.replace(/transform="[^"]*"/, `transform="matrix(${transform.join(',')})"`);
+    //   this.svgContent = this.svgContent.replace(imageParentTag, newImageParentTag);
+    // });
 
     this.svgContent = this.svgContent.replace(/&nbsp;/g, ' ');
-    this.svgContent = this.convertBackground(this.svgContent);
-    this.svgContent = this.convertShape(this.svgContent);
+    this.svgContent = this.svgContent.replace(/<rect(.*?)<\/rect>/g, '');
     this.svgContent = this.convertFillTransparent(this.svgContent);
     this.svgContent = this.fixAdobeTag(this.svgContent);
+    this.svgContent = this.convertShape(this.svgContent);
+    this.svgContent = this.convertBackground(this.svgContent);
     return this.svgContent;
   }
 }

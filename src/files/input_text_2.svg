@@ -1,1 +1,153 @@
-<svg id="fdcfbd_canvas" width="1500" height="2100" xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:svgjs="http://svgjs.com/svgjs" viewBox="0 0 1500 2100" class="svg-main-canvas ready" preserveAspectRatio="none" transform="matrix(1,0,0,1,0,0)" style="transform: matrix(1, 0, 0, 1, 0, 0)" > <defs id="SvgjsDefs1002"></defs> <style> #fdcfbd_canvas_text_d8ea13 { font-family: 'font-bug'; } @font-face { font-family: 'font-bug'; src: url('https://dev.korjl.com/assets/org/GD01HHE0HGV05VPEJ5TGT5BF14CT/font/optimized/oq/oqz3kd855h5eakhs.woff') format('woff'); } </style> <g id="fdcfbd_canvas_group_background" transform="matrix(1,0,0,1,0,0)"> <rect id="SvgjsRect1013" width="1500" height="2100" fill="#4e4343" y="0"></rect> </g> <g id="fdcfbd_canvas_group_elements" class="group_elements"> <g id="fdcfbd_canvas_group_element_d8ea13" class="not-select" pointer-events="" data-object_id="d8ea13"> <g id="fdcfbd_canvas_group_text_parent_d8ea13" transform="matrix(1,0,0,1,-97.59440265260946,-19.60841099729987)" style="opacity: 1; mix-blend-mode: normal" > <g id="fdcfbd_canvas_group_text_style_d8ea13" transform="matrix(1,0,0,1,0,0)"></g> <g id="fdcfbd_canvas_group_text_d8ea13"> <text id="fdcfbd_canvas_text_d8ea13" font-family="&quot;font-ptlxvvrkph&quot;, 'Arial', 'Noto Emoji'" x="847.5944152090591" y="903.3069343404106" fill="#ffc0c0" font-size="174.804491964785px" letter-spacing="0" family="&quot;font-ptlxvvrkph&quot;, 'Arial', 'Noto Emoji'" size="174.804491964785px" text-anchor="middle" transform="matrix(1,0,0,1,0,0)" data-svg-origin="847.5944152090591 897.083740234375" style="translate: none; rotate: none; scale: none; transform-origin: 0px 0px" > <tspan id="SvgjsTspan1177" x="847.5944152090591" dy="155.21580499900466">Nguyen</tspan> <tspan id="SvgjsTspan1178" x="847.5944152090591" dy="174.804491964785">TanVinh</tspan> </text> </g> </g> <rect id="fdcfbd_canvas_rect_d8ea13" width="1181.6041746563994" height="345.04931640625" classPoints="svg_select_points_text" radius="0" fill="none" pointer-events="visible" x="256.7923278808594" y="897.083740234375" transform="matrix(1,0,0,1,-97.59440265260946,-19.60841099729987)" style="cursor: default" ></rect> </g> <g id="fdcfbd_canvas_group_element_b7cbcf" class="not-select" pointer-events="" data-object_id="b7cbcf"> <g id="fdcfbd_canvas_group_image_parent_b7cbcf" transform="matrix(1,0,0,1,-561.2492685781159,-1387.2147454651845)" style="opacity: 1; mix-blend-mode: normal" > <g id="fdcfbd_canvas_group_image_style_b7cbcf"></g> <g id="fdcfbd_canvas_group_image_b7cbcf"> <image id="fdcfbd_canvas_image_b7cbcf" xlink:href="https://dev.korjl.com/assets/org/GD01HHDZSMZQ57K00R3XXZ50CCT6/image/optimized/2b/2bb2741688ec17ad" width="430.75348782919224" height="646.1302490234375" preserveAspectRatio="none" class="" x="1114.85791015625" y="1557" ></image> </g> </g> <rect id="fdcfbd_canvas_rect_b7cbcf" width="430.75348782919224" height="646.1302490234375" fill="none" pointer-events="visible" x="1114.85791015625" y="1557" transform="matrix(1,0,0,1,-561.2492685781159,-1387.2147454651845)" ></rect> </g> </g> </svg> 
+<svg
+  id="dfbdba_canvas"
+  width="1500"
+  height="2100"
+  xmlns="http://www.w3.org/2000/svg"
+  version="1.1"
+  xmlns:xlink="http://www.w3.org/1999/xlink"
+  xmlns:svgjs="http://svgjs.com/svgjs"
+  viewBox="0 0 1500 2100"
+  class="svg-main-canvas ready"
+  preserveAspectRatio="none"
+  transform="matrix(1,0,0,1,0,0)"
+  style="transform: matrix(1, 0, 0, 1, 0, 0)"
+>
+  <defs id="SvgjsDefs1002">
+    <style>
+      .font_bug {
+        font-family: "font-bug";
+      }
+      @font-face {
+        font-family: "font-ptlxvvrkph";
+        src: url("https://dev.korjl.com/assets/org/GD01HHE0HGV05VPEJ5TGT5BF14CT/font/optimized/oq/oqz3kd855h5eakhs.woff")
+          format("woff");
+      }
+    </style>
+  </defs>
+  <g id="dfbdba_canvas_group_background" transform="matrix(1,0,0,1,0,0)">
+    <rect
+      id="SvgjsRect1013"
+      width="1500"
+      height="2100"
+      fill="#4e4343"
+      y="0"
+    ></rect>
+  </g>
+  <g id="dfbdba_canvas_group_elements" class="group_elements">
+    <g
+      id="dfbdba_canvas_group_element_d8ea13"
+      class="not-select"
+      pointer-events=""
+      data-object_id="d8ea13"
+    >
+      <g
+        id="dfbdba_canvas_group_text_parent_d8ea13"
+        transform="matrix(1,0,0,1,-284.98061417719236,-896.4917831533284)"
+        style="opacity: 1; mix-blend-mode: normal"
+      >
+        <g
+          id="dfbdba_canvas_group_text_style_d8ea13"
+          transform="matrix(1,0,0,1,0,0)"
+        ></g>
+        <g id="dfbdba_canvas_group_text_d8ea13">
+          <text
+            id="dfbdba_canvas_text_d8ea13"
+            font-family="&quot;font-ptlxvvrkph&quot;, 'Times', 'Arial'"
+            x="827.5539906741077"
+            y="903.3069343404106"
+            fill="#ffc0c0"
+            font-size="168.875px"
+            letter-spacing="0"
+            family="&quot;font-ptlxvvrkph&quot;, 'Times', 'Arial'"
+            size="168.875px"
+            text-anchor="middle"
+            transform="matrix(1,0,0,1,0,0)"
+            data-svg-origin="827.5539906741077 895.1221923828125"
+            style="
+              translate: none;
+              rotate: none;
+              scale: none;
+              transform-origin: 0px 0px;
+            "
+          >
+            <tspan
+              id="SvgjsTspan3299"
+              x="827.5539906741077"
+              dy="194.34774780273438"
+            >Ng
+              <tspan style="font-size: 218.875px; fill: rgb(191, 33, 33)">
+                uy
+              </tspan>
+              en
+              <tspan></tspan>
+            </tspan>
+            <tspan id="SvgjsTspan3300" x="827.5539906741077" dy="168.875">
+              Ta
+              <tspan
+                style="
+                  font-style: italic;
+                  font-weight: bold;
+                  fill: rgb(63, 71, 210);
+                "
+              >
+                nV
+              </tspan>
+            </tspan>
+            <tspan id="SvgjsTspan3301" x="827.5539906741077" dy="168.875">
+              <tspan style="fill: rgb(63, 71, 210)">inh</tspan>
+            </tspan>
+          </text>
+        </g>
+      </g>
+      <rect
+        id="dfbdba_canvas_rect_d8ea13"
+        width="1141.5233255864966"
+        height="549.08837890625"
+        classPoints="svg_select_points_text"
+        radius="0"
+        fill="none"
+        pointer-events="visible"
+        x="256.7923278808594"
+        y="895.1221923828125"
+        transform="matrix(1,0,0,1,-284.98061417719236,-896.4917831533284)"
+        style="cursor: default"
+      ></rect>
+    </g>
+    <g
+      id="dfbdba_canvas_group_element_bd6c05"
+      class="not-select"
+      pointer-events=""
+      data-object_id="bd6c05"
+    >
+      <g
+        id="dfbdba_canvas_group_image_parent_bd6c05"
+        transform="matrix(1,0,0,1,-344.4736002831958,-1597.0000343671559)"
+        style="opacity: 1; mix-blend-mode: normal"
+      >
+        <g id="dfbdba_canvas_group_image_style_bd6c05"></g>
+        <g id="dfbdba_canvas_group_image_bd6c05">
+          <image
+            id="dfbdba_canvas_image_bd6c05"
+            xlink:href="https://dev.korjl.com/assets/org/GD01HHDZSMZQ57K00R3XXZ50CCT6/image/optimized/2b/2bb2741688ec17ad"
+            width="395.5899378023194"
+            height="593.3849225725447"
+            preserveAspectRatio="none"
+            class=""
+            x="1154.85791015625"
+            y="1597"
+          ></image>
+        </g>
+      </g>
+      <rect
+        id="dfbdba_canvas_rect_bd6c05"
+        width="395.5899378023194"
+        height="593.3849225725447"
+        fill="none"
+        pointer-events="visible"
+        x="1154.85791015625"
+        y="1597"
+        transform="matrix(1,0,0,1,-344.4736002831958,-1597.0000343671559)"
+      ></rect>
+    </g>
+  </g>
+</svg>
