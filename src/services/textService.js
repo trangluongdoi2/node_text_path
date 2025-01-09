@@ -1,4 +1,5 @@
 import { JSDOM } from 'jsdom';
+import * as math from 'mathjs';
 import { TextPathService } from './textPathService.js';
 import {
   getContentByTag,
@@ -15,171 +16,6 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-
-// const mockObject = {
-//   "elementKey": "d8ea13",
-//   "sectionIndex": 1,
-//   "originalText": "Nguyen\nTanVinh",
-//   "left": 256.7923278808594,
-//   "fontSize": 160.53473751868012,
-//   "width": 1085.146691010979,
-//   "height": 156.27610342843195,
-//   "top": 903.3069343404106,
-//   "type": "textbox",
-//   "fill": "#FFC0C0",
-//   "asset": {
-//       "selected": "AF01J3PFV429770TKBA751TP04AC",
-//       "available": [
-//           "AF01J3PFV429770TKBA751TP04AC"
-//       ]
-//   },
-//   "transformMatrix": [
-//       1,
-//       0,
-//       0,
-//       1,
-//       -256.7922968894336,
-//       -896.4917831533284
-//   ],
-//   "fontFamily": "font-ptlxvvrkph",
-//   "styles": {
-//       "1": {
-//           "3": {
-//               "fill": "#C0D1FF"
-//           },
-//           "4": {
-//               "fill": "#C0D1FF"
-//           }
-//       }
-//   },
-//   "backstage": {
-//       "corjl1Styles": {}
-//   },
-//   "scaleX": 1,
-//   "scaleY": 1,
-//   "cropX": 0,
-//   "cropY": 0,
-//   "originX": "left",
-//   "originY": "top",
-//   "flipX": false,
-//   "flipY": false,
-//   "opacity": 1,
-//   "angle": 0,
-//   "skewX": 0,
-//   "skewY": 0,
-//   "selectable": true,
-//   "visible": true,
-//   "isMakeClippingMask": false,
-//   "crossOrigin": "anonymous",
-//   "outsideArtboard": false,
-//   "textAlign": "center",
-//   "resizeAsImage": false,
-//   "lineHeight": 1,
-//   "placeholder": "Enter Text Here",
-//   "charSpacing": 0,
-//   "wrapText": false,
-//   "text": "Nguyen\nTanVinh",
-//   "strokeWidth": 0,
-//   "canReplaceImage": false,
-//   "lockSize": false,
-//   "lockStyle": false,
-//   "selectionStart": 10,
-//   "selectionEnd": 12
-// }
-
-// const textTagContent = `
-// <text id="eafacd_canvas_text_d8ea13" font-family="&quot;font-ptlxvvrkph&quot;, 'Times', 'Arial'" x="799.3656733863489" y="903.3069343404106" fill="#ffc0c0" font-size="160.53473751868012px" letter-spacing="0" family="&quot;font-ptlxvvrkph&quot;, 'Times', 'Arial'" size="160.53473751868012px" text-anchor="middle" transform="matrix(1,0,0,1,0,0)" data-svg-origin="799.3656733863489 897.466552734375" style="translate: none; rotate: none; scale: none; transform-origin: 0px 0px;"><tspan id="SvgjsTspan1869" x="799.3656733863489" dy="142.54512703990224">Nguyen</tspan><tspan id="SvgjsTspan1870" x="799.3656733863489" dy="160.53473751868012">Tan<tspan style="fill: rgb(192, 209, 255);">Vi</tspan>nh<tspan></tspan></tspan></text>
-// `;
-
-// const mockObject2 = {
-//     "elementKey": "d8ea13",
-//     "sectionIndex": 1,
-//     "originalText": "Nguyen\nTa nV \ninh",
-//     "left": 256.7923278808594,
-//     "fontSize": 168.875,
-//     "width": 1141.5233255864966,
-//     "height": 156.27610342843195,
-//     "top": 903.3069343404106,
-//     "type": "textbox",
-//     "fill": "#FFC0C0",
-//     "asset": {
-//         "selected": "AF01J3PFV429770TKBA751TP04AC",
-//         "available": [
-//             "AF01J3PFV429770TKBA751TP04AC"
-//         ]
-//     },
-//     "transformMatrix": [
-//         1,
-//         0,
-//         0,
-//         1,
-//         -284.98061417719236,
-//         -896.4917831533284
-//     ],
-//     "fontFamily": "font-ptlxvvrkph",
-//     "styles": {
-//         "0": {
-//             "2": {
-//                 "fontSize": 218.875,
-//                 "fill": "#BF2121"
-//             },
-//             "3": {
-//                 "fontSize": 218.875,
-//                 "fill": "#BF2121"
-//             }
-//         },
-//         "1": {
-//             "3": {
-//                 "fontWeight": "bold",
-//                 "fontStyle": "italic"
-//             },
-//             "4": {
-//                 "fontWeight": "bold",
-//                 "fontStyle": "italic"
-//             },
-//             "5": {
-//                 "fontWeight": "bold",
-//                 "fontStyle": "italic"
-//             }
-//         }
-//     },
-//     "backstage": {
-//         "corjl1Styles": {}
-//     },
-//     "scaleX": 1,
-//     "scaleY": 1,
-//     "cropX": 0,
-//     "cropY": 0,
-//     "originX": "left",
-//     "originY": "top",
-//     "flipX": false,
-//     "flipY": false,
-//     "opacity": 1,
-//     "angle": 0,
-//     "skewX": 0,
-//     "skewY": 0,
-//     "selectable": true,
-//     "visible": true,
-//     "isMakeClippingMask": false,
-//     "crossOrigin": "anonymous",
-//     "outsideArtboard": false,
-//     "textAlign": "center",
-//     "resizeAsImage": false,
-//     "lineHeight": 1,
-//     "placeholder": "Enter Text Here",
-//     "charSpacing": 0,
-//     "wrapText": false,
-//     "text": "Nguyen\nTa nV \ninh",
-//     "strokeWidth": 0,
-//     "canReplaceImage": false,
-//     "lockSize": false,
-//     "lockStyle": false
-// }
-
-// const textTagContent2 = `
-// <text id="dfbdba_canvas_text_d8ea13" font-family="&quot;font-ptlxvvrkph&quot;, 'Times', 'Arial'" x="827.5539906741077" y="903.3069343404106" fill="#ffc0c0" font-size="168.875px" letter-spacing="0" family="&quot;font-ptlxvvrkph&quot;, 'Times', 'Arial'" size="168.875px" text-anchor="middle" transform="matrix(1,0,0,1,0,0)" data-svg-origin="827.5539906741077 895.1221923828125" style="translate: none; rotate: none; scale: none; transform-origin: 0px 0px;"><tspan id="SvgjsTspan2338" x="827.5539906741077" dy="194.34774780273438">Ng<tspan style="font-size: 218.875px; fill: rgb(191, 33, 33);">uy</tspan>en<tspan></tspan></tspan><tspan id="SvgjsTspan2339" x="827.5539906741077" dy="168.875">Ta <tspan style="font-style: italic; font-weight: bold;">nV </tspan></tspan><tspan id="SvgjsTspan2340" x="827.5539906741077" dy="168.875">inh</tspan></text>
-// `;
-
 const { reCaculateTransform } = useCaculateTransform();
 
 export class TextService {
@@ -189,10 +25,12 @@ export class TextService {
   textParentData;
   rectData;
   textLines;
+  __charBounds;
   tspanContents;
   boundingElement;
   _fontSizeFraction = 0.222;
   lineHeightScale = 1;
+  fontloadMap = {};
   keyAttributesByTag = {
     rect: ['x', 'y', 'width', 'height'],
     tspan: ['x', 'y', 'dx', 'dy'],
@@ -201,8 +39,10 @@ export class TextService {
   constructor(innerHTML, outerHTML, object) {
     this.outerHTML = outerHTML;
     this.innerHTML = innerHTML;
-    this.object = object;
+    this.object = { ...object };
+    this.fontloadMap = {};
     this.textLines = {};
+    this.__charBounds = {};
     this.tspanContents = [];
     this.boundingElement = {};
     this.processTextParentContent();
@@ -218,6 +58,18 @@ export class TextService {
     return TextService.instance;
   }
 
+  caculateCenterOfElementText({ x, y, angle }) {
+    const { a, b, c, d } = getRotationMatrixRatios(angle);
+    const rotationMatrix = math.matrix([[a, c], [b, d]]);
+    const translateMatrix = math.matrix([[-this.object.width / 2], [-this.object.height / 2]]);
+    const positionMatrix = math.matrix([[x], [y]]);
+    const center = math.subtract(positionMatrix, math.multiply(rotationMatrix, translateMatrix));
+    return {
+      x: center._data[0][0],
+      y: center._data[1][0],
+    };
+  }
+
   getPositionOfBoundingBoxText() {
     const originalAngle = this.object.angle;
     const originalFlipX = this.object.flipX;
@@ -225,22 +77,27 @@ export class TextService {
     this.object.flipX = false;
     this.object.flipY = false;
     const position = reCaculateTransform(this.object);
+    const center = this.caculateCenterOfElementText({ x: position.x, y: position.y, angle: originalAngle });
     this.object.angle = originalAngle;
     this.object.flipX = originalFlipX;
     this.object.flipY = originalFlipY;
+    const w = this.rectData.params.width || this.object.width;
+    const h = this.rectData.params.height || this.object.height;
     this.boundingElement = {
       x: position.x,
       y: position.y,
-      cx: position.x + this.object.width / 2,
-      cy: position.y + this.object.height / 2,
-      width: this.object.width,
-      height: this.object.height,
+      cx: center.x,
+      cy: center.y,
+      width: w,
+      height: h,
     };
   }
 
   async loadFont() {
     const localPath = path.join(__dirname, '../fonts/font_1.woff');
     this.fontLoad = await useFont().loadFontFromOpenTypeByUrl(localPath);
+    this.fontloadMap = {};
+    // Need add multi styles
   }
 
   getStyleDeclaration(multiStyles, lineIndex, charIndex) {
@@ -293,16 +150,95 @@ export class TextService {
     return this.lineHeightScale || 0.001;
   }
 
+  // getLineWidth(lineIndex) {
+  //   const lineWidth = this.getAdvanceWidthOfTextLine()[lineIndex];
+  //   return lineWidth;
+  // }
+
+  // _getLineLeftOffset(lineIndex) {
+  //   const lineWidth = this.getLineWidth(lineIndex),
+  //     lineDiff = this.width - lineWidth,
+  //     textAlign = this.textAlign,
+  //     direction = this.direction,
+  //     isEndOfWrapping = this.isEndOfWrapping(lineIndex);
+  //   let leftOffset = 0;
+  //   if (
+  //     textAlign === JUSTIFY ||
+  //     (textAlign === JUSTIFY_CENTER && !isEndOfWrapping) ||
+  //     (textAlign === JUSTIFY_RIGHT && !isEndOfWrapping) ||
+  //     (textAlign === JUSTIFY_LEFT && !isEndOfWrapping)
+  //   ) {
+  //     return 0;
+  //   }
+  //   if (textAlign === CENTER) {
+  //     leftOffset = lineDiff / 2;
+  //   }
+  //   if (textAlign === RIGHT) {
+  //     leftOffset = lineDiff;
+  //   }
+  //   if (textAlign === JUSTIFY_CENTER) {
+  //     leftOffset = lineDiff / 2;
+  //   }
+  //   if (textAlign === JUSTIFY_RIGHT) {
+  //     leftOffset = lineDiff;
+  //   }
+  //   if (direction === 'rtl') {
+  //     if (
+  //       textAlign === RIGHT ||
+  //       textAlign === JUSTIFY ||
+  //       textAlign === JUSTIFY_RIGHT
+  //     ) {
+  //       leftOffset = 0;
+  //     } else if (textAlign === LEFT || textAlign === JUSTIFY_LEFT) {
+  //       leftOffset = -lineDiff;
+  //     } else if (textAlign === CENTER || textAlign === JUSTIFY_CENTER) {
+  //       leftOffset = -lineDiff / 2;
+  //     }
+  //   }
+  //   return leftOffset;
+  // }
+
+  isEndOfWrapping(lineIndex) {
+    return lineIndex === this.tspanContents.length - 1;
+  }
+
+  measureLine(lineIndex) {
+    const lineWidth = this.getAdvanceWidthOfTextLine()[lineIndex];
+    return lineWidth;
+  }
+
+  _getLeftOffset() {
+    return -this.boundingElement.width / 2 || 0;
+  }
+
+  _getLineLeftOffset(lineIndex) {
+    const lineWidth = this.measureLine(lineIndex);
+    const lineDiff = this.boundingElement.width - lineWidth;
+    const textAlign = this.object.textAlign;
+    if (textAlign === 'justify' || (textAlign === 'justify-left' && !this.isEndOfWrapping(lineIndex))) {
+      return 0;
+    }
+    let leftOffset = 0;
+    if (textAlign === 'center') {
+      leftOffset = lineDiff / 2;
+    }
+    if (textAlign === 'right') {
+      leftOffset = lineDiff;
+    }
+    return leftOffset;
+  }
+
   handleTspanContent() {
-    const leftRelative = this.getRelativeLeftOfTextLine();
     let lineHeights = 0;
     const safeLineHeight = this._getSafeLineHeight();
     const deltaY = this.getDeltaBetweenTextTagAndBoundingBox();
+    let dyNew = 0;
     this.tspanContents.forEach((tspanData, lineIndex) => {
       const heightOfLine = this.getHeightOfLine(lineIndex);
       const maxHeight = heightOfLine / safeLineHeight;
-      let top = this.getTopOffset() + lineHeights + maxHeight;
-      top -= (heightOfLine * this._fontSizeFraction) / this.lineHeightScale + deltaY;
+      dyNew = dyNew + Number(tspanData.dy);
+      const leftLineOffset = this._getLineLeftOffset(lineIndex);
+      const top = dyNew - this.boundingElement.height / 2 - deltaY;
       if (!this.textLines[lineIndex]) {
         this.textLines[lineIndex] = {};
       }
@@ -317,8 +253,6 @@ export class TextService {
         let left = 0;
         if (prevChar) {
           left = prevChar.left + prevChar.width;
-        } else {
-          left = leftRelative[lineIndex];
         }
         this.textLines[lineIndex][charIndex] = {
           char,
@@ -329,21 +263,31 @@ export class TextService {
           fontStyle: this.getValueOfPropertyAt(this.object, lineIndex, charIndex, 'fontStyle'),
           x: Number(tspanData.x),
           dy: Number(tspanData.dy),
+          y: dyNew,
           top,
           left,
           width,
+          dyNew,
         }
       });
       lineHeights += heightOfLine;
     });
-    // console.log(this.textLines, '==> this.textLines...');
+
+    const letfOffset = this._getLeftOffset();
+
+    Object.keys(this.textLines).forEach((lineIndex) => {
+      const line = this.textLines[lineIndex];
+      const leftLineOffset = this._getLineLeftOffset(lineIndex);
+      Object.keys(line).forEach((charIndex) => {
+        const char = line[charIndex];
+        char.left += letfOffset + leftLineOffset;
+      });
+    });
   }
 
   processTspanContent() {
     const { window } = new JSDOM(this.textTagData.content);
-    // console.log(this.textTagData.content, '==> this.textTagData.content...');
     const textElement = window.document.getElementsByTagName('text')[0];
-    // console.log(textElement, '==> textElement...');
     if (textElement) {
       this.tspanContents = this.getTagElements(textElement);
       this.handleTspanContent();
@@ -418,7 +362,6 @@ export class TextService {
   }
 
   processTextTagContent() {
-    // console.log(this.innerHTML, '==> this.innerHTML...');
     const content = getContentByTag(this.innerHTML, 'text')[0];
     this.textTagData = {
       content,
@@ -429,16 +372,21 @@ export class TextService {
   getDeltaBetweenTextTagAndBoundingBox() {
     const { y } = this.textTagData.params;
     const { y: boundingBoxY } = this.rectData.params;
-    console.log(y, boundingBoxY, '==> y, boundingBoxY...');
-    return boundingBoxY - y;
+    return y - boundingBoxY;
   }
 
+  // caculateBaseLine(opts) {
+  //   const { ascender, descender, unitsPerEm, fontSize } = opts;
+  //   const fontScale = 1 / unitsPerEm;
+  //   const ascenderRatio = ascender * fontScale * fontSize;
+  //   const descenderRatio = Math.abs(descender) * fontScale * fontSize;
+  //   const padding = (ascenderRatio + descenderRatio - this.lineHeightScale * fontSize) / 2;
+  //   return ascenderRatio - padding;
+  // }
+
   async exportPath() {
-    // console.log(this.object, '==> this.object...');
     const res = await this.getCharsData();
-    // console.log(res, '==> res...');
     const newData = {
-      // charsMap: await this.getCharsData(),
       charsMap: res,
       boundingElement: this.boundingElement,
       object: this.object,

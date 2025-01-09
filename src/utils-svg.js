@@ -487,10 +487,6 @@ export const rotateToZero = (matrix) => {
 export const getImagePng = async (file) => {
   let image = sharp(file);
   const metadata = await image.metadata();
-  // metadata.width = 3357;
-  // metadata.height = 1362;
-  // metadata.density = 72;
-  // console.log(metadata, '>>> metadata...');
   return image
     .flatten({ background: { r: 255, g: 255, b: 255 } })
     .resize(metadata.width, metadata.height, {

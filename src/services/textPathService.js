@@ -106,6 +106,8 @@ export class TextPathService {
 
   getPathByChar(charData, lineIndex, charIndex) {
     const { cx, cy } = this.boundingElement;
+    // console.log(charData, '==> charData...');
+    console.log(cx, cy, '==> cx, cy...');
     const path = this.fontLoad.getPath(charData.char, 0, 0, charData.fontSize);
     const initTransform = {
       x: 0,
@@ -113,7 +115,7 @@ export class TextPathService {
       isItalicStyle: charData.fontStyle === 'italic',
     }
     const caculatedPath = this.getDataPath(path, initTransform, lineIndex, charIndex);
-    const { a, b, c, d } = getRotationMatrixRatios(0);
+    const { a, b, c, d } = getRotationMatrixRatios(this.object.angle);
     const { left = 0, top = 0 } = charData;
     const tx = a * left + c * top + cx;
     const ty = b * left + d * top + cy;
@@ -126,9 +128,14 @@ export class TextPathService {
       </g>`;
     return pathContent;
   };
+  
+  getGlyphPaths() {
+    console.log('===> getGlyphPaths 999');
+  }
 
   getTextPaths() {
     const originalPaths = [];
+    console.log(this.charsMap, '==> getTextPaths this.charsMap...');
     Object.entries(this.charsMap).forEach(([lineIndex, textLines]) => {
       Object.entries(textLines).forEach(([charIndex, charData]) => {
         const pathByChar = this.getPathByChar(charData, lineIndex, charIndex);
@@ -136,18 +143,15 @@ export class TextPathService {
       });
     });
     const { a, b, c, d } = getRotationMatrixRatios(this.object.angle);
-    const { x, y, cx, cy, width, height } = this.boundingElement;
+    console.log(this.object.angle, '==> getTextPaths this.object.angle...');
+    const { cx, cy, width, height } = this.boundingElement;
     const left = -width / 2;
     const top = -height / 2;
     const tx = a * left + c * top + cx;
     const ty = b * left + d * top + cy;
 
     const newMatrix = `matrix(${a} ${b} ${c} ${d} ${tx} ${ty})`;
-    this.paths = `
-      <g transform="${newMatrix}">
-        ${originalPaths.join('')}
-      </g>
-    `;
+    this.paths = originalPaths.join('');
     return `
       <g transform="${newMatrix}">
         ${originalPaths.join('')}

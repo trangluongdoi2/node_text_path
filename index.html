@@ -39,8 +39,43 @@
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/opentype.js/1.3.4/opentype.min.js"></script>
 </head>
+
 <body>
-  <script type="module" src="src/index.js"></script>
+  <form>
+    <input id="input" placeholder="Copy link S3 here"></input>
+    <button id="btn" type="submit">Load</button>
+  </form>
   <div id="svg-container"></div>
+  <script src="
+https://cdn.jsdelivr.net/npm/jsdom-browser.screen@0.2.2/src/index.min.js
+"></script>
+  <!-- <script src="https://cdn.jsdelivr.net/npm/jsdom@25.0.1/lib/api.min.js"></script> -->
+  <script>
+    let currentURL = '';
+    function getPureSVG(content) {
+      // console.log('getPureSVG...');
+      // console.log(js);
+    }
+    async function fetchContentHTML(url) {
+      return new Promise((resolve) => {
+        fetch(url)
+          .then(data => data.text())
+          .then(data => {
+            resolve(data)
+          })
+      })
+    }
+    function updateEvent(e) {
+      currentURL = e.target.value;
+    }
+    const inputEl = document.getElementById('input');
+    const btn = document.getElementById('btn');
+    inputEl.addEventListener('input', updateEvent)
+    btn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const content = await fetchContentHTML(currentURL);
+      getPureSVG(content);
+    })
+  </script>
 </body>
 </html>

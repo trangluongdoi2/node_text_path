@@ -1,10 +1,13 @@
-import HandlerSVGContent from "./handlerSVGContent.js";
+import fs from 'fs';
 import express from 'express';
+import cors from 'cors';
 import path from 'path';
+import bodyParser from 'body-parser';
+import { JSDOM } from 'jsdom';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import fs from 'fs';
-
+import HandlerSVGContent from "./handlerSVGContent.js";
+import { HTMLService } from "./services/htmlService.js";
 const PORT = 3000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -13,9 +16,37 @@ const app = express();
 // view engine setup
 app.set('views', path.join(__dirname, './views'));
 app.set('view engine', 'jade');
+app.use(bodyParser.json({ limit: '50mb' }));
+app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
+app.use(
+  cors({
+    origin: '*',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,
+    allowedHeaders: ['*']
+  })
+);
+
+app.post('/api/post-html', (req, res) => {
+  const { data } = req.body;
+  const htmlService = new HTMLService(data);
+  const pureSVGContent = htmlService.getPureSVG();
+  console.log(pureSVGContent, '==> pureSVGContent...');
+});
+
 app.use('/', async (req, res) => {
-  const svgContent = fs.readFileSync(path.join(__dirname, './files/input_text.svg'), 'utf8');
-  // const svgContent = fs.readFileSync(path.join(__dirname, './files/input_text_2.svg'), 'utf8');
+  let svgContent = fs.readFileSync(path.join(__dirname, './files/input_text.svg'), 'utf8');
+  function preProcessSVG(svgContent) {
+    const dom = new JSDOM(svgContent);
+    const { window } = dom;
+    const element = window.document.getElementsByClassName('svg_select_boundingRect hidden');
+    for (const item of element) {
+      item.remove();
+    }
+    const newSVGContent = window.document.body.innerHTML;
+    return newSVGContent;
+  }
+  svgContent = preProcessSVG(svgContent);
   const data = fs.readFileSync(path.join(__dirname, './data/index.json'), 'utf8');
   const handlerSVGContent = new HandlerSVGContent(svgContent.replace(/\s+/g, ' '), JSON.parse(data));
   const output = await handlerSVGContent.export();

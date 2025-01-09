@@ -30,9 +30,9 @@ class HandlerSVGContent {
   elements;
   groupElement;
   textPathService;
-  data1;
+  data;
   // temp
-  constructor(svgContent, data1) {
+  constructor(svgContent, data) {
     this.configs = {
       pageColumns: 1,
       pageRows: 1,
@@ -43,7 +43,7 @@ class HandlerSVGContent {
     this.shapeRectangles = getShapeRectanglesTag(svgContent);
     this.filterGradientTags = getFilterGradientTags(svgContent);
     this.shapeClipPaths = getShapeClipPathTags(getContentByTag(svgContent, 'defs')?.[0] || '');
-    this.data1 = data1;
+    this.data = data;
 
 
     if (this.filterGradientTags?.length) {
@@ -281,13 +281,11 @@ class HandlerSVGContent {
     formatSVGContent = window.document.body.innerHTML;
     this.svgContent = formatSVGContent;
 
-    console.log(this.elements.length, '==> this.elements...');
-
     const elementsResult = await Promise.all(
       this.elements.map(async (element, index) => {
         const { innerHTML, outerHTML } = element;
         if (this.isTextElement(innerHTML)) {
-          const elementData = Object.values(this.data1)[index];
+          const elementData = Object.values(this.data)[index];
           const textPathService = new TextService(innerHTML, outerHTML, elementData).getInstance();
           return await textPathService.exportPath();
         }
@@ -305,7 +303,6 @@ class HandlerSVGContent {
       let { elementTag, path, clippingMaskTag } = element;
       switch (element.type) {
         case 'TEXT':
-          console.log(elementTag, '==> elementTag...');
           this.svgContent = this.svgContent.replace(elementTag, path);
           break;
         case 'TEXT_CLIP_PATH':
