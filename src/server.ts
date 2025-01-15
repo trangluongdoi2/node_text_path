@@ -4,19 +4,14 @@ import cors from 'cors';
 import path from 'path';
 import bodyParser from 'body-parser';
 import { JSDOM } from 'jsdom';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 import { HTMLService } from './services/htmlService';
 import HandlerSVGContent from './handlerSVGContent';
 
 const PORT = 3000;
-// @ts-ignore
-// const __filename = fileURLToPath(import.meta.url);
-// const __dirname = dirname(__filename);
 const app = express();
 
 // view engine setup
-// app.set('views', path.join(__dirname, './views'));
+app.set('views', path.join(__dirname, './views'));
 app.set('view engine', 'jade');
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
@@ -53,7 +48,6 @@ app.use('/', async (req: Request, res: Response) => {
   const data = fs.readFileSync(path.join(__dirname, './data/index.json'), 'utf8');
   const handlerSVGContent = new HandlerSVGContent(svgContent.replace(/\s+/g, ' '), JSON.parse(data));
   const output = await handlerSVGContent.export();
-  // @ts-ignore
   res.render('index', { input: svgContent, output });
   fs.writeFileSync(path.join(__dirname, './files/output_text.svg'), output);
   console.log('Write file output_text.svg SUCCESS!!!');

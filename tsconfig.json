@@ -5,7 +5,7 @@
   },
   "compilerOptions": {
     "esModuleInterop": true,
-    "target": "ES5",
+    "target": "ES2020",
     "noImplicitAny": true,
     "moduleResolution": "node",
     "sourceMap": false,
@@ -20,7 +20,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]
-    }
+    },
   },
   "include": ["src/**/*"],
 }
+
