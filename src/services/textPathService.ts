@@ -1,21 +1,16 @@
-import { JSDOM } from 'jsdom';
-import path from 'path';
-import { dirname } from 'path';
-import { fileURLToPath } from 'url';
-import * as fabric from 'fabric';
-import {
-  getRotationMatrixRatios,
-} from '../utils-svg.js';
-import { clone } from '../utilities/index.js';
+import { degreesToRadians } from "@/helper/math";
+import { TransformPath } from "@/types/convert-text";
+import { clone } from "@/utilities";
+import { getRotationMatrixRatios } from "@/utils-svg";
 
 export class TextPathService {
   charsMap;
   object;
   boundingElement;
-  paths;
+  declare paths: any;
   fontLoad;
   ITALIC_ANGLE = 15;
-  constructor(options) {
+  constructor(options: any) {
     this.charsMap = options.charsMap;
     this.object = options.object;
     this.boundingElement = options.boundingElement;
@@ -23,12 +18,12 @@ export class TextPathService {
     this.paths = [];
   }
 
-  getPathContent(path, transform) {
+  getPathContent(path: any, transform: any) {
     if (!path.commands?.length) {
       return '';
     }
 
-    const pathContent = path.commands.map((command) => {      
+    const pathContent = path.commands.map((command: any) => {      
       const commandMap = new Map();
       let finalContent = `${command.type} `;
 
@@ -57,7 +52,7 @@ export class TextPathService {
         commandMap.set('y', command.y);
       }
       if (transform?.isItalicStyle) {
-        const italicShearXVal = fabric.util.degreesToRadians(-this.ITALIC_ANGLE);
+        const italicShearXVal = degreesToRadians(-this.ITALIC_ANGLE);
         if (commandMap.has('x')) {
           const x = commandMap.get('x') || 0;
           const y = commandMap.get('y') || 0;
@@ -83,9 +78,9 @@ export class TextPathService {
       return finalContent;
     });
     return pathContent.join('');
-  };
+  }
 
-  getDataPath(path, transform, lineIndex, charIndex) {
+  getDataPath(path: any, transform: TransformPath, lineIndex: number, charIndex: number) {
     const clonePathContent = [];
 
     const purePath = clone(path);
@@ -97,17 +92,15 @@ export class TextPathService {
     clonePathContent.push(this.getPathContent(purePath, transformPurePath));
 
     return clonePathContent.join('');
-  };
+  }
 
-  getPathWithStyles(paths, style = {}) {
-    let fillStyles = style.fill ? `fill="${style.fill}"` : '';
+  getPathWithStyles(paths: any, style: Record<string, any> = {}) {
+    const fillStyles = style.fill ? `fill="${style.fill}"` : '';
     return `<path ${fillStyles} d="${paths}" />`;
-  };
+  }
 
-  getPathByChar(charData, lineIndex, charIndex) {
+  getPathByChar(charData: any, lineIndex: number, charIndex: number) {
     const { cx, cy } = this.boundingElement;
-    // console.log(charData, '==> charData...');
-    console.log(cx, cy, '==> cx, cy...');
     const path = this.fontLoad.getPath(charData.char, 0, 0, charData.fontSize);
     const initTransform = {
       x: 0,
@@ -127,18 +120,20 @@ export class TextPathService {
          ${this.getPathWithStyles(caculatedPath, { fill: charData.fill, fontStyle: charData.fontStyle })}
       </g>`;
     return pathContent;
-  };
+  }
   
   getGlyphPaths() {
     console.log('===> getGlyphPaths 999');
   }
 
   getTextPaths() {
-    const originalPaths = [];
+    const originalPaths: any = [];
     console.log(this.charsMap, '==> getTextPaths this.charsMap...');
     Object.entries(this.charsMap).forEach(([lineIndex, textLines]) => {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       Object.entries(textLines).forEach(([charIndex, charData]) => {
-        const pathByChar = this.getPathByChar(charData, lineIndex, charIndex);
+        const pathByChar = this.getPathByChar(charData, Number(lineIndex), Number(charIndex));
         originalPaths.push(pathByChar);
       });
     });

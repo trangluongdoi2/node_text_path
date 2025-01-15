@@ -3,12 +3,14 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+// @ts-ignore
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 // const dirname = path.resolve();
 
 export class HTMLService {
-  constructor(html) {
+  declare html: any
+  constructor(html: any) {
     this.html = html;
     fs.writeFileSync(path.join(__dirname, '../files/pure.html'), this.html);
   }

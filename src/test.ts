@@ -1,35 +1,3 @@
-// const matrix = new fabric.Matrix();
-import * as fabric from 'fabric';
-import * as math from 'mathjs';
-
-function calcRotateMatrix(options) {
-  if (!options.angle) {
-    return fabric.iMatrix.concat();
-  }
-  const theta = fabric.util.degreesToRadians(options.angle);
-  const cos = fabric.util.cos(theta);
-  const sin = fabric.util.sin(theta);
-  return [cos, sin, -sin, cos, 0, 0];
-}
-
-// console.log(calcRotateMatrix({ angle: 45 }), '==> calcRotateMatrix...');
-
-function calcTranslateMatrix(point, matrix) {
-  return [1, 0, 0, 1, point.x, point.y];
-}
-
-function multiplyTransformMatrices(a, b, is2x2) {
-  // Matrix multiply a * b
-  return [
-    a[0] * b[0] + a[2] * b[1],
-    a[1] * b[0] + a[3] * b[1],
-    a[0] * b[2] + a[2] * b[3],
-    a[1] * b[2] + a[3] * b[3],
-    is2x2 ? 0 : a[0] * b[4] + a[2] * b[5] + a[4],
-    is2x2 ? 0 : a[1] * b[4] + a[3] * b[5] + a[5]
-  ];
-}
-
 // const mat1 = calcRotateMatrix({ angle: 13 });
 // const mat2 = calcTranslateMatrix({ x: -674.9304336458374, y: -431.9554775333359 });
 // const center = { x: 1200, y: 1200 };

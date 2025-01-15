@@ -1,20 +1,22 @@
 import fs from 'fs';
-import express from 'express';
+import express, { Request, Response } from 'express';
 import cors from 'cors';
 import path from 'path';
 import bodyParser from 'body-parser';
 import { JSDOM } from 'jsdom';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import HandlerSVGContent from "./handlerSVGContent.js";
-import { HTMLService } from "./services/htmlService.js";
+import { HTMLService } from './services/htmlService';
+import HandlerSVGContent from './handlerSVGContent';
+
 const PORT = 3000;
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+// @ts-ignore
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = dirname(__filename);
 const app = express();
 
 // view engine setup
-app.set('views', path.join(__dirname, './views'));
+// app.set('views', path.join(__dirname, './views'));
 app.set('view engine', 'jade');
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
@@ -27,19 +29,20 @@ app.use(
   })
 );
 
-app.post('/api/post-html', (req, res) => {
+app.post('/api/post-html', (req: Request, res: Response) => {
+  // @ts-ignore
   const { data } = req.body;
   const htmlService = new HTMLService(data);
   const pureSVGContent = htmlService.getPureSVG();
   console.log(pureSVGContent, '==> pureSVGContent...');
 });
 
-app.use('/', async (req, res) => {
+app.use('/', async (req: Request, res: Response) => {
   let svgContent = fs.readFileSync(path.join(__dirname, './files/input_text.svg'), 'utf8');
-  function preProcessSVG(svgContent) {
+  function preProcessSVG(svgContent: string) {
     const dom = new JSDOM(svgContent);
     const { window } = dom;
-    const element = window.document.getElementsByClassName('svg_select_boundingRect hidden');
+    const element = window.document.getElementsByClassName('svg_select_boundingRect hidden') as any;
     for (const item of element) {
       item.remove();
     }
@@ -50,6 +53,7 @@ app.use('/', async (req, res) => {
   const data = fs.readFileSync(path.join(__dirname, './data/index.json'), 'utf8');
   const handlerSVGContent = new HandlerSVGContent(svgContent.replace(/\s+/g, ' '), JSON.parse(data));
   const output = await handlerSVGContent.export();
+  // @ts-ignore
   res.render('index', { input: svgContent, output });
   fs.writeFileSync(path.join(__dirname, './files/output_text.svg'), output);
   console.log('Write file output_text.svg SUCCESS!!!');

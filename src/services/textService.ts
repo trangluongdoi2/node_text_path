@@ -1,42 +1,36 @@
+import { useCaculateTransform } from '@/helper/transform';
+import { BoundingElement, RenderCharInfo, TspanContent } from '@/types/convert-text';
+import { getContentByTag, getRotationMatrixRatios, getTextParentTags } from '@/utils-svg';
 import { JSDOM } from 'jsdom';
 import * as math from 'mathjs';
-import { TextPathService } from './textPathService.js';
-import {
-  getContentByTag,
-  getMatrixFromTransform,
-  getTextParentTags,
-  getRotationMatrixRatios,
-} from '../utils-svg.js';
-import { useFont } from '../composables/useFont.js';
-import { useCaculateTransform } from '../useCaculateTransform.js';
-import path from 'path';
-import { dirname } from 'path';
-import { fileURLToPath } from 'url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const { reCaculateTransform } = useCaculateTransform();
+const { reCaculateTransform  }  = useCaculateTransform()
 
 export class TextService {
-  innerHTML;
-  outerHTML;
-  textContent;
-  textParentData;
-  rectData;
-  textLines;
-  __charBounds;
-  tspanContents;
-  boundingElement;
+  static instance: TextService | undefined;
+  declare innerHTML;
+  declare outerHTML;
+  declare textContent: string;
+  declare textParentData: any;
+  declare rectData: any;
+  declare textLines: Record<string, Record<string, RenderCharInfo>>;
+  declare __charBounds;
+  declare tspanContents: TspanContent[];
+  declare boundingElement: BoundingElement;
   _fontSizeFraction = 0.222;
   lineHeightScale = 1;
   fontloadMap = {};
-  keyAttributesByTag = {
+  declare object: any;
+  declare textTagData: {
+    content: string,
+    params: Record<string, string | number>,
+  }
+  keyAttributesByTag: Record<string, string[]> = {
     rect: ['x', 'y', 'width', 'height'],
     tspan: ['x', 'y', 'dx', 'dy'],
     text: ['x', 'y', 'textAnchor', 'transform', 'fontFamily', 'fontSize'],
   }
-  constructor(innerHTML, outerHTML, object) {
+  constructor(innerHTML: string, outerHTML: string, object: any) {
     this.outerHTML = outerHTML;
     this.innerHTML = innerHTML;
     this.object = { ...object };
@@ -44,7 +38,15 @@ export class TextService {
     this.textLines = {};
     this.__charBounds = {};
     this.tspanContents = [];
-    this.boundingElement = {};
+    this.boundingElement = {
+      x: 0,
+      y: 0,
+      cx: 0,
+      cy: 0,
+      width: 0,
+      height: 0,
+    }
+    // this.instance = undefined;
     this.processTextParentContent();
     this.processTextTagContent();
     this.processTextRectContent();
@@ -58,12 +60,12 @@ export class TextService {
     return TextService.instance;
   }
 
-  caculateCenterOfElementText({ x, y, angle }) {
+  caculateCenterOfElementText({ x, y, angle }: { x: number, y: number, angle: number }) {
     const { a, b, c, d } = getRotationMatrixRatios(angle);
     const rotationMatrix = math.matrix([[a, c], [b, d]]);
     const translateMatrix = math.matrix([[-this.object.width / 2], [-this.object.height / 2]]);
     const positionMatrix = math.matrix([[x], [y]]);
-    const center = math.subtract(positionMatrix, math.multiply(rotationMatrix, translateMatrix));
+    const center = math.subtract(positionMatrix, math.multiply(rotationMatrix, translateMatrix)) as any;
     return {
       x: center._data[0][0],
       y: center._data[1][0],
@@ -93,19 +95,19 @@ export class TextService {
     };
   }
 
-  async loadFont() {
-    const localPath = path.join(__dirname, '../fonts/font_1.woff');
-    this.fontLoad = await useFont().loadFontFromOpenTypeByUrl(localPath);
-    this.fontloadMap = {};
-    // Need add multi styles
-  }
+  // async loadFont() {
+  //   const localPath = path.join(__dirname, '../fonts/font_1.woff');
+  //   this.fontLoad = await useFont().loadFontFromOpenTypeByUrl(localPath);
+  //   this.fontloadMap = {};
+  //   // Need add multi styles
+  // }
 
-  getStyleDeclaration(multiStyles, lineIndex, charIndex) {
+  getStyleDeclaration(multiStyles: any, lineIndex: number, charIndex: number) {
     const lineStyle = multiStyles && multiStyles[lineIndex];
     return lineStyle ? lineStyle[charIndex] ?? {} : {};
   }
 
-  getValueOfPropertyAt(object, lineIndex, charIndex, field) {
+  getValueOfPropertyAt(object: any, lineIndex: number, charIndex: number, field: string) {
     const charStyle = this.getStyleDeclaration(object.styles, lineIndex, charIndex);
     return charStyle[field] ?? object[field];
   }
@@ -115,94 +117,42 @@ export class TextService {
     return -height / 2;
   }
 
-  getHeightOfChar(lineIndex, charIndex) {
+  getHeightOfChar(lineIndex: number, charIndex: number) {
     return this.getValueOfPropertyAt(this.object, lineIndex, charIndex, 'fontSize');
   }
 
-  getHeightOfLine(lineIndex) {
+  getHeightOfLine(lineIndex: number) {
     let maxHeight = this.getHeightOfChar(lineIndex, 0);
-    for (let i = 1; i < this.tspanContents[lineIndex].length; i++) {
+    for (let i = 1; i < this.tspanContents[lineIndex].text.length; i++) {
       maxHeight = Math.max(this.getHeightOfChar(lineIndex, i), maxHeight);
     }
     return maxHeight;
   }
 
   getAdvanceWidthOfTextLine() {
-    const advanceWidths = [];
+    const advanceWidths: number[] = [];
     this.tspanContents.forEach((tspanData, lineIndex) => {
       let advanceWidth = 0;
       const charsEachLine = tspanData.text.split('');
-      charsEachLine.forEach((char, charIndex) => {
+      charsEachLine.forEach((char: string, charIndex: number) => {
         const fontSize = this.getValueOfPropertyAt(this.object, lineIndex, charIndex, 'fontSize');
-        advanceWidth += this.fontLoad.getAdvanceWidth(char, fontSize);
+        advanceWidth += 0;
+        // advanceWidth += this.fontLoad.getAdvanceWidth(char, fontSize);
       });
       advanceWidths.push(advanceWidth);
     });
     return advanceWidths;
   }
 
-  getRelativeLeftOfTextLine() {
-    const advanceWidths = this.getAdvanceWidthOfTextLine();
-    const result = advanceWidths.map((advanceWidth) => -advanceWidth / 2);
-    return result;
-  }
   _getSafeLineHeight() {
     return this.lineHeightScale || 0.001;
   }
 
-  // getLineWidth(lineIndex) {
-  //   const lineWidth = this.getAdvanceWidthOfTextLine()[lineIndex];
-  //   return lineWidth;
-  // }
-
-  // _getLineLeftOffset(lineIndex) {
-  //   const lineWidth = this.getLineWidth(lineIndex),
-  //     lineDiff = this.width - lineWidth,
-  //     textAlign = this.textAlign,
-  //     direction = this.direction,
-  //     isEndOfWrapping = this.isEndOfWrapping(lineIndex);
-  //   let leftOffset = 0;
-  //   if (
-  //     textAlign === JUSTIFY ||
-  //     (textAlign === JUSTIFY_CENTER && !isEndOfWrapping) ||
-  //     (textAlign === JUSTIFY_RIGHT && !isEndOfWrapping) ||
-  //     (textAlign === JUSTIFY_LEFT && !isEndOfWrapping)
-  //   ) {
-  //     return 0;
-  //   }
-  //   if (textAlign === CENTER) {
-  //     leftOffset = lineDiff / 2;
-  //   }
-  //   if (textAlign === RIGHT) {
-  //     leftOffset = lineDiff;
-  //   }
-  //   if (textAlign === JUSTIFY_CENTER) {
-  //     leftOffset = lineDiff / 2;
-  //   }
-  //   if (textAlign === JUSTIFY_RIGHT) {
-  //     leftOffset = lineDiff;
-  //   }
-  //   if (direction === 'rtl') {
-  //     if (
-  //       textAlign === RIGHT ||
-  //       textAlign === JUSTIFY ||
-  //       textAlign === JUSTIFY_RIGHT
-  //     ) {
-  //       leftOffset = 0;
-  //     } else if (textAlign === LEFT || textAlign === JUSTIFY_LEFT) {
-  //       leftOffset = -lineDiff;
-  //     } else if (textAlign === CENTER || textAlign === JUSTIFY_CENTER) {
-  //       leftOffset = -lineDiff / 2;
-  //     }
-  //   }
-  //   return leftOffset;
-  // }
-
-  isEndOfWrapping(lineIndex) {
+  isEndOfWrapping(lineIndex: number) {
     return lineIndex === this.tspanContents.length - 1;
   }
 
-  measureLine(lineIndex) {
+  measureLine(lineIndex: number) {
     const lineWidth = this.getAdvanceWidthOfTextLine()[lineIndex];
     return lineWidth;
   }
@@ -211,7 +161,7 @@ export class TextService {
     return -this.boundingElement.width / 2 || 0;
   }
 
-  _getLineLeftOffset(lineIndex) {
+  _getLineLeftOffset(lineIndex: number) {
     const lineWidth = this.measureLine(lineIndex);
     const lineDiff = this.boundingElement.width - lineWidth;
     const textAlign = this.object.textAlign;
@@ -228,6 +178,7 @@ export class TextService {
     return leftOffset;
   }
 
+  // TODO: Need recaculate this function!
   handleTspanContent() {
     let lineHeights = 0;
     const safeLineHeight = this._getSafeLineHeight();
@@ -243,12 +194,13 @@ export class TextService {
         this.textLines[lineIndex] = {};
       }
       const charsEachLine = tspanData.text.split('');
-      charsEachLine.forEach((char, charIndex) => {
+      charsEachLine.forEach((char: string, charIndex: number) => {
         if (!this.textLines[lineIndex][charIndex]) {
-          this.textLines[lineIndex][charIndex] = {};
+          this.textLines[lineIndex][charIndex] = {} as RenderCharInfo;
         }
         const fontSize = this.getValueOfPropertyAt(this.object, lineIndex, charIndex, 'fontSize');
-        const width = this.fontLoad.getAdvanceWidth(char, fontSize);
+        // const width = this.fontLoad.getAdvanceWidth(char, fontSize);
+        const width = 0;
         const prevChar = this.textLines[lineIndex][charIndex - 1];
         let left = 0;
         if (prevChar) {
@@ -275,9 +227,9 @@ export class TextService {
 
     const letfOffset = this._getLeftOffset();
 
-    Object.keys(this.textLines).forEach((lineIndex) => {
+    Object.keys(this.textLines).forEach((lineIndex: string) => {
       const line = this.textLines[lineIndex];
-      const leftLineOffset = this._getLineLeftOffset(lineIndex);
+      const leftLineOffset = this._getLineLeftOffset(Number(lineIndex));
       Object.keys(line).forEach((charIndex) => {
         const char = line[charIndex];
         char.left += letfOffset + leftLineOffset;
@@ -287,14 +239,14 @@ export class TextService {
 
   processTspanContent() {
     const { window } = new JSDOM(this.textTagData.content);
-    const textElement = window.document.getElementsByTagName('text')[0];
+    const textElement = window.document.getElementsByTagName('text')[0] as any;
     if (textElement) {
       this.tspanContents = this.getTagElements(textElement);
       this.handleTspanContent();
     }
   }
 
-  getTagElements(element) {
+  getTagElements(element: any) {
     const spanEls = element.childNodes;
     const results = [];
     for (const child of spanEls) {
@@ -302,7 +254,7 @@ export class TextService {
         continue;
       }
       if (child.nodeName === 'TSPAN') {
-        const tagData = {
+        const tagData: any = {
           text: child.textContent,
           x: child.getAttribute('x'),
           dy: child.getAttribute('dy'),
@@ -316,25 +268,27 @@ export class TextService {
   }
 
   async getCharsData() {
-    await this.loadFont();
+    // await this.loadFont();
     this.processTspanContent();
     return this.textLines;
   }
 
-  getElementArributes(content, keyAttributes) {
-    const attributes = {};
+  getElementArributes(content: string | string[], keyAttributes: string[]) {
+    const attributes: Record<string, number | string> = {};
     const numberAttributes = ['x', 'y', 'dx', 'dy', 'width', 'height'];
     const regex = /[\s\r\t\n]*([a-z0-9\-_]+)[\s\r\t\n]*=[\s\r\t\n]*(['"])((?:\\\2|(?!\2).)*)\2/gi;
     let match = null;
-    while ((match = regex.exec(content))) {
+    while ((match = regex.exec(content as any))) {
       let attribute = match[1];
       const value = match[3];
       const index = attribute.indexOf('-');
 
       if (index !== -1) {
         attribute = attribute.replace('-', '');
-        attribute = attribute.split('');
+        attribute = attribute.split('') as string[] as any;
+        // @ts-ignore
         attribute[index] = attribute[index].toUpperCase();
+        // @ts-ignore
         attribute = attribute.join('');
       }
   
@@ -372,7 +326,7 @@ export class TextService {
   getDeltaBetweenTextTagAndBoundingBox() {
     const { y } = this.textTagData.params;
     const { y: boundingBoxY } = this.rectData.params;
-    return y - boundingBoxY;
+    return Number(y) - boundingBoxY;
   }
 
   // caculateBaseLine(opts) {
@@ -385,19 +339,20 @@ export class TextService {
   // }
 
   async exportPath() {
-    const res = await this.getCharsData();
-    const newData = {
-      charsMap: res,
-      boundingElement: this.boundingElement,
-      object: this.object,
-      fontLoad: this.fontLoad,
-    }
-    const textPathService = new TextPathService(newData);
-    const path = textPathService.getPaths();
-    return {
-      type: 'TEXT',
-      elementTag: this.innerHTML,
-      path,
-    }
+    console.log(JSON.stringify(this.object), '===> export Path..')
+  //   const res = await this.getCharsData();
+  //   const newData = {
+  //     charsMap: res,
+  //     boundingElement: this.boundingElement,
+  //     object: this.object,
+  //     fontLoad: this.fontLoad,
+  //   }
+  //   const textPathService = new TextPathService(newData);
+  //   const path = textPathService.getPaths();
+  //   return {
+  //     type: 'TEXT',
+  //     elementTag: this.innerHTML,
+  //     path,
+  //   }
   }
 }

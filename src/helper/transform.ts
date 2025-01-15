@@ -1,4 +1,11 @@
-import * as fabric from 'fabric';
+import { 
+  calcDimensionsMatrix,
+  composeMatrix,
+  multiplyTransformMatrices,
+  qrDecompose,
+  sizeAfterTransform
+} from "./matrix";
+import { Point } from "./point";
 
 export const useCaculateTransform = () => {
   const originOffset = {
@@ -9,7 +16,11 @@ export const useCaculateTransform = () => {
     right: 0.5,
   };
 
-  const _getTransformedDimensions = (element, options = {}) => {
+  const degreesToRadians = (angle: number): number => {
+    return angle * Math.PI / 180;
+  }
+
+  const _getTransformedDimensions = (element: any, options = {}) => {
     const dimOptions = {
       scaleX: element.scaleX,
       scaleY: element.scaleY,
@@ -33,27 +44,27 @@ export const useCaculateTransform = () => {
           noSkew = dimOptions.skewX === 0 && dimOptions.skewY === 0;
     let finalDimensions;
     if (noSkew) {
-      finalDimensions = new fabric.Point(
+      finalDimensions = new Point(
         dimX * dimOptions.scaleX,
         dimY * dimOptions.scaleY,
       );
     } else {
-      finalDimensions = fabric.util.sizeAfterTransform(
+      finalDimensions = sizeAfterTransform(
         dimX,
         dimY,
-        fabric.util.calcDimensionsMatrix(dimOptions),
+        calcDimensionsMatrix(dimOptions),
       );
     }
 
     return finalDimensions.scalarAdd(postScalingStrokeValue);
   }
 
-  const resolveOrigin = (originValue) =>
+  const resolveOrigin = (originValue: any) =>
     typeof originValue === 'string'
-      ? originOffset[originValue]
+      ? (originOffset as any)[originValue]
       : originValue - 0.5;
 
-  const translateToGivenOrigin = (options) => {
+  const translateToGivenOrigin = (options: any) => {
     const { element, point, fromOriginX, fromOriginY, toOriginX, toOriginY } = options;
     let { x, y } = point;
     const offsetX = resolveOrigin(toOriginX) - resolveOrigin(fromOriginX);
@@ -65,10 +76,10 @@ export const useCaculateTransform = () => {
       y += offsetY * dim.y;
     }
 
-    return new fabric.Point(x, y);
+    return new Point(x, y);
   }
 
-  const translateToCenterPoint = (options) => {
+  const translateToCenterPoint = (options: any) => {
     const { element, point, originX, originY } = options;
     const p = translateToGivenOrigin({
       element,
@@ -79,12 +90,12 @@ export const useCaculateTransform = () => {
       toOriginY: 'center',
     });
     if (element.angle) {
-      return p.rotate(fabric.util.degreesToRadians(element.angle), point);
+      return p.rotate(degreesToRadians(element.angle), point);
     }
     return p;
   }
 
-  const translateToOriginPoint = (options) => {
+  const translateToOriginPoint = (options: any) => {
     const { element, center, originX, originY } = options;
     const p = translateToGivenOrigin({
       element,
@@ -95,21 +106,21 @@ export const useCaculateTransform = () => {
       toOriginY: originY,
     });
     if (element.angle) {
-      return p.rotate(fabric.util.degreesToRadians(element.angle), center);
+      return p.rotate(degreesToRadians(element.angle), center);
     }
     return p;
   }
 
-  const getRelativeCenterPoint = (element) => {
+  const getRelativeCenterPoint = (element: any) => {
     return translateToCenterPoint({
       element,
-      point: new fabric.Point(element.left, element.top),
+      point: new Point(element.left, element.top),
       originX: element.originX,
       originY: element.originY,
     });
   }
 
-  const reCaculateTransform = (element) => {
+  const reCaculateTransform = (element: any) => {
     const center = getRelativeCenterPoint(element);
     const options = {
       angle: element.angle,
@@ -122,10 +133,10 @@ export const useCaculateTransform = () => {
       flipX: element.flipX,
       flipY: element.flipY,
     };
-    const currentT = fabric.util.composeMatrix(options);
+    const currentT = composeMatrix(options);
     const { transformMatrix = [1, 0, 0, 1, 0, 0] } = element;
-    const mT = fabric.util.multiplyTransformMatrices(transformMatrix, currentT);
-    const opt = fabric.util.qrDecompose(mT);
+    const mT = multiplyTransformMatrices(transformMatrix, currentT);
+    const opt = qrDecompose(mT);
     const newCenter = { x: opt.translateX, y: opt.translateY };
     Object.assign(element, opt);
     const centerPoint = translateToCenterPoint({ element, point: newCenter, originX: 'center', originY: 'center' });

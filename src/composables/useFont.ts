@@ -1,14 +1,14 @@
-import { load, parse } from 'opentype.js';
+import { Font, load, parse } from 'opentype.js';
 import fs from 'fs';
 
-let fontsTracks = {};
+let fontsTracks: { [key: string]: Font | undefined } = {};
 
 const DEBUG_FONTS = [
   'https://dev.korjl.com/assets/org/GD01HHE0HGV05VPEJ5TGT5BF14CT/font/optimized/oq/oqz3kd855h5eakhs.woff',
 ];
 
 export const useFont = () => {
-  const loadFontFromOpenTypeByUrl = (url) => {
+  const loadFontFromOpenTypeByUrl = (url: string) => {
     return new Promise((resolve, reject) => {
       if (fontsTracks[url]) {
         resolve(fontsTracks[url]);
@@ -25,7 +25,7 @@ export const useFont = () => {
     });
   };
 
-  const loadFontFromOpenTypeByLocalPath = async (path) => {
+  const loadFontFromOpenTypeByLocalPath = async (path: any) => {
     const buffer = await fs.promises.readFile(path);
     console.log(buffer, '==> buffer...');
     const font = parse(buffer);

@@ -1,8 +1,9 @@
 import { JSDOM } from 'jsdom';
 import sharp from 'sharp';
 import fs from 'fs';
-import { TextPathService } from './services/textPathService.js';
-import { TextService } from './services/textService.js';
+// import { TextPathService } from './services/textPathService';
+import { TextService } from './services/textService';
+import { SVGElement } from './types/index'
 
 import {
   getContentByTag,
@@ -18,21 +19,24 @@ import {
   getImageParentTags,
   getClipPathId,
   removeDOCTYPE,
-} from './utils-svg.js';
+} from './utils-svg';
 
 class HandlerSVGContent {
-  svgContent;
+  private svgContent: string;
   backupSvgContent;
-  styles;
-  background;
-  shapeRectangles;
-  shapeClipPathByRectangles;
-  elements;
-  groupElement;
-  textPathService;
-  data;
-  // temp
-  constructor(svgContent, data) {
+  private styles: any;
+  private background: string;
+  private shapeRectangles: string[];
+  private shapeClipPathByRectangles: any;
+  private elements: Element[];
+  groupElement: Element | null;
+  private textPathService: any;
+  private configs: Record<string, any>;
+  private data: any;
+  private filterGradientTags: string[];
+  private shapeClipPaths: string[];
+
+  constructor(svgContent: string, data: any) {
     this.configs = {
       pageColumns: 1,
       pageRows: 1,
@@ -41,8 +45,8 @@ class HandlerSVGContent {
     svgContent = svgContent.replace(/\s+/g, ' ');
     this.background = getBackgroundTag(svgContent);
     this.shapeRectangles = getShapeRectanglesTag(svgContent);
-    this.filterGradientTags = getFilterGradientTags(svgContent);
-    this.shapeClipPaths = getShapeClipPathTags(getContentByTag(svgContent, 'defs')?.[0] || '');
+    this.filterGradientTags = getFilterGradientTags(svgContent) as string[];
+    this.shapeClipPaths = getShapeClipPathTags(getContentByTag(svgContent, 'defs')?.[0] || '') as string[];
     this.data = data;
 
 
@@ -72,19 +76,19 @@ class HandlerSVGContent {
     this.svgContent = svgContent;
     this.backupSvgContent = svgContent;
     const { window } = new JSDOM(this.svgContent);
-    this.elements = [...window.document.getElementsByClassName('not-select')];
+    this.elements = [...window.document.getElementsByClassName('not-select') as any];
     this.groupElement = window.document.getElementsByClassName('group_elements')[0];
   }
 
-  isTextElement(elementHtml) {
+  isTextElement(elementHtml: string) {
     return getContentByTag(elementHtml, 'text').length > 0
   }
 
-  isImageElement(elementHtml) {
+  isImageElement(elementHtml: string) {
     return getContentByTag(elementHtml, 'image').length > 0;
   }
 
-  isClipPath(elementHtml) {
+  isClipPath(elementHtml: string) {
     const clipPathId = getClipPathId(elementHtml);
     if (clipPathId) {
       return clipPathId.includes('canvas_clip_path');
@@ -92,19 +96,19 @@ class HandlerSVGContent {
     return false;
   }
 
-  hasClipPath(index) {
+  hasClipPath(index: number) {
     return this.isClipPath(this.elements[index + 1]?.outerHTML ?? '');
   }
 
-  hasAdobe(elementHtml) {
+  hasAdobe(elementHtml: string) {
     return elementHtml.indexOf('&ns_extend') !== -1 || elementHtml.indexOf('&ns_ai') !== -1 || elementHtml.indexOf('&ns_graphs') !== -1;
   }
 
-  hasFilter(elementHtml) {
+  hasFilter(elementHtml: string) {
     return elementHtml.indexOf('filter') !== -1;
   }
 
-  convertTextByPath(elementTag, outerHTML) {
+  convertTextByPath(elementTag: string, outerHTML: string) {
     // console.log(elementTag, '===> elementTag');
     return {
       type: 'TEXT',
@@ -113,7 +117,7 @@ class HandlerSVGContent {
     }
   }
 
-  convertSvgToPng(file) {
+  convertSvgToPng(file: string) {
     return new Promise(async (resolve) => {
       try {
         const pngBuffer = await sharp(Buffer.from(file))
@@ -127,13 +131,14 @@ class HandlerSVGContent {
     });
   }
 
-  convertImage(elementTag) {
+  convertImage(elementTag: string) {
     return new Promise(async (resolve) => {
       const imageElements = getContentByTag(elementTag, 'image');
       const svgImages = [];
       for (let imageElement of imageElements) {
         const imageStyles = getElemAttributesByImage(imageElement);
-        let imageContent = imageStyles.href;
+        // @ts-ignore
+        let imageContent = imageStyles?.href as any;
         if (imageContent.startsWith('data:image/svg+xml')) {
           imageContent = decodeURIComponent(imageContent.split(',')[1]);
           if (imageContent.indexOf('svg_has_been_converted') !== -1) {
@@ -191,7 +196,7 @@ class HandlerSVGContent {
     });
   }
 
-  convertShape(svgContent) {
+  convertShape(svgContent: string) {
     if (!this.shapeRectangles?.length) {
       return svgContent;
     }
@@ -209,7 +214,7 @@ class HandlerSVGContent {
     return svgContent;
   }
 
-  convertBackground(svgContent) {
+  convertBackground(svgContent: string) {
     if (!this.background) {
       return svgContent;
     }
@@ -217,13 +222,13 @@ class HandlerSVGContent {
     return svgContent;
   }
 
-  convertFillTransparent(svgContent) {
+  convertFillTransparent(svgContent: string) {
     svgContent = svgContent.replace(/fill="transparent"/g, 'fill="none"');
     svgContent = svgContent.replace(/fillColor&quot;:&quot;transparent&quot;/g, "fillColor&quot;:&quot;none&quot;");
     return svgContent;
   }
 
-  fixAdobeTag(svgContent) {
+  fixAdobeTag(svgContent: string) {
     if (!this.hasAdobe(svgContent)) {
       return svgContent;
     }
@@ -253,15 +258,16 @@ class HandlerSVGContent {
     return 37.5;
   }
 
-  updateTransformClippingPathWithBleedSize(outerHTML, {
+  updateTransformClippingPathWithBleedSize(outerHTML: string, {
     col = 1,
     row = 1,
     bleedSize = 37.5,
   }) {
     const clipPathId = getClipPathId(outerHTML);
-    let selectClipPath = this.shapeClipPaths.find(shapeClipPath => shapeClipPath.match(clipPathId));
+    let selectClipPath = this.shapeClipPaths.find(shapeClipPath => shapeClipPath.match(clipPathId)) as string;
     const selectClipPathIndex = this.shapeClipPaths.findIndex(shapeClipPath => shapeClipPath.match(clipPathId));
     if (selectClipPath && selectClipPathIndex !== -1) {
+      // @ts-ignore
       const transform = getMatrixFromTransform(selectClipPath.match(/transform="[^"]*"/)?.[0]);
       const translateX = col === 1 ? bleedSize : 0;
       const translateY = row === 1 ? bleedSize : 0;
@@ -291,16 +297,16 @@ class HandlerSVGContent {
         }
         if (this.isImageElement(innerHTML)) {
           this.updateTransformClippingPathWithBleedSize(outerHTML, { col, row, bleedSize });
-          return this.convertImage(innerHTML, outerHTML);
+          return this.convertImage(innerHTML);
         }
       }).filter(element => Boolean(element))
-    );
+    ) as SVGElement[];
     for (const element of elementsResult) {
       if (!element) {
         continue;
       }
 
-      let { elementTag, path, clippingMaskTag } = element;
+      let { elementTag, path, clippingMaskTag } = element as any;
       switch (element.type) {
         case 'TEXT':
           this.svgContent = this.svgContent.replace(elementTag, path);
