@@ -1,5 +1,5 @@
 import { degreesToRadians } from "@/helper/math";
-import { TransformPath } from "@/types/convert-text";
+import { FontloadMap, TransformPath } from "@/types/convert-text";
 import { clone } from "@/utilities";
 import { getRotationMatrixRatios } from "@/utils-svg";
 
@@ -8,13 +8,13 @@ export class TextPathService {
   object;
   boundingElement;
   declare paths: any;
-  fontLoad;
+  fontloadMap: FontloadMap;
   ITALIC_ANGLE = 15;
   constructor(options: any) {
     this.charsMap = options.charsMap;
     this.object = options.object;
     this.boundingElement = options.boundingElement;
-    this.fontLoad = options.fontLoad;
+    this.fontloadMap = options.fontloadMap;
     this.paths = [];
   }
 
@@ -94,14 +94,15 @@ export class TextPathService {
     return clonePathContent.join('');
   }
 
-  getPathWithStyles(paths: any, style: Record<string, any> = {}) {
-    const fillStyles = style.fill ? `fill="${style.fill}"` : '';
+  getPathWithStyles(paths: any, styles: Record<string, any> = {}) {
+    const fillStyles = styles.fill ? `fill="${styles.fill}"` : '';
     return `<path ${fillStyles} d="${paths}" />`;
   }
 
   getPathByChar(charData: any, lineIndex: number, charIndex: number) {
     const { cx, cy } = this.boundingElement;
-    const path = this.fontLoad.getPath(charData.char, 0, 0, charData.fontSize);
+    const fontload = this.fontloadMap[this.object.fontFamily].fontload;
+    const path = fontload.getPath(charData.char, 0, 0, charData.fontSize);
     const initTransform = {
       x: 0,
       y: 0,
@@ -117,7 +118,7 @@ export class TextPathService {
 
     const pathContent = `
       <g transform="${matrix}">
-         ${this.getPathWithStyles(caculatedPath, { fill: charData.fill, fontStyle: charData.fontStyle })}
+        ${this.getPathWithStyles(caculatedPath, { fill: charData.fill, fontStyle: charData.fontStyle })}
       </g>`;
     return pathContent;
   }
@@ -128,17 +129,16 @@ export class TextPathService {
 
   getTextPaths() {
     const originalPaths: any = [];
-    console.log(this.charsMap, '==> getTextPaths this.charsMap...');
     Object.entries(this.charsMap).forEach(([lineIndex, textLines]) => {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       Object.entries(textLines).forEach(([charIndex, charData]) => {
         const pathByChar = this.getPathByChar(charData, Number(lineIndex), Number(charIndex));
         originalPaths.push(pathByChar);
       });
     });
+    this.paths = originalPaths.join('');
+
     const { a, b, c, d } = getRotationMatrixRatios(this.object.angle);
-    console.log(this.object.angle, '==> getTextPaths this.object.angle...');
     const { cx, cy, width, height } = this.boundingElement;
     const left = -width / 2;
     const top = -height / 2;
@@ -146,7 +146,6 @@ export class TextPathService {
     const ty = b * left + d * top + cy;
 
     const newMatrix = `matrix(${a} ${b} ${c} ${d} ${tx} ${ty})`;
-    this.paths = originalPaths.join('');
     return `
       <g transform="${newMatrix}">
         ${originalPaths.join('')}

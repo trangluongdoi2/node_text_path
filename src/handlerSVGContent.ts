@@ -47,8 +47,7 @@ class HandlerSVGContent {
     this.shapeRectangles = getShapeRectanglesTag(svgContent);
     this.filterGradientTags = getFilterGradientTags(svgContent) as string[];
     this.shapeClipPaths = getShapeClipPathTags(getContentByTag(svgContent, 'defs')?.[0] || '') as string[];
-    this.data = data;
-
+    this.data = Object.values(data);
 
     if (this.filterGradientTags?.length) {
       this.filterGradientTags.forEach((filterGradient, index) => {
@@ -58,6 +57,7 @@ class HandlerSVGContent {
 
     if (this.background) {
       svgContent = svgContent.replace(this.background, '##background##');
+      this.data = this.data.filter((item: any) => item.type !== 'background');
     }
 
     if (this.shapeRectangles?.length) {
@@ -109,7 +109,6 @@ class HandlerSVGContent {
   }
 
   convertTextByPath(elementTag: string, outerHTML: string) {
-    // console.log(elementTag, '===> elementTag');
     return {
       type: 'TEXT',
       elementTag: '',
@@ -282,18 +281,21 @@ class HandlerSVGContent {
     const bleedSize = this.getBleedSize();
     const col = 1;
     const row = 1;
-    let formatSVGContent = this.svgContent;
-    const { window } = new JSDOM(this.svgContent);
-    formatSVGContent = window.document.body.innerHTML;
-    this.svgContent = formatSVGContent;
+    // let formatSVGContent = this.svgContent;
+    // const { window } = new JSDOM(this.svgContent);
+    // formatSVGContent = window.document.body.innerHTML;
+    // this.svgContent = formatSVGContent;
+    // console.log('?? format??');
 
     const elementsResult = await Promise.all(
       this.elements.map(async (element, index) => {
-        const { innerHTML, outerHTML } = element;
+        console.log(element, '==> element...');
+        const { innerHTML: innerHTML, outerHTML: outerHTML } = element;
         if (this.isTextElement(innerHTML)) {
-          const elementData = Object.values(this.data)[index];
+          // const elementData = Object.values(this.data)[index];
+          const elementData = this.data[index];
           const textPathService = new TextService(innerHTML, outerHTML, elementData).getInstance();
-          return await textPathService.exportPath();
+          return textPathService.exportPath();
         }
         if (this.isImageElement(innerHTML)) {
           this.updateTransformClippingPathWithBleedSize(outerHTML, { col, row, bleedSize });
@@ -308,8 +310,11 @@ class HandlerSVGContent {
 
       let { elementTag, path, clippingMaskTag } = element as any;
       switch (element.type) {
-        case 'TEXT':
+        case 'TEXT': {
+          // const regexElementTag = new RegExp(elementTag, 'g');
+          // this.svgContent = this.svgContent.replace(regexElementTag, path);
           this.svgContent = this.svgContent.replace(elementTag, path);
+        }
           break;
         case 'TEXT_CLIP_PATH':
           this.svgContent = this.svgContent.replace(elementTag, path).replace(clippingMaskTag || '', '');

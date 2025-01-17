@@ -1,3 +1,4 @@
+import { Font } from "opentype.js";
 
 const enum Degree {}
 const enum Radian {}
@@ -68,3 +69,41 @@ export type TransformPath = {
   y: number,
   isItalicStyle: boolean,
 }
+
+export type GraphemeBBox = {
+  width: number;
+  height: number;
+  kernedWidth: number;
+  left: number;
+  deltaY: number;
+  renderLeft?: number;
+  renderTop?: number;
+  angle?: number;
+};
+
+export interface ITextPathServiceInput {
+  charsMap: any,
+  boundingElement: any,
+  object: any,
+}
+
+export type FontloadMap = { [key: string]: { fontload: Font } }
+
+export type StylePropertiesType =
+  | 'fill'
+  | 'stroke'
+  | 'strokeWidth'
+  | 'fontSize'
+  | 'fontFamily'
+  | 'fontWeight'
+  | 'fontStyle'
+  | 'textBackgroundColor'
+  | 'deltaY'
+  | 'overline'
+  | 'underline'
+  | 'linethrough';
+
+export type TextStyleDeclaration = Pick<
+  Record<string, any>,
+  StylePropertiesType
+>;

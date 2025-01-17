@@ -1,5 +1,6 @@
 import { Font, load, parse } from 'opentype.js';
 import fs from 'fs';
+import { toArrayBuffer } from '@/common/file';
 
 let fontsTracks: { [key: string]: Font | undefined } = {};
 
@@ -25,19 +26,11 @@ export const useFont = () => {
     });
   };
 
-  const loadFontFromOpenTypeByLocalPath = async (path: any) => {
-    const buffer = await fs.promises.readFile(path);
-    console.log(buffer, '==> buffer...');
-    const font = parse(buffer);
+  const loadFontFromOpenTypeByLocalPath = (path: any) => {
+    const buffer = fs.readFileSync(path);
+    const arrayBuffer = toArrayBuffer(buffer);
+    const font = parse(arrayBuffer);
     return font;
-    // return new Promise(async (resolve, reject) => {
-    //   parse(buffer, (err, font) => {
-    //     if (err) {
-    //       reject(err);
-    //     }
-    //     resolve(font);
-    //   });
-    // });
   };
 
   return {

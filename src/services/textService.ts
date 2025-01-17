@@ -1,8 +1,13 @@
 import { useCaculateTransform } from '@/helper/transform';
-import { BoundingElement, RenderCharInfo, TspanContent } from '@/types/convert-text';
-import { getContentByTag, getRotationMatrixRatios, getTextParentTags } from '@/utils-svg';
+import { BoundingElement, RenderCharInfo, TextStyleDeclaration, TspanContent } from '@/types/convert-text';
+import { getContentByTag, getRotationMatrixRatios, getTextParentTags, isEqual } from '@/utils-svg';
 import { JSDOM } from 'jsdom';
+import path from 'path';
 import * as math from 'mathjs';
+import { Font } from 'opentype.js';
+import { useFont } from '@/composables/useFont';
+import { TextPathService } from './textPathService';
+import { getMeasuringContext } from '@/utilities/canvas';
 
 const { reCaculateTransform  }  = useCaculateTransform()
 
@@ -17,9 +22,10 @@ export class TextService {
   declare __charBounds;
   declare tspanContents: TspanContent[];
   declare boundingElement: BoundingElement;
+  declare fontLoad: Font;
   _fontSizeFraction = 0.222;
   lineHeightScale = 1;
-  fontloadMap = {};
+  fontloadMap: Record<string, { fontload: Font }> = {};
   declare object: any;
   declare textTagData: {
     content: string,
@@ -80,6 +86,7 @@ export class TextService {
     this.object.flipY = false;
     const position = reCaculateTransform(this.object);
     const center = this.caculateCenterOfElementText({ x: position.x, y: position.y, angle: originalAngle });
+    // console.log(center, '==> center...');
     this.object.angle = originalAngle;
     this.object.flipX = originalFlipX;
     this.object.flipY = originalFlipY;
@@ -95,12 +102,13 @@ export class TextService {
     };
   }
 
-  // async loadFont() {
-  //   const localPath = path.join(__dirname, '../fonts/font_1.woff');
-  //   this.fontLoad = await useFont().loadFontFromOpenTypeByUrl(localPath);
-  //   this.fontloadMap = {};
-  //   // Need add multi styles
-  // }
+  loadFont() {
+    const localPath = path.join(__dirname, '../fonts/font_1.woff');
+    const fontLoad = useFont().loadFontFromOpenTypeByLocalPath(localPath);
+    if (!this.fontloadMap[this.object.fontFamily]) {
+      this.fontloadMap[this.object.fontFamily] = { fontload: fontLoad };
+    }
+  }
 
   getStyleDeclaration(multiStyles: any, lineIndex: number, charIndex: number) {
     const lineStyle = multiStyles && multiStyles[lineIndex];
@@ -136,8 +144,9 @@ export class TextService {
       const charsEachLine = tspanData.text.split('');
       charsEachLine.forEach((char: string, charIndex: number) => {
         const fontSize = this.getValueOfPropertyAt(this.object, lineIndex, charIndex, 'fontSize');
-        advanceWidth += 0;
-        // advanceWidth += this.fontLoad.getAdvanceWidth(char, fontSize);
+        const fontFamily = this.getValueOfPropertyAt(this.object, lineIndex, charIndex, 'fontFamily');
+        const fontload = this.fontloadMap[fontFamily].fontload;
+        advanceWidth += fontload.getAdvanceWidth(char, fontSize);
       });
       advanceWidths.push(advanceWidth);
     });
@@ -157,6 +166,47 @@ export class TextService {
     return lineWidth;
   }
 
+  _measureChar(char: string, stylesChar: any, prevChar: string | undefined, styleChar: any) {
+    let width: number | undefined,
+    coupleWidth: number | undefined,
+    previousWidth: number | undefined,
+    kernedWidth: number | undefined;
+
+    const stylesAreEqual = prevChar && isEqual(stylesChar, styleChar);
+
+    const ctx = getMeasuringContext();
+
+    // if (
+    //   width === undefined ||
+    //   previousWidth === undefined ||
+    //   coupleWidth === undefined
+    // ) {
+    //   const ctx = getMeasuringContext()!;
+    //   // send a TRUE to specify measuring font size CACHE_FONT_SIZE
+    //   this._setTextStyles(ctx, charStyle, true);
+    //   if (width === undefined) {
+    //     kernedWidth = width = ctx.measureText(_char).width;
+    //     fontCache[_char] = width;
+    //   }
+    //   if (previousWidth === undefined && stylesAreEqual && previousChar) {
+    //     previousWidth = ctx.measureText(previousChar).width;
+    //     fontCache[previousChar] = previousWidth;
+    //   }
+    //   if (stylesAreEqual && coupleWidth === undefined) {
+    //     // we can measure the kerning couple and subtract the width of the previous character
+    //     coupleWidth = ctx.measureText(couple).width;
+    //     fontCache[couple] = coupleWidth;
+    //     // safe to use the non-null since if undefined we defined it before.
+    //     kernedWidth = coupleWidth - previousWidth!;
+    //   }
+    // }
+
+    return {
+      width: 0,
+      kernedWidth: 0
+    }
+  }
+
   _getLeftOffset() {
     return -this.boundingElement.width / 2 || 0;
   }
@@ -164,7 +214,19 @@ export class TextService {
   _getLineLeftOffset(lineIndex: number) {
     const lineWidth = this.measureLine(lineIndex);
     const lineDiff = this.boundingElement.width - lineWidth;
-    const textAlign = this.object.textAlign;
+    let textAlign = 'justify';
+    const textAnchor = this.textTagData.params.textAnchor;
+    switch (textAnchor) {
+      case 'middle':
+        textAlign = 'center';
+        break;
+      case 'start':
+        textAlign = 'left';
+        break;
+      case 'end':
+        textAlign = 'right';
+        break;
+    }
     if (textAlign === 'justify' || (textAlign === 'justify-left' && !this.isEndOfWrapping(lineIndex))) {
       return 0;
     }
@@ -180,6 +242,7 @@ export class TextService {
 
   // TODO: Need recaculate this function!
   handleTspanContent() {
+    console.log(this.tspanContents, '==> this.tspanContents');
     let lineHeights = 0;
     const safeLineHeight = this._getSafeLineHeight();
     const deltaY = this.getDeltaBetweenTextTagAndBoundingBox();
@@ -188,7 +251,7 @@ export class TextService {
       const heightOfLine = this.getHeightOfLine(lineIndex);
       const maxHeight = heightOfLine / safeLineHeight;
       dyNew = dyNew + Number(tspanData.dy);
-      const leftLineOffset = this._getLineLeftOffset(lineIndex);
+      // const leftLineOffset = this._getLineLeftOffset(lineIndex);
       const top = dyNew - this.boundingElement.height / 2 - deltaY;
       if (!this.textLines[lineIndex]) {
         this.textLines[lineIndex] = {};
@@ -199,9 +262,18 @@ export class TextService {
           this.textLines[lineIndex][charIndex] = {} as RenderCharInfo;
         }
         const fontSize = this.getValueOfPropertyAt(this.object, lineIndex, charIndex, 'fontSize');
-        // const width = this.fontLoad.getAdvanceWidth(char, fontSize);
-        const width = 0;
+        const fontFamily = this.getValueOfPropertyAt(this.object, lineIndex, charIndex, 'fontFamily');
+        const fontload = this.fontloadMap[fontFamily].fontload;
         const prevChar = this.textLines[lineIndex][charIndex - 1];
+
+        const styleChar = this._getStyleDeclaration(lineIndex, charIndex);
+        const prevStyleChar = this._getStyleDeclaration(lineIndex, charIndex - 1);
+        const info = this._measureChar(char, styleChar, prevChar?.char, prevStyleChar);
+        console.log(styleChar, prevStyleChar, '==> styleChar, prevStyleChar');
+        console.log(info, '==> info');
+        
+        const width = fontload.getAdvanceWidth(char, fontSize);
+        
         let left = 0;
         if (prevChar) {
           left = prevChar.left + prevChar.width;
@@ -209,7 +281,7 @@ export class TextService {
         this.textLines[lineIndex][charIndex] = {
           char,
           fill: this.getValueOfPropertyAt(this.object, lineIndex, charIndex, 'fill'),
-          fontFamily: this.getValueOfPropertyAt(this.object, lineIndex, charIndex, 'fontFamily'),
+          fontFamily,
           fontSize,
           fontWeight: this.getValueOfPropertyAt(this.object, lineIndex, charIndex, 'fontWeight'),
           fontStyle: this.getValueOfPropertyAt(this.object, lineIndex, charIndex, 'fontStyle'),
@@ -267,8 +339,8 @@ export class TextService {
     return results;
   }
 
-  async getCharsData() {
-    // await this.loadFont();
+  getCharsData() {
+    this.loadFont();
     this.processTspanContent();
     return this.textLines;
   }
@@ -329,30 +401,43 @@ export class TextService {
     return Number(y) - boundingBoxY;
   }
 
-  // caculateBaseLine(opts) {
-  //   const { ascender, descender, unitsPerEm, fontSize } = opts;
-  //   const fontScale = 1 / unitsPerEm;
-  //   const ascenderRatio = ascender * fontScale * fontSize;
-  //   const descenderRatio = Math.abs(descender) * fontScale * fontSize;
-  //   const padding = (ascenderRatio + descenderRatio - this.lineHeightScale * fontSize) / 2;
-  //   return ascenderRatio - padding;
+  // getCompleteStyleDeclaration(
+  //   lineIndex: number,
+  //   charIndex: number,
+  // ): CompleteTextStyleDeclaration {
+  //   return {
+  //     ...pick(
+  //       this,
+  //       (this.constructor as typeof StyledText)
+  //         ._styleProperties as (keyof this)[],
+  //     ),
+  //     ...this._getStyleDeclaration(lineIndex, charIndex),
+  //   } as CompleteTextStyleDeclaration;
   // }
 
-  async exportPath() {
-    console.log(JSON.stringify(this.object), '===> export Path..')
-  //   const res = await this.getCharsData();
-  //   const newData = {
-  //     charsMap: res,
-  //     boundingElement: this.boundingElement,
-  //     object: this.object,
-  //     fontLoad: this.fontLoad,
-  //   }
-  //   const textPathService = new TextPathService(newData);
-  //   const path = textPathService.getPaths();
-  //   return {
-  //     type: 'TEXT',
-  //     elementTag: this.innerHTML,
-  //     path,
-  //   }
+  _getStyleDeclaration(
+    lineIndex: number,
+    charIndex: number,
+  ): TextStyleDeclaration {
+    const lineStyle = this.object.styles && this.object.styles[lineIndex];
+    return lineStyle ? lineStyle[charIndex] ?? {} : {};
+  }
+
+
+  exportPath() {
+    const res = this.getCharsData();
+    const newData = {
+      charsMap: res,
+      boundingElement: this.boundingElement,
+      object: this.object,
+      fontloadMap: this.fontloadMap,
+    }
+    const textPathService = new TextPathService(newData);
+    const path = textPathService.getPaths();
+    return {
+      type: 'TEXT',
+      elementTag: this.innerHTML,
+      path,
+    }
   }
 }
