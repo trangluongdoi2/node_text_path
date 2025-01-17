@@ -7,6 +7,7 @@ import { JSDOM } from 'jsdom';
 import { HTMLService } from './services/htmlService';
 import HandlerSVGContent from './handlerSVGContent';
 import { ChromiumHandler } from './chromium/chromiumHandler';
+import { Page } from 'puppeteer-core';
 
 const PORT = 3000;
 const app = express();
@@ -46,8 +47,16 @@ app.use('/', async (req: Request, res: Response) => {
     return newSVGContent;
   }
   svgContent = preProcessSVG(svgContent);
-  // const data = fs.readFileSync(path.join(__dirname, './data/index.json'), 'utf8');
-  const data = fs.readFileSync(path.join(__dirname, './data/index_2.json'), 'utf8');
+
+  // let page: Page | undefined = undefined;
+  // try {
+  //   page = await ChromiumHandler.newPage();
+  //   console.log('Chromium DONE!');
+  // } catch (error) {
+  //   console.log(error, '==> error');
+  // }
+
+  const data = fs.readFileSync(path.join(__dirname, './data/index_3.json'), 'utf8');
   const handlerSVGContent = new HandlerSVGContent(svgContent.replace(/\s+/g, ' '), JSON.parse(data));
   const output = await handlerSVGContent.export();
   res.render('index', { input: svgContent, output });
@@ -58,10 +67,10 @@ app.use('/', async (req: Request, res: Response) => {
 app.listen(PORT, async () => {
   console.log(`Server is running on port ${PORT} ` + `http://localhost:${PORT}/`);
   fetch(`http://localhost:${PORT}/`);
-  try {
-    const page = await ChromiumHandler.newPage();
-    console.log('Chromium DONE!');
-  } catch (error) {
-    console.log(error, '==> error');
-  }
+  // try {
+  //   const page = await ChromiumHandler.newPage();
+  //   console.log('Chromium DONE!');
+  // } catch (error) {
+  //   console.log(error, '==> error');
+  // }
 });

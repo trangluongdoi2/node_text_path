@@ -2,8 +2,6 @@ import { DOMParser } from '@xmldom/xmldom';
 import sharp from 'sharp';
 import { SVGImageStyles, SVGTagHtml, SVGTextStyles } from './types';
 
-
-
 export const insertStringAt = (orginString: string, stringInsert: string, index: number) =>
   orginString.substr(0, index) + stringInsert + orginString.substr(index);
 

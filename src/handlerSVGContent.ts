@@ -20,9 +20,12 @@ import {
   getClipPathId,
   removeDOCTYPE,
 } from './utils-svg';
+import { Page } from 'puppeteer-core';
+import PotraceService from './services/potraceService';
 
 class HandlerSVGContent {
   private svgContent: string;
+  private potraceService = new PotraceService();
   backupSvgContent;
   private styles: any;
   private background: string;
@@ -36,7 +39,8 @@ class HandlerSVGContent {
   private filterGradientTags: string[];
   private shapeClipPaths: string[];
 
-  constructor(svgContent: string, data: any) {
+  constructor(svgContent: string, data: any, page?: Page) {
+    console.log(page, '==> page');
     this.configs = {
       pageColumns: 1,
       pageRows: 1,
@@ -65,7 +69,6 @@ class HandlerSVGContent {
         svgContent = svgContent.replace(shapeRectangle, `##shapeRectangles${index}##`);
       });
     }
-
 
     if (this.shapeClipPaths?.length) {
       this.shapeClipPaths.forEach((shapeClipPath, index) => {
@@ -106,14 +109,6 @@ class HandlerSVGContent {
 
   hasFilter(elementHtml: string) {
     return elementHtml.indexOf('filter') !== -1;
-  }
-
-  convertTextByPath(elementTag: string, outerHTML: string) {
-    return {
-      type: 'TEXT',
-      elementTag: '',
-      path: '',
-    }
   }
 
   convertSvgToPng(file: string) {
@@ -194,6 +189,19 @@ class HandlerSVGContent {
       });
     });
   }
+
+  // private convertTextByPosterize(elementTag: string, outerHTML: string): Promise<SVGElement> {
+  //   return new Promise(async (resolve) => {
+  //     const groupElementContent = this.groupElement?.innerHTML || '';
+  //     const currentOnlyTextHtml: string = this.backupSvgContent.replace(groupElementContent, outerHTML);
+  //     const path = await this.potraceService.convertTextByPotrace(currentOnlyTextHtml, elementTag, this.styles);
+  //     resolve({
+  //       type: 'TEXT',
+  //       elementTag,
+  //       path,
+  //     });
+  //   });
+  // }
 
   convertShape(svgContent: string) {
     if (!this.shapeRectangles?.length) {
@@ -277,10 +285,15 @@ class HandlerSVGContent {
     }
   }
 
+  createRectBouding() {
+    return `<rect width="100%" height="100%" fill="red" x="0" y="0"/>`;
+  }
+
   async export() {
     const bleedSize = this.getBleedSize();
     const col = 1;
     const row = 1;
+
     // let formatSVGContent = this.svgContent;
     // const { window } = new JSDOM(this.svgContent);
     // formatSVGContent = window.document.body.innerHTML;
@@ -292,8 +305,8 @@ class HandlerSVGContent {
         console.log(element, '==> element...');
         const { innerHTML: innerHTML, outerHTML: outerHTML } = element;
         if (this.isTextElement(innerHTML)) {
-          // const elementData = Object.values(this.data)[index];
-          const elementData = this.data[index];
+          // return this.convertTextByPosterize(innerHTML, outerHTML);
+          const elementData = Object.values(this.data)[index];
           const textPathService = new TextService(innerHTML, outerHTML, elementData).getInstance();
           return textPathService.exportPath();
         }
@@ -325,7 +338,7 @@ class HandlerSVGContent {
           }
           break;
         }
-      }
+    }
 
     // const imageParentTags = getImageParentTags(this.svgContent);
     // imageParentTags.forEach((imageParentTag) => {
@@ -346,6 +359,28 @@ class HandlerSVGContent {
     this.svgContent = this.fixAdobeTag(this.svgContent);
     this.svgContent = this.convertShape(this.svgContent);
     this.svgContent = this.convertBackground(this.svgContent);
+    console.log(this.groupElement, '==> this.groupElement');
+
+    const { window } = new JSDOM(this.svgContent);
+    const groupElement = window.document.getElementsByClassName('group_elements')[0];
+    const rect = window.document.createElement('rect');
+
+    const top = 636.2272523111372;
+    const left = 139.09947460966805;
+    const wRect = 921.8011474609375;
+    const hRect = 538.0439453125;
+
+    rect.setAttribute('width', `${wRect}px`);
+    rect.setAttribute('height', `${hRect}px`);
+    rect.setAttribute('fill', '#c4c4c4');
+    rect.setAttribute('stroke', '10px');
+    rect.setAttribute('opacity', '0.5');
+    rect.setAttribute('stroke-color', 'red');
+    rect.setAttribute('x', `${left}px`);
+    rect.setAttribute('y', `${top}px`);
+    groupElement.appendChild(rect);
+    this.svgContent = window.document.body.innerHTML;
+    // this.groupElement.appendChild(this.createRectBouding());
     return this.svgContent;
   }
 }

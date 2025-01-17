@@ -81,11 +81,20 @@ export type GraphemeBBox = {
   angle?: number;
 };
 
+// export interface ITextPathServiceInput {
+//   charsMap: any,
+//   boundingElement: any,
+//   object: any,
+// }
+
 export interface ITextPathServiceInput {
   charsMap: any,
   boundingElement: any,
   object: any,
+  fontloadMap: FontloadMap,
+  deltaY: number,
 }
+
 
 export type FontloadMap = { [key: string]: { fontload: Font } }
 

@@ -242,7 +242,6 @@ export class TextService {
 
   // TODO: Need recaculate this function!
   handleTspanContent() {
-    console.log(this.tspanContents, '==> this.tspanContents');
     let lineHeights = 0;
     const safeLineHeight = this._getSafeLineHeight();
     const deltaY = this.getDeltaBetweenTextTagAndBoundingBox();
@@ -251,8 +250,9 @@ export class TextService {
       const heightOfLine = this.getHeightOfLine(lineIndex);
       const maxHeight = heightOfLine / safeLineHeight;
       dyNew = dyNew + Number(tspanData.dy);
-      // const leftLineOffset = this._getLineLeftOffset(lineIndex);
-      const top = dyNew - this.boundingElement.height / 2 - deltaY;
+
+      const top = -this.boundingElement.height / 2 + dyNew;
+
       if (!this.textLines[lineIndex]) {
         this.textLines[lineIndex] = {};
       }
@@ -268,9 +268,8 @@ export class TextService {
 
         const styleChar = this._getStyleDeclaration(lineIndex, charIndex);
         const prevStyleChar = this._getStyleDeclaration(lineIndex, charIndex - 1);
-        const info = this._measureChar(char, styleChar, prevChar?.char, prevStyleChar);
-        console.log(styleChar, prevStyleChar, '==> styleChar, prevStyleChar');
-        console.log(info, '==> info');
+        // const info = this._measureChar(char, styleChar, prevChar?.char, prevStyleChar);
+        // console.log(styleChar, prevStyleChar, '==> styleChar, prevStyleChar');
         
         const width = fontload.getAdvanceWidth(char, fontSize);
         
@@ -398,7 +397,12 @@ export class TextService {
   getDeltaBetweenTextTagAndBoundingBox() {
     const { y } = this.textTagData.params;
     const { y: boundingBoxY } = this.rectData.params;
-    return Number(y) - boundingBoxY;
+    // const boundingBoxY = 679.0341186523438;
+    // const y = 687.5955614331436;
+    console.log(y, boundingBoxY, '==> y, boundingBoxY');
+    const deltaY = Number(y) - boundingBoxY;
+    console.log(deltaY, '==> deltaY');
+    return deltaY;
   }
 
   // getCompleteStyleDeclaration(
@@ -431,6 +435,7 @@ export class TextService {
       boundingElement: this.boundingElement,
       object: this.object,
       fontloadMap: this.fontloadMap,
+      deltaY: this.getDeltaBetweenTextTagAndBoundingBox(),
     }
     const textPathService = new TextPathService(newData);
     const path = textPathService.getPaths();

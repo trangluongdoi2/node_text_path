@@ -1,5 +1,5 @@
 import { degreesToRadians } from "@/helper/math";
-import { FontloadMap, TransformPath } from "@/types/convert-text";
+import { FontloadMap, ITextPathServiceInput, TransformPath } from "@/types/convert-text";
 import { clone } from "@/utilities";
 import { getRotationMatrixRatios } from "@/utils-svg";
 
@@ -9,12 +9,14 @@ export class TextPathService {
   boundingElement;
   declare paths: any;
   fontloadMap: FontloadMap;
+  deltaY: number;
   ITALIC_ANGLE = 15;
-  constructor(options: any) {
+  constructor(options: ITextPathServiceInput) {
     this.charsMap = options.charsMap;
     this.object = options.object;
     this.boundingElement = options.boundingElement;
     this.fontloadMap = options.fontloadMap;
+    this.deltaY = options.deltaY;
     this.paths = [];
   }
 
@@ -111,6 +113,7 @@ export class TextPathService {
     const caculatedPath = this.getDataPath(path, initTransform, lineIndex, charIndex);
     const { a, b, c, d } = getRotationMatrixRatios(this.object.angle);
     const { left = 0, top = 0 } = charData;
+    // const deltaY = 687.5955614331436 - 678.88525390625;
     const tx = a * left + c * top + cx;
     const ty = b * left + d * top + cy;
 
@@ -140,8 +143,9 @@ export class TextPathService {
 
     const { a, b, c, d } = getRotationMatrixRatios(this.object.angle);
     const { cx, cy, width, height } = this.boundingElement;
+    // const deltaY = 687.5955614331436 - 678.88525390625;
     const left = -width / 2;
-    const top = -height / 2;
+    const top = -height / 2 + this.deltaY;
     const tx = a * left + c * top + cx;
     const ty = b * left + d * top + cy;
 

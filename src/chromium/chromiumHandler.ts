@@ -75,7 +75,6 @@ export class ChromiumHandler {
       await page.setViewport(viewport);
     }
     await page.goto('https://www.google.com', { waitUntil: 'networkidle2', timeout: 0 });
-    await page.pdf({ path: 'page.pdf', format: 'A4' });
     // await page.waitForSelector('.canvas-loaded', { timeout: 0 });
     return page;
   }
