@@ -113,9 +113,8 @@ export class TextPathService {
     const caculatedPath = this.getDataPath(path, initTransform, lineIndex, charIndex);
     const { a, b, c, d } = getRotationMatrixRatios(this.object.angle);
     const { left = 0, top = 0 } = charData;
-    // const deltaY = 687.5955614331436 - 678.88525390625;
     const tx = a * left + c * top + cx;
-    const ty = b * left + d * top + cy;
+    const ty = b * left + d * top + cy - this.deltaY / 2;
 
     const matrix = `matrix(${a} ${b} ${c} ${d} ${tx} ${ty})`;
 
@@ -142,10 +141,10 @@ export class TextPathService {
     this.paths = originalPaths.join('');
 
     const { a, b, c, d } = getRotationMatrixRatios(this.object.angle);
+    console.log(this.deltaY, '==> this.deltaY...');
     const { cx, cy, width, height } = this.boundingElement;
-    // const deltaY = 687.5955614331436 - 678.88525390625;
     const left = -width / 2;
-    const top = -height / 2 + this.deltaY;
+    const top = -height / 2 - this.deltaY;
     const tx = a * left + c * top + cx;
     const ty = b * left + d * top + cy;
 

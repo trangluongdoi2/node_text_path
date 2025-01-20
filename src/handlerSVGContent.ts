@@ -22,6 +22,7 @@ import {
 } from './utils-svg';
 import { Page } from 'puppeteer-core';
 import PotraceService from './services/potraceService';
+import { BoundingElement } from './types/convert-text';
 
 class HandlerSVGContent {
   private svgContent: string;
@@ -40,7 +41,6 @@ class HandlerSVGContent {
   private shapeClipPaths: string[];
 
   constructor(svgContent: string, data: any, page?: Page) {
-    console.log(page, '==> page');
     this.configs = {
       pageColumns: 1,
       pageRows: 1,
@@ -294,21 +294,25 @@ class HandlerSVGContent {
     const col = 1;
     const row = 1;
 
-    // let formatSVGContent = this.svgContent;
-    // const { window } = new JSDOM(this.svgContent);
-    // formatSVGContent = window.document.body.innerHTML;
-    // this.svgContent = formatSVGContent;
-    // console.log('?? format??');
+    let formatSVGContent = this.svgContent;
+    const { window } = new JSDOM(this.svgContent);
+    formatSVGContent = window.document.body.innerHTML;
+    this.svgContent = formatSVGContent;
+
+    const boundingRects: BoundingElement[] = [];
 
     const elementsResult = await Promise.all(
       this.elements.map(async (element, index) => {
-        console.log(element, '==> element...');
-        const { innerHTML: innerHTML, outerHTML: outerHTML } = element;
+        const { innerHTML, outerHTML } = element;
         if (this.isTextElement(innerHTML)) {
-          // return this.convertTextByPosterize(innerHTML, outerHTML);
+          console.log(index, '==> index...');
           const elementData = Object.values(this.data)[index];
-          const textPathService = new TextService(innerHTML, outerHTML, elementData).getInstance();
-          return textPathService.exportPath();
+          const textPathService = new TextService(innerHTML, outerHTML, elementData)
+          // return textPathService.exportPath();
+          const res = textPathService.exportPath((boundingRect: BoundingElement) => {
+            boundingRects.push(boundingRect);
+          });
+          return res;
         }
         if (this.isImageElement(innerHTML)) {
           this.updateTransformClippingPathWithBleedSize(outerHTML, { col, row, bleedSize });
@@ -316,7 +320,8 @@ class HandlerSVGContent {
         }
       }).filter(element => Boolean(element))
     ) as SVGElement[];
-    for (const element of elementsResult) {
+
+    for (const [elementIndex, element] of elementsResult.entries()) {
       if (!element) {
         continue;
       }
@@ -324,8 +329,7 @@ class HandlerSVGContent {
       let { elementTag, path, clippingMaskTag } = element as any;
       switch (element.type) {
         case 'TEXT': {
-          // const regexElementTag = new RegExp(elementTag, 'g');
-          // this.svgContent = this.svgContent.replace(regexElementTag, path);
+          // elementTag = elementTag.replace(/&nbsp;/g, ' ');
           this.svgContent = this.svgContent.replace(elementTag, path);
         }
           break;
@@ -337,7 +341,9 @@ class HandlerSVGContent {
             this.svgContent = this.svgContent.replace(item.imageElement, item.imageContent);
           }
           break;
-        }
+        default:
+          break;
+      }
     }
 
     // const imageParentTags = getImageParentTags(this.svgContent);
@@ -359,28 +365,26 @@ class HandlerSVGContent {
     this.svgContent = this.fixAdobeTag(this.svgContent);
     this.svgContent = this.convertShape(this.svgContent);
     this.svgContent = this.convertBackground(this.svgContent);
-    console.log(this.groupElement, '==> this.groupElement');
+    // console.log(this.groupElement, '==> this.groupElement');
 
-    const { window } = new JSDOM(this.svgContent);
-    const groupElement = window.document.getElementsByClassName('group_elements')[0];
-    const rect = window.document.createElement('rect');
-
-    const top = 636.2272523111372;
-    const left = 139.09947460966805;
-    const wRect = 921.8011474609375;
-    const hRect = 538.0439453125;
-
-    rect.setAttribute('width', `${wRect}px`);
-    rect.setAttribute('height', `${hRect}px`);
-    rect.setAttribute('fill', '#c4c4c4');
-    rect.setAttribute('stroke', '10px');
-    rect.setAttribute('opacity', '0.5');
-    rect.setAttribute('stroke-color', 'red');
-    rect.setAttribute('x', `${left}px`);
-    rect.setAttribute('y', `${top}px`);
-    groupElement.appendChild(rect);
-    this.svgContent = window.document.body.innerHTML;
-    // this.groupElement.appendChild(this.createRectBouding());
+    // Draw bounding rect for text element
+    const { window: newWindow } = new JSDOM(this.svgContent);
+    const groupElement = newWindow.document.getElementsByClassName('group_elements')[0];
+    boundingRects.forEach((boundingRect) => {
+      console.log(boundingRect, '==> boundingRect...');
+      const rect = window.document.createElement('rect');
+      const { x, y, width, height } = boundingRect;
+      rect.setAttribute('width', `${width}px`);
+      rect.setAttribute('height', `${height}px`);
+      rect.setAttribute('fill', '#c4c4c4');
+      rect.setAttribute('stroke', '10px');
+      rect.setAttribute('opacity', '0.5');
+      rect.setAttribute('x', `${x}px`);
+      rect.setAttribute('y', `${y}px`);
+      groupElement.appendChild(rect);
+    });
+    this.svgContent = newWindow.document.body.innerHTML;
+    // this.svgContent = this.svgContent.replace(/<rect(.*?)<\/rect>/g, '');
     return this.svgContent;
   }
 }

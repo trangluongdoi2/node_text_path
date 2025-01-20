@@ -12,7 +12,7 @@ export default class PotraceService {
   private browserPool: any;
 
   constructor() {
-    console.log('===> constructor');
+    // console.log('===> constructor');
     // this.browserPool = new BrowserPool();
     // this.workingDirTmp = `/tmp/${randomString(false, 5)}`;
     // prepareWorkingDir(this.workingDirTmp);
