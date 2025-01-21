@@ -81,6 +81,7 @@ class HandlerSVGContent {
     const { window } = new JSDOM(this.svgContent);
     this.elements = [...window.document.getElementsByClassName('not-select') as any];
     this.groupElement = window.document.getElementsByClassName('group_elements')[0];
+    // this.boundingElements = [];
   }
 
   isTextElement(elementHtml: string) {
@@ -289,6 +290,11 @@ class HandlerSVGContent {
     return `<rect width="100%" height="100%" fill="red" x="0" y="0"/>`;
   }
 
+  getMasterElementByElementKey(innerHTML: string) {
+    const currentData = this.data.find((item: any) => innerHTML.includes(item.elementKey));
+    return currentData;
+  }
+
   async export() {
     const bleedSize = this.getBleedSize();
     const col = 1;
@@ -302,13 +308,11 @@ class HandlerSVGContent {
     const boundingRects: BoundingElement[] = [];
 
     const elementsResult = await Promise.all(
-      this.elements.map(async (element, index) => {
+      this.elements.map((element, index) => {
         const { innerHTML, outerHTML } = element;
         if (this.isTextElement(innerHTML)) {
-          console.log(index, '==> index...');
-          const elementData = Object.values(this.data)[index];
+          const elementData = this.getMasterElementByElementKey(innerHTML);
           const textPathService = new TextService(innerHTML, outerHTML, elementData)
-          // return textPathService.exportPath();
           const res = textPathService.exportPath((boundingRect: BoundingElement) => {
             boundingRects.push(boundingRect);
           });
@@ -329,7 +333,7 @@ class HandlerSVGContent {
       let { elementTag, path, clippingMaskTag } = element as any;
       switch (element.type) {
         case 'TEXT': {
-          // elementTag = elementTag.replace(/&nbsp;/g, ' ');
+          elementTag = elementTag.replace(/&nbsp;/g, ' ');
           this.svgContent = this.svgContent.replace(elementTag, path);
         }
           break;
@@ -371,14 +375,13 @@ class HandlerSVGContent {
     const { window: newWindow } = new JSDOM(this.svgContent);
     const groupElement = newWindow.document.getElementsByClassName('group_elements')[0];
     boundingRects.forEach((boundingRect) => {
-      console.log(boundingRect, '==> boundingRect...');
       const rect = window.document.createElement('rect');
       const { x, y, width, height } = boundingRect;
       rect.setAttribute('width', `${width}px`);
       rect.setAttribute('height', `${height}px`);
-      rect.setAttribute('fill', '#c4c4c4');
+      rect.setAttribute('fill', 'red');
       rect.setAttribute('stroke', '10px');
-      rect.setAttribute('opacity', '0.5');
+      rect.setAttribute('opacity', '0.1');
       rect.setAttribute('x', `${x}px`);
       rect.setAttribute('y', `${y}px`);
       groupElement.appendChild(rect);

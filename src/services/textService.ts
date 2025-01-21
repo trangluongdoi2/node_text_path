@@ -1,10 +1,10 @@
 import { useCaculateTransform } from '@/helper/transform';
-import { BoundingElement, RenderCharInfo, TextStyleDeclaration, TspanContent } from '@/types/convert-text';
+import { BoundingElement, GlyphData, RenderCharInfo, TextFontData, TextPath, TextStyleDeclaration, TspanContent } from '@/types/convert-text';
 import { getContentByTag, getRotationMatrixRatios, getTextParentTags, isEqual } from '@/utils-svg';
 import { JSDOM } from 'jsdom';
 import path from 'path';
 import * as math from 'mathjs';
-import { Font } from 'opentype.js';
+import { Font, Glyph } from 'opentype.js';
 import { useFont } from '@/composables/useFont';
 import { TextPathService } from './textPathService';
 import { getMeasuringContext } from '@/utilities/canvas';
@@ -18,11 +18,15 @@ export class TextService {
   declare textContent: string;
   declare textParentData: any;
   declare rectData: any;
-  declare textLines: Record<string, Record<string, RenderCharInfo>>;
+  declare textLines: { [key: string]: { [key: string]: RenderCharInfo } };
+  declare textLines2: Array<RenderCharInfo[]>
   declare __charBounds;
   declare tspanContents: TspanContent[];
   declare boundingElement: BoundingElement;
   declare fontLoad: Font;
+  declare _textLines: Array<string[]>;
+  declare textLinesArray: string[];
+  private glyphsData: Array<GlyphData[]>;
   _fontSizeFraction = 0.222;
   lineHeightScale = 1;
   fontloadMap: Record<string, { fontload: Font }> = {};
@@ -43,6 +47,7 @@ export class TextService {
     this.object = { ...object };
     this.fontloadMap = {};
     this.textLines = {};
+    this.textLines2 = [];
     this.__charBounds = {};
     this.tspanContents = [];
     this.boundingElement = {
@@ -53,10 +58,27 @@ export class TextService {
       width: 0,
       height: 0,
     }
+    this.glyphsData = [];
+    this.initTextData();
+  }
+
+  private initTextData() {
     this.processTextParentContent();
     this.processTextTagContent();
     this.processTextRectContent();
     this.getPositionOfBoundingBoxText();
+    this.getTextLines();
+  }
+
+  private hasCharSpacing() {
+    return Boolean(this.object.charSpacing)
+  }
+
+  getTextLines() {
+    this.textLinesArray = this.object.originalText.split('\n');
+    this._textLines = this.textLinesArray.map((textLine: string) => textLine.split(''));
+    console.log(this.textLinesArray, '==> this.textLinesArray');
+    console.log(this._textLines, '==> this._textLines');
   }
 
   caculateCenterOfElementText({ x, y, angle }: { x: number, y: number, angle: number }) {
@@ -79,12 +101,13 @@ export class TextService {
     this.object.flipY = false;
     const position = reCaculateTransform(this.object);
     const center = this.caculateCenterOfElementText({ x: position.x, y: position.y, angle: originalAngle });
-    // console.log(center, '==> center...');
     this.object.angle = originalAngle;
     this.object.flipX = originalFlipX;
     this.object.flipY = originalFlipY;
-    const w = this.rectData.params.width || this.object.width;
-    const h = this.rectData.params.height || this.object.height;
+    // const w = this.rectData.params.width || this.object.width;
+    // const h = this.rectData.params.height || this.object.height;
+    const w = this.object.width;
+    const h = this.object.height;
     this.boundingElement = {
       x: position.x,
       y: position.y,
@@ -97,7 +120,8 @@ export class TextService {
 
   loadFont() {
     // const localPath = path.join(__dirname, '../fonts/font.woff');
-    const localPath = path.join(__dirname, '../fonts/wavsujv5preyca7l.woff');
+    // const localPath = path.join(__dirname, '../fonts/wavsujv5preyca7l.woff');
+    const localPath = path.join(__dirname, '../fonts/7cvp1ivqus133n47_glyph.woff');
     const fontLoad = useFont().loadFontFromOpenTypeByLocalPath(localPath);
     if (!this.fontloadMap[this.object.fontFamily]) {
       this.fontloadMap[this.object.fontFamily] = { fontload: fontLoad };
@@ -109,14 +133,9 @@ export class TextService {
     return lineStyle ? lineStyle[charIndex] ?? {} : {};
   }
 
-  getValueOfPropertyAt(object: any, lineIndex: number, charIndex: number, field: string) {
-    const charStyle = this.getStyleDeclaration(object.styles, lineIndex, charIndex);
-    if (field === 'fontFamily') {
-      // @ts-ignore
-      console.log(this.object.type, '==> this.object.type...');
-      console.log(this.object.elementKey, '==> this.object.elementKey...');
-    }
-    return charStyle[field] ?? object[field];
+  getValueOfPropertyAt(lineIndex: number, charIndex: number, field: string) {
+    const charStyle = this.getStyleDeclaration(this.object.styles, lineIndex, charIndex);
+    return charStyle[field] ?? this.object[field];
   }
 
   getTopOffset() {
@@ -125,7 +144,7 @@ export class TextService {
   }
 
   getHeightOfChar(lineIndex: number, charIndex: number) {
-    return this.getValueOfPropertyAt(this.object, lineIndex, charIndex, 'fontSize');
+    return this.getValueOfPropertyAt(lineIndex, charIndex, 'fontSize');
   }
 
   getHeightOfLine(lineIndex: number) {
@@ -142,8 +161,8 @@ export class TextService {
       let advanceWidth = 0;
       const charsEachLine = tspanData.text.split('');
       charsEachLine.forEach((char: string, charIndex: number) => {
-        const fontSize = this.getValueOfPropertyAt(this.object, lineIndex, charIndex, 'fontSize');
-        const fontFamily = this.getValueOfPropertyAt(this.object, lineIndex, charIndex, 'fontFamily');
+        const fontSize = this.getValueOfPropertyAt(lineIndex, charIndex, 'fontSize');
+        const fontFamily = this.getValueOfPropertyAt(lineIndex, charIndex, 'fontFamily');
         const fontload = this.fontloadMap[fontFamily].fontload;
         advanceWidth += fontload.getAdvanceWidth(char, fontSize);
       });
@@ -165,69 +184,16 @@ export class TextService {
     return lineWidth;
   }
 
-  _setTextStyles(
-    ctx: CanvasRenderingContext2D,
-    charStyle?: any,
-    forMeasuring?: boolean,
-  ) {
-    ctx.textBaseline = 'alphabetic';
-    console.log(charStyle, '==> charStyle...');
-    // ctx.font = this._getFontDeclaration(charStyle, forMeasuring);
-  }
-
-  // _measureChar(char: string, stylesChar: any, prevChar: string | undefined, styleChar: any) {
-  //   // let width: number | undefined,
-  //   // coupleWidth: number | undefined,
-  //   // previousWidth: number | undefined,
-  //   // kernedWidth: number | undefined;
-  //   // const couple = prevChar + char;
-
-  //   // const stylesAreEqual = prevChar && isEqual(stylesChar, styleChar);
-  //   // kernedWidth = width = this.ctx.measureText(char).width;
-
-  //   // if (width === undefined ||
-  //   //   previousWidth === undefined ||
-  //   //   coupleWidth === undefined
-  //   // ) {
-  //   //   if (previousWidth === undefined && stylesAreEqual && prevChar) {
-  //   //     previousWidth = this.ctx.measureText(prevChar).width;
-  //   //   }
-  
-  //   //   if (stylesAreEqual && coupleWidth === undefined) {
-  //   //     coupleWidth = this.ctx.measureText(couple).width;
-  //   //     kernedWidth = coupleWidth - previousWidth!;
-  //   //   }
-  //   // }
-  //   const fontload = this.fontloadMap[styleChar.fontFamily].fontload;
-  //   // @ts-ignore
-  //   const prevFontload = this.fontloadMap[prevChar?.fontFamily as string].fontload;
-  //   console.log(fontload, prevFontload, '==> fontload, prevFontload...');
-
-  //   const glyphId = fontload.charToGlyphIndex(char);
-  //   const prevGlyphId = prevChar ? prevFontload.charToGlyphIndex(prevChar) : null;
-
-    
-  //   return {
-  //     width: 0,
-  //     kernedWidth: 0,
-  //   }
-  // }
-
   _measureChar2(char: string, stylesChar: any, prevChar: string | undefined, prevStylesChar: any) {
     const fontload = this.fontloadMap[stylesChar?.fontFamily]?.fontload;
     const prevFontload = this.fontloadMap[prevStylesChar?.fontFamily]?.fontload;
     const glyphId = fontload.charToGlyphIndex(char);
     const prevGlyphId = prevChar ? prevFontload.charToGlyphIndex(prevChar) : null;
-    console.log(glyphId, prevGlyphId, '==> glyphId, prevGlyphId...');
     const glyph = fontload.glyphs.get(glyphId);
     // @ts-ignore
     const advanceWidth = glyph.advanceWidth * (stylesChar?.fontSize || this.object.fontSize) / fontload.unitsPerEm;
     let kerning = 0;
     if (prevGlyphId) {
-      console.log(prevFontload.getKerningValue(prevGlyphId, glyphId));
-      // console.log(prevStylesChar?.fontSize || this.object.fontSize, '==> prevStylesChar?.fontSize || this.object.fontSize..');
-      // console.log(prevFontload.unitsPerEm, '==> prevFontload.unitsPerEm..');
-      // const prevGlyph = prevFontload.glyphs.get(prevGlyphId) as any;
       kerning = prevFontload.getKerningValue(prevGlyphId, glyphId) * (prevStylesChar?.fontSize || this.object.fontSize) / prevFontload.unitsPerEm;
     }
     
@@ -278,47 +244,104 @@ export class TextService {
   }
 
   // TODO: Need recaculate this function!
-  handleTspanContent() {
-    let lineHeights = 0;
-    const safeLineHeight = this._getSafeLineHeight();
-    let dyNew = 0;
+  // handleTspanContent() {
+  //   let top = -this.boundingElement.height / 2;
+  //   console.log(this.tspanContents, '==> this.tspanContents..');
+  //   this.tspanContents.forEach((tspanData, lineIndex) => {
+  //     // RELATIVE
+  //     top += Number(tspanData.dy);
+  //     if (!this.textLines[lineIndex]) {
+  //       this.textLines[lineIndex] = {};
+  //     }
+  //     const charsEachLine = tspanData.text.split('');
+  //     charsEachLine.forEach((char: string, charIndex: number) => {
+  //       if (!this.textLines[lineIndex][charIndex]) {
+  //         this.textLines[lineIndex][charIndex] = {} as RenderCharInfo;
+  //       }
+  //       const fontSize = this.getValueOfPropertyAt(lineIndex, charIndex, 'fontSize');
+  //       const fontFamily = this.getValueOfPropertyAt(lineIndex, charIndex, 'fontFamily');
+  //       const prevChar = this.textLines[lineIndex][charIndex - 1];
+
+  //       const stylesChar = {
+  //         fontFamily, 
+  //         fontSize,
+  //       }
+  //       const prevStylesChar = {
+  //         fontFamily: this.getValueOfPropertyAt(lineIndex, charIndex - 1, 'fontFamily'),
+  //         fontSize: this.getValueOfPropertyAt(lineIndex, charIndex - 1, 'fontSize'),
+  //       }
+        
+  //       const info = this._measureChar2(char, stylesChar, prevChar?.char, prevStylesChar);
+  //       let width = info.width,
+  //       kernedWidth = info.kernedWidth,
+  //       charSpacing = 0;
+  //       if (this.object.charSpacing !== 0) {
+  //         charSpacing = this._getWidthOfCharSpacing(this.object.charSpacing);
+  //       }
+  //       width = width + charSpacing;
+  //       kernedWidth = kernedWidth + charSpacing;
+        
+  //       let left = 0;
+  //       if (prevChar) {
+  //         left = prevChar.left + prevChar.width + info.kernedWidth - info.width;
+  //       }
+  //       this.textLines[lineIndex][charIndex] = {
+  //         char,
+  //         fill: this.getValueOfPropertyAt(lineIndex, charIndex, 'fill'),
+  //         fontFamily,
+  //         fontSize,
+  //         fontWeight: this.getValueOfPropertyAt(lineIndex, charIndex, 'fontWeight'),
+  //         fontStyle: this.getValueOfPropertyAt(lineIndex, charIndex, 'fontStyle'),
+  //         x: Number(tspanData.x),
+  //         dy: Number(tspanData.dy),
+  //         top,
+  //         left,
+  //         width,
+  //       }
+  //     });
+  //   });
+
+  //   const letfOffset = this._getLeftOffset();
+
+  //   Object.keys(this.textLines).forEach((lineIndex: string) => {
+  //     const line = this.textLines[lineIndex];
+  //     const leftLineOffset = this._getLineLeftOffset(Number(lineIndex));
+  //     Object.keys(line).forEach((charIndex) => {
+  //       const char = line[charIndex];
+  //       char.left += letfOffset + leftLineOffset;
+  //     });
+  //   });
+  // }
+
+  handleTspanContent2() {
+    let top = -this.boundingElement.height / 2;
+    console.log(this.tspanContents, '==> this.tspanContents..');
     this.tspanContents.forEach((tspanData, lineIndex) => {
-      const heightOfLine = this.getHeightOfLine(lineIndex);
-      const maxHeight = heightOfLine / safeLineHeight;
-      dyNew = dyNew + Number(tspanData.dy);
-
-      const top = -this.boundingElement.height / 2 + dyNew;
-
-      if (!this.textLines[lineIndex]) {
-        this.textLines[lineIndex] = {};
+      // RELATIVE
+      top += Number(tspanData.dy);
+      if (!this.textLines2[lineIndex]) {
+        this.textLines2[lineIndex] = [];
       }
       const charsEachLine = tspanData.text.split('');
       charsEachLine.forEach((char: string, charIndex: number) => {
-        if (!this.textLines[lineIndex][charIndex]) {
-          this.textLines[lineIndex][charIndex] = {} as RenderCharInfo;
-        }
-        const fontSize = this.getValueOfPropertyAt(this.object, lineIndex, charIndex, 'fontSize');
-        const fontFamily = this.getValueOfPropertyAt(this.object, lineIndex, charIndex, 'fontFamily');
-        const prevFontFamily = this.textLines[lineIndex][charIndex - 1]?.fontFamily;
-        const fontload = this.fontloadMap[fontFamily].fontload;
-        const prevChar = this.textLines[lineIndex][charIndex - 1];
-
-        // const styleChar = this._getStyleDeclaration(lineIndex, charIndex);
+        const fontSize = this.getValueOfPropertyAt(lineIndex, charIndex, 'fontSize');
+        const fontFamily = this.getValueOfPropertyAt(lineIndex, charIndex, 'fontFamily');
+        const prevChar = this.textLines2[lineIndex][charIndex - 1];
 
         const stylesChar = {
           fontFamily, 
           fontSize,
         }
         const prevStylesChar = {
-          fontFamily: this.getValueOfPropertyAt(this.object, lineIndex, charIndex - 1, 'fontFamily'),
-          fontSize: this.getValueOfPropertyAt(this.object, lineIndex, charIndex - 1, 'fontSize'),
+          fontFamily: this.getValueOfPropertyAt(lineIndex, charIndex - 1, 'fontFamily'),
+          fontSize: this.getValueOfPropertyAt(lineIndex, charIndex - 1, 'fontSize'),
         }
         
         const info = this._measureChar2(char, stylesChar, prevChar?.char, prevStylesChar);
         let width = info.width,
         kernedWidth = info.kernedWidth,
         charSpacing = 0;
-        if (this.object.charSpacing !== 0) {
+        if (this.hasCharSpacing()) {
           charSpacing = this._getWidthOfCharSpacing(this.object.charSpacing);
         }
         width = width + charSpacing;
@@ -328,35 +351,32 @@ export class TextService {
         if (prevChar) {
           left = prevChar.left + prevChar.width + info.kernedWidth - info.width;
         }
-        this.textLines[lineIndex][charIndex] = {
+        this.textLines2[lineIndex].push({
           char,
-          fill: this.getValueOfPropertyAt(this.object, lineIndex, charIndex, 'fill'),
+          fill: this.getValueOfPropertyAt(lineIndex, charIndex, 'fill'),
           fontFamily,
           fontSize,
-          fontWeight: this.getValueOfPropertyAt(this.object, lineIndex, charIndex, 'fontWeight'),
-          fontStyle: this.getValueOfPropertyAt(this.object, lineIndex, charIndex, 'fontStyle'),
+          fontWeight: this.getValueOfPropertyAt(lineIndex, charIndex, 'fontWeight'),
+          fontStyle: this.getValueOfPropertyAt(lineIndex, charIndex, 'fontStyle'),
           x: Number(tspanData.x),
           dy: Number(tspanData.dy),
-          y: dyNew,
           top,
           left,
           width,
-          dyNew,
-        }
+        });
       });
-      lineHeights += heightOfLine;
     });
 
     const letfOffset = this._getLeftOffset();
 
-    Object.keys(this.textLines).forEach((lineIndex: string) => {
-      const line = this.textLines[lineIndex];
-      const leftLineOffset = this._getLineLeftOffset(Number(lineIndex));
-      Object.keys(line).forEach((charIndex) => {
-        const char = line[charIndex];
+    this.textLines2.forEach((line, lineIndex) => {
+      const leftLineOffset = this._getLineLeftOffset(lineIndex);
+      line.forEach((char, charIndex) => {
         char.left += letfOffset + leftLineOffset;
       });
     });
+
+    console.log(this.textLines2, '==> this.textLines2...');
   }
 
   processTspanContent() {
@@ -364,7 +384,8 @@ export class TextService {
     const textElement = window.document.getElementsByTagName('text')[0] as any;
     if (textElement) {
       this.tspanContents = this.getTagElements(textElement);
-      this.handleTspanContent();
+      // this.handleTspanContent();
+      this.handleTspanContent2();
     }
   }
 
@@ -381,7 +402,7 @@ export class TextService {
           x: child.getAttribute('x'),
           dy: child.getAttribute('dy'),
           style: child.getAttribute('style') || {},
-          children: this.getTagElements(child,),
+          children: this.getTagElements(child),
         };
         results.push(tagData);
       }
@@ -460,17 +481,167 @@ export class TextService {
     return lineStyle ? lineStyle[charIndex] ?? {} : {};
   }
 
+  _getLignatureEachLineByGlyphs(text: string, font: Font): TextFontData[] {
+    if (this.hasCharSpacing()) {
+      const result = text.split('').map((char: string) => {
+        return {
+          text: char,
+          fontload: font,
+        };
+      });
+      return result;
+    }
+    const singleGlyphs: Array<string> = [];
+    const lignatureGlyphs: Array<string> = [];
+    const result: TextFontData[] = [];
+    let glyphs: Glyph[] = [];
+    try {
+      glyphs = font.stringToGlyphs(text);
+    } catch (error) {
+      console.log(error, '===> error');
+      glyphs = [];
+    }
+    glyphs.forEach((glyph: Glyph) => {
+      lignatureGlyphs.push(glyph.name as string);
+    });
+
+    font.forEachGlyph(text, 0, 0, undefined, undefined, (glyph: Glyph) => {
+      singleGlyphs.push(glyph.name as string);
+    });
+    let currentLignature = '';
+    let start = 0;
+    let end = 1;
+    while (end <= text.length) {
+      currentLignature = text.slice(start, end);
+      const tempLignatureGlyphs = font.stringToGlyphs(currentLignature);
+      const flag = tempLignatureGlyphs.length === 1 && tempLignatureGlyphs[0].name === lignatureGlyphs[0];
+      if (flag) {
+        result.push({
+          text: currentLignature,
+          fontload: font,
+        });
+        start = end;
+        lignatureGlyphs.shift();
+      }
+      end += 1;
+    }
+    return result;
+  }
+
+  preProcessFontData(): Array<TextFontData[]> {
+    const result: Array<TextFontData[]> = [];
+    this._textLines.forEach((textLine: string[], lineIndex: number) => {
+      result[lineIndex] = [];
+      let currentString = '';
+      let currentFontFamily = this.getValueOfPropertyAt(lineIndex, 0, 'fontFamily') as string;
+      for (let i = 0; i < textLine.length; i++) {
+        const char = textLine[i];
+        const fontFamily = this.getValueOfPropertyAt(lineIndex, i, 'fontFamily') as string;
+        if (fontFamily === currentFontFamily) {
+          currentString += char;
+        } else {
+          result[lineIndex].push({
+            text: currentString,
+            fontload: this.fontloadMap[currentFontFamily].fontload || this.fontloadMap[this.object.fontFamily].fontload,
+          });
+          currentFontFamily = fontFamily;
+          currentString = char;
+        }
+        if (i === textLine.length - 1) {
+          result[lineIndex].push({
+            text: currentString,
+            fontload: this.fontloadMap[currentFontFamily].fontload || this.fontloadMap[this.object.fontFamily].fontload,
+          });
+        }
+      }
+    });
+    return result;
+  }
+
+  handleRelativePositionOfGlyphs() {
+    const lignatureGlyphs = this.getLignatureByGlyphs();
+    let glyphsData: Array<GlyphData[]> = [];
+    for (const [lineIndex, lignature] of lignatureGlyphs.entries()) {
+      if (lignature.length === 0) {
+        continue;
+      }
+      let i = 0;
+      glyphsData[lineIndex] = [];
+
+      lignature.forEach((lignature: TextFontData, index: number) => {
+        const { text, fontload } = lignature;
+        const glyphs = fontload.stringToGlyphs(text) as Glyph[];
+        const fontSize = this.getValueOfPropertyAt(lineIndex, i, 'fontSize') as number;
+        const fill = this.getValueOfPropertyAt(lineIndex, i, 'fill') as string;
+        const fontStyle = this.getValueOfPropertyAt(lineIndex, i, 'fontStyle') as string;
+        // const fontFamily = this.getValueOfPropertyAt(lineIndex, i, 'fontFamily') as string;
+        let path = glyphs[0].getPath(0, 0, fontSize) as TextPath;
+        // if (['.notdef', '.null'].includes(glyphs[0].name as string)) {
+        //   path = this.getPathFromFontLoad(text, fontSize) as TextPath;
+        // }
+        const charIndexStart = i;
+        const charIndexEnd = i + text.length;
+        glyphsData[lineIndex].push({
+          top: this.textLines2[lineIndex][charIndexStart]?.top || 0,
+          left: this.textLines2[lineIndex][charIndexStart]?.left || 0,
+          charIndexStart,
+          charIndexEnd,
+          path,
+          fill,
+          fontStyle,
+          fontSize,
+          name: glyphs[0].name as string,
+          glyph: glyphs[0],
+          text: text,
+        });
+        i += text.length;
+      });
+    }
+    glyphsData = glyphsData.filter(data => Boolean(data));
+    return glyphsData;
+  }
+
+
+  getLignatureByGlyphs(): Array<TextFontData[]> {
+    const textLinesData = this.preProcessFontData();
+    const result: Array<TextFontData[]> = [];
+    const tempResult: Array<Array<TextFontData[]>> = [];
+    for (const [lineIndex, textLine] of textLinesData.entries()) {
+      result[lineIndex] = [];
+      tempResult[lineIndex] = [];
+      textLine.forEach(({ text, fontload }) => {
+        const lignature = this._getLignatureEachLineByGlyphs(text, fontload);
+        tempResult[lineIndex].push(lignature);
+      });
+      result[lineIndex] = tempResult[lineIndex].flat();
+    }
+    return result;
+  }
+
+  getGlyphsData() {
+    return this.handleRelativePositionOfGlyphs();
+  }
+
   exportPath(callback?: Function) {
-    const res = this.getCharsData();
+    if (!this.object) {
+      return {
+        type: 'TEXT',
+        elementTag: this.innerHTML,
+        path: '',
+      };
+    }
+    this.getCharsData();
+    this.glyphsData = this.getGlyphsData();
     const newData = {
-      charsMap: res,
       boundingElement: this.boundingElement,
       object: this.object,
       fontloadMap: this.fontloadMap,
       deltaY: this.getDeltaBetweenTextTagAndBoundingBox(),
+      glyphsData: this.glyphsData,
     }
     const textPathService = new TextPathService(newData);
     const path = textPathService.getPaths();
+    console.log(this.boundingElement, '==> this.boundingElement...');
     callback && callback({ ...this.boundingElement, y: this.boundingElement.y - this.getDeltaBetweenTextTagAndBoundingBox() });
     return {
       type: 'TEXT',

@@ -1,4 +1,4 @@
-import { Font } from "opentype.js";
+import { Font, Glyph } from "opentype.js";
 
 const enum Degree {}
 const enum Radian {}
@@ -57,11 +57,11 @@ export type RenderCharInfo = {
   fontStyle: string,
   x: number,
   dy: number,
-  y: number,
+  // y: number,
   top: number,
   left: number,
   width: number,
-  dyNew: number,
+  // dyNew: number,
 }
 
 export type TransformPath = {
@@ -81,20 +81,13 @@ export type GraphemeBBox = {
   angle?: number;
 };
 
-// export interface ITextPathServiceInput {
-//   charsMap: any,
-//   boundingElement: any,
-//   object: any,
-// }
-
 export interface ITextPathServiceInput {
-  charsMap: any,
-  boundingElement: any,
+  boundingElement: BoundingElement,
   object: any,
   fontloadMap: FontloadMap,
   deltaY: number,
+  glyphsData: Array<GlyphData[]>,
 }
-
 
 export type FontloadMap = { [key: string]: { fontload: Font } }
 
@@ -116,3 +109,50 @@ export type TextStyleDeclaration = Pick<
   Record<string, any>,
   StylePropertiesType
 >;
+
+export interface TextFontData {
+  text: string;
+  fontload: Font;
+}
+
+export interface Point {
+  x: number;
+  y: number;
+}
+
+export interface Extension {
+  outerGlow: string;
+  shadow: string;
+  stroke: string;
+  gradient: string;
+}
+
+export interface PathCommand {
+  type: string;
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  x: number;
+  y: number;
+}
+
+export interface GlyphData {
+  top: number;
+  left: number;
+  charIndexStart: number;
+  charIndexEnd: number;
+  path: TextPath;
+  fill: string;
+  fontStyle: string;
+  fontSize: number;
+  width?: number;
+  width2?: number;
+  name: string;
+  text?: string;
+  glyph?: Glyph;
+}
+
+export interface TextPath {
+  commands: PathCommand[];
+}
