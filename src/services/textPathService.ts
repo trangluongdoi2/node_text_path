@@ -169,7 +169,6 @@ export class TextPathService {
     return charStyle[field] ?? this.object[field];
   }
 
-
   getGlyphPaths(): { multiPaths: string, singlePath: string[] } {
     if (!this.glyphsData?.length) {
       return { multiPaths: '', singlePath: [] };
@@ -220,31 +219,6 @@ export class TextPathService {
     }
   }
 
-  // getTextPaths() {
-  //   const originalPaths: any = [];
-  //   Object.entries(this.charsMap).forEach(([lineIndex, textLines]) => {
-  //     Object.entries(textLines).forEach(([charIndex, charData]) => {
-  //       const pathByChar = this.getPathByChar(charData, Number(lineIndex), Number(charIndex));
-  //       originalPaths.push(pathByChar);
-  //     });
-  //   });
-  //   this.paths = originalPaths.join('');
-
-  //   const { a, b, c, d } = getRotationMatrixRatios(this.object.angle);
-  //   const { cx, cy, width, height } = this.boundingElement;
-  //   const left = -width / 2;
-  //   const top = -height / 2;
-  //   const tx = a * left + c * top + cx;
-  //   const ty = b * left + d * top + cy;
-
-  //   const newMatrix = `matrix(${a} ${b} ${c} ${d} ${tx} ${ty})`;
-  //   return `
-  //     <g transform="${newMatrix}">
-  //       ${originalPaths.join('')}
-  //     </g>
-  //   `;
-  // }
-
   getTextPathsByGlyphs() {
     const { multiPaths, singlePath } = this.getGlyphPaths();
     return {
@@ -253,13 +227,13 @@ export class TextPathService {
     }
   }
 
-  getOriginalCombineTextTransformContent() {
+  getOriginalCombineTextTransformContent(skipFlip = false) {
     const { scaleX, scaleY } = this.object;
     const { a, b, c, d } = getRotationMatrixRatios(this.object.angle);
-    const newA = a * scaleX * this.flip.x;
-    const newB = b * scaleX * this.flip.x;
-    const newC = c * scaleY * this.flip.y;
-    const newD = d * scaleY * this.flip.y;
+    const newA = a * scaleX * (skipFlip ? 1 : this.flip.x);
+    const newB = b * scaleX * (skipFlip ? 1 : this.flip.x);
+    const newC = c * scaleY * (skipFlip ? 1 : this.flip.y);
+    const newD = d * scaleY * (skipFlip ? 1 : this.flip.y);
     const tx = this.boundingElement.cx;
     const ty = this.boundingElement.cy;
     const matrix = `matrix(${newA} ${newB} ${newC} ${newD} ${tx} ${ty})`;
@@ -294,23 +268,21 @@ export class TextPathService {
       return '';
     }
     const strokeStyles = this.getStrokeStyles();
-    console.log(strokeStyles, '==> strokeStyles');
     return `
       <g ${this.getOriginalCombineTextTransformContent()} ${strokeStyles}>
         <path d="${path}" />
       </g>
-    `
+    `;
   }
 
-  getCombinePathContent() {
+  getCombinePathContent(): { content: string, purePathContent: string } {
     const { path, paths } = this.getTextPathsByGlyphs();
     const filterPaths = this.filterTags?.map((filterTag: string) => `
       <g ${this.getOriginalCombineTextTransformContent()} ${filterTag}>
         <path d="${path}" />
       </g>
     `).join(' ');
-    console.log(this.filterTags, '==> this.filterTags');
-    return `
+    const res = `
       ${filterPaths}
       ${this.getStrokeContent(path)}
       <g ${this.getOriginalCombineTextTransformContent()}>
@@ -318,10 +290,24 @@ export class TextPathService {
       </g>
       ${paths}
     `;
+    const purePathContent = `<path d="${path}" />`;
+    return {
+      content: res,
+      purePathContent,
+    }
+    // return `
+    //   <g ${this.getOriginalCombineTextTransformContent()}>
+    //     <path d="${path}" />
+    //   </g>
+    // `;
   }
 
-  getPaths() {
-    const res = this.getCombinePathContent();
-    return res;
+  getPaths(callback?: Function) {
+    const { content, purePathContent } = this.getCombinePathContent();
+    callback && callback({
+      transform: this.getOriginalCombineTextTransformContent(),
+      path: purePathContent,
+    })
+    return content;
   }
 }

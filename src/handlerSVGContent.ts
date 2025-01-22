@@ -54,6 +54,9 @@ class HandlerSVGContent {
     this.shapeRectangles = getShapeRectanglesTag(svgContent);
     this.filterGradientTags = getFilterGradientTags(svgContent) as string[];
     this.shapeClipPaths = getShapeClipPathTags(getContentByTag(svgContent, 'defs')?.[0] || '') as string[];
+
+    console.log(this.shapeClipPaths, '==> this.shapeClipPaths...');
+
     this.data = Object.values(data);
 
     if (this.filterGradientTags?.length) {
@@ -113,6 +116,22 @@ class HandlerSVGContent {
 
   hasFilter(elementHtml: string) {
     return elementHtml.indexOf('filter') !== -1;
+  }
+
+  private isCurvedText(masterElement: any) {
+    if (!masterElement) {
+      return false;
+    }
+    const { backstage = {} } = masterElement;
+    if (!Object.keys(backstage)?.length) {
+      return false;
+    }
+    const { curved = {} } = backstage;
+    // eslint-disable-next-line no-extra-boolean-cast
+    if (!Object.keys(curved)?.length || !Boolean(curved?.enabled)) {
+      return false;
+    }
+    return true;
   }
 
   convertSvgToPng(file: string) {
@@ -303,6 +322,69 @@ class HandlerSVGContent {
     // return filterTags;
   }
 
+  private getClipPathId(html: string): string {
+    const regex = /clip-path="url\(#([^)]+)\)"/;
+    const match = html.match(regex);
+    return match ? match[1] : '';
+  }
+  
+
+  convertClippingPathText(index: number, elementTag: string, outerHTML: string) {
+    const outerHtmlByClipPath: string = this.elements[index + 1]?.outerHTML || '';
+    const clippingMaskTag = this.isClipPath(outerHtmlByClipPath) ? outerHtmlByClipPath : '';
+    // console.log(outerHtmlByClipPath, '==> outerHtmlByClipPath...');
+    // console.log(clippingMaskTag.slice(0, 500), '==> clippingMaskTag...');
+    // console.log(elementTag, 'elementTag');
+
+    const imageClipPathTag = getContentByTag(clippingMaskTag, 'image')?.[0] || '';
+    const styleImageClipPathTag = getElemAttributesByImage(imageClipPathTag);
+    const displayNone = [
+      'display: none',
+      'visibility: hidden',
+      'opacity: 0',
+    ];
+
+    if (displayNone.some((style: string) => (styleImageClipPathTag?.style || '').includes(style))) {
+      this.elements.splice(index + 1, 1);
+      const masterElement = this.getMasterElementByElementKey(elementTag);
+      const textStyleTags = (getTextStylesContent(elementTag) || []) as string[];
+      const filterTags = getFilterUrl(textStyleTags.join(''));
+      const textPathService = new TextService({ outerHTML, innerHTML: elementTag }, masterElement, filterTags);
+      const res = textPathService.exportPath();
+      return res;
+    }
+
+    const masterElement = this.getMasterElementByElementKey(elementTag);
+    const textStyleTags = (getTextStylesContent(elementTag) || []) as string[];
+    const filterTags = getFilterUrl(textStyleTags.join(''));
+    const textPathService = new TextService({ outerHTML, innerHTML: elementTag }, masterElement, filterTags);
+    let newTransform = '';
+    let pureContentPath = '';
+    const res = textPathService.exportPath((res: any) => {
+      pureContentPath = res.path;
+      newTransform = res.transform;
+    });
+    console.log(newTransform, '==> newTransform...');
+    const clipPathId = this.getClipPathId(outerHtmlByClipPath);
+    let selectClipPath = this.shapeClipPaths.find(shapeClipPath => shapeClipPath.match(clipPathId));
+    const selectClipPathIndex = this.shapeClipPaths.findIndex(shapeClipPath => shapeClipPath.match(clipPathId));
+    if (selectClipPath && selectClipPathIndex !== -1) {
+      // const newTransform = 'transform="matrix(1,0,0,1,0,0)"';
+      const textTag = getContentByTag(selectClipPath, 'text')?.[0] || '';
+      selectClipPath = selectClipPath.replace(textTag, pureContentPath);
+
+      // May be consider for bleed translate
+      selectClipPath = selectClipPath.replace(/transform="[^"]*"/, newTransform);
+      this.svgContent = this.svgContent.replace(`##shapeClipPaths${selectClipPathIndex}##`, selectClipPath);
+    }
+
+    return {
+      ...res,
+      clippingMaskTag,
+      type: 'TEXT_CLIP_PATH',
+    }
+  }
+
   async export() {
     const bleedSize = this.getBleedSize();
     const col = 1;
@@ -319,10 +401,20 @@ class HandlerSVGContent {
       this.elements.map((element, index) => {
         const { innerHTML, outerHTML } = element;
         if (this.isTextElement(innerHTML)) {
-          const elementData = this.getMasterElementByElementKey(innerHTML);
+          const masterElement = this.getMasterElementByElementKey(innerHTML);
+          if (this.isCurvedText(masterElement)) {
+            return {
+              type: 'TEXT',
+              elementTag: innerHTML,
+              path: ''
+            }
+          }
+          if (this.hasClipPath(index)) {
+            return this.convertClippingPathText(index, innerHTML, outerHTML);
+          }
           const textStyleTags = (getTextStylesContent(innerHTML) || []) as string[];
           const filterTags = getFilterUrl(textStyleTags.join(''));
-          const textPathService = new TextService({ outerHTML, innerHTML }, elementData, filterTags);
+          const textPathService = new TextService({ outerHTML, innerHTML }, masterElement, filterTags);
           const res = textPathService.exportPath((boundingRect: BoundingElement) => {
             boundingRects.push(boundingRect);
           });
@@ -344,14 +436,12 @@ class HandlerSVGContent {
       switch (element.type) {
         case 'TEXT': {
           elementTag = elementTag.replace(/&nbsp;/g, ' ');
-          // console.log(elementTag, '==> elementTag...');
-          // const textStyleTags = getTextStyleTags(elementTag);
-          // console.log(textStyleTags, '==> textStyleTags...');
           this.svgContent = this.svgContent.replace(elementTag, path);
         }
           break;
         case 'TEXT_CLIP_PATH':
-          this.svgContent = this.svgContent.replace(elementTag, path).replace(clippingMaskTag || '', '');
+          console.log('Case TEXT_CLIP_PATH 99...');
+          this.svgContent = this.svgContent.replace(elementTag, path);
           break;
         case 'IMAGE':
           for (const item of element.svgImages || []) {

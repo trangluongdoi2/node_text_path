@@ -42,335 +42,42 @@
         "lockSize": false,
         "lockStyle": false
     },
-    "c51f52": {
-        "elementKey": "c51f52",
+    "dc6f1a": {
+        "elementKey": "dc6f1a",
         "sectionIndex": 1,
-        "left": 425.1012268066406,
-        "top": 2221,
-        "type": "image",
-        "width": 552.3608512923952,
-        "height": 792.6378173828125,
-        "asset": {
-            "selected": "AG01JGNJC20KKY09CMPATNSE7GKF",
-            "available": [
-                "AG01JGNJC20KKY09CMPATNSE7GKF"
-            ]
-        },
-        "transformMatrix": [
-            1,
-            0,
-            0,
-            1,
-            -101.28163419992819,
-            -2334.9762165829725
-        ],
-        "corjlFilters": [],
-        "scaleX": 1,
-        "scaleY": 1,
-        "cropX": 0,
-        "cropY": 0,
-        "originX": "left",
-        "originY": "top",
-        "flipX": false,
-        "flipY": false,
-        "opacity": 1,
-        "angle": 0,
-        "skewX": 0,
-        "skewY": 0,
-        "selectable": true,
-        "visible": true,
-        "isMakeClippingMask": false,
-        "crossOrigin": "anonymous",
-        "outsideArtboard": false,
-        "src": "https://dev.korjl.com/assets/org/GD01HHDZSMZQ57K00R3XXZ50CCT6/image/optimized/24/24f04f944c2ce24d",
-        "thumbnail": "https://dev.korjl.com/assets/org/GD01HHDZSMZQ57K00R3XXZ50CCT6/image/thumb/18/180c3b381ea7fe3a",
-        "isError": false,
-        "strokeWidth": 0,
-        "canReplaceImage": false,
-        "lockSize": false,
-        "lockStyle": false
-    },
-    "9e7451": {
-        "elementKey": "9e7451",
-        "sectionIndex": 1,
-        "left": -61,
-        "top": 1320.8502197265625,
-        "type": "line-shape",
-        "width": 1190,
-        "height": 0,
-        "asset": {
-            "selected": "AG01HHE0CCTWRBQ6BG1PBE8XPN5W",
-            "available": [
-                "AG01HHE0CCTWRBQ6BG1PBE8XPN5W"
-            ]
-        },
-        "backstage": {
-            "stroke": {
-                "enabled": true,
-                "color": "#D52828",
-                "opacity": 100,
-                "width": 10
-            }
-        },
-        "transformMatrix": [
-            1,
-            0,
-            0,
-            1,
-            65.78947368421052,
-            -172.06477732793522
-        ],
-        "subType": "line",
-        "scaleX": 1,
-        "scaleY": 1,
-        "cropX": 0,
-        "cropY": 0,
-        "originX": "left",
-        "originY": "top",
-        "flipX": false,
-        "flipY": false,
-        "opacity": 1,
-        "angle": 0,
-        "skewX": 0,
-        "skewY": 0,
-        "selectable": true,
-        "visible": true,
-        "isMakeClippingMask": false,
-        "crossOrigin": "anonymous",
-        "outsideArtboard": false,
-        "src": "https://dev.korjl.com/assets/org/GS100001/svg/optimized/49/49cb017b05e89872",
-        "stroke": "#D52828",
-        "strokeWidth": 10,
-        "canReplaceImage": false,
-        "lockSize": false,
-        "lockStyle": false
-    },
-    "9df7de": {
-        "elementKey": "9df7de",
-        "sectionIndex": 1,
-        "left": -21,
-        "top": 1360.8502197265625,
-        "type": "line-shape",
-        "width": 1190,
-        "height": 0,
-        "asset": {
-            "selected": "AG01HHE0CCTWRBQ6BG1PBE8XPN5W",
-            "available": [
-                "AG01HHE0CCTWRBQ6BG1PBE8XPN5W"
-            ]
-        },
-        "backstage": {
-            "stroke": {
-                "enabled": true,
-                "color": "#D52828",
-                "opacity": 100,
-                "width": 10
-            }
-        },
-        "transformMatrix": [
-            1,
-            0,
-            0,
-            1,
-            27.834008097165984,
-            -364.37246963562757
-        ],
-        "subType": "line",
-        "scaleX": 1,
-        "scaleY": 1,
-        "cropX": 0,
-        "cropY": 0,
-        "originX": "left",
-        "originY": "top",
-        "flipX": false,
-        "flipY": false,
-        "opacity": 1,
-        "angle": 0,
-        "skewX": 0,
-        "skewY": 0,
-        "selectable": true,
-        "visible": true,
-        "isMakeClippingMask": false,
-        "crossOrigin": "anonymous",
-        "outsideArtboard": false,
-        "src": "https://dev.korjl.com/assets/org/GS100001/svg/optimized/49/49cb017b05e89872",
-        "stroke": "#D52828",
-        "strokeWidth": 10,
-        "canReplaceImage": false,
-        "lockSize": false,
-        "lockStyle": false
-    },
-    "9c7817": {
-        "elementKey": "9c7817",
-        "sectionIndex": 1,
-        "left": 19,
-        "top": 1400.8502197265625,
-        "type": "line-shape",
-        "width": 1190,
-        "height": 0,
-        "asset": {
-            "selected": "AG01HHE0CCTWRBQ6BG1PBE8XPN5W",
-            "available": [
-                "AG01HHE0CCTWRBQ6BG1PBE8XPN5W"
-            ]
-        },
-        "backstage": {
-            "stroke": {
-                "enabled": true,
-                "color": "#D52828",
-                "opacity": 100,
-                "width": 10
-            }
-        },
-        "transformMatrix": [
-            1,
-            0,
-            0,
-            1,
-            -12.651821862348186,
-            -551.6194331983806
-        ],
-        "subType": "line",
-        "scaleX": 1,
-        "scaleY": 1,
-        "cropX": 0,
-        "cropY": 0,
-        "originX": "left",
-        "originY": "top",
-        "flipX": false,
-        "flipY": false,
-        "opacity": 1,
-        "angle": 0,
-        "skewX": 0,
-        "skewY": 0,
-        "selectable": true,
-        "visible": true,
-        "isMakeClippingMask": false,
-        "crossOrigin": "anonymous",
-        "outsideArtboard": false,
-        "src": "https://dev.korjl.com/assets/org/GS100001/svg/optimized/49/49cb017b05e89872",
-        "stroke": "#D52828",
-        "strokeWidth": 10,
-        "canReplaceImage": false,
-        "lockSize": false,
-        "lockStyle": false
-    },
-    "9c6f72": {
-        "elementKey": "9c6f72",
-        "sectionIndex": 1,
-        "left": -94.05667877197266,
-        "top": 637.6517944335938,
-        "type": "line-shape",
-        "angle": 90,
-        "width": 1276.0566787719727,
-        "height": 0,
-        "asset": {
-            "selected": "AG01HHE0CCTWRBQ6BG1PBE8XPN5W",
-            "available": [
-                "AG01HHE0CCTWRBQ6BG1PBE8XPN5W"
-            ]
-        },
-        "backstage": {
-            "stroke": {
-                "enabled": true,
-                "color": "#E81111",
-                "opacity": 100,
-                "width": 10
-            }
-        },
-        "transformMatrix": [
-            3.0531133177191805e-16,
-            1,
-            -1,
-            3.0531133177191805e-16,
-            956.4777067547385,
-            465.58701571568764
-        ],
-        "subType": "line",
-        "highlightPlugins": {
-            "transform": false
-        },
-        "scaleX": 1,
-        "scaleY": 1,
-        "cropX": 0,
-        "cropY": 0,
-        "originX": "left",
-        "originY": "top",
-        "flipX": false,
-        "flipY": false,
-        "opacity": 1,
-        "skewX": 0,
-        "skewY": 0,
-        "selectable": true,
-        "visible": true,
-        "isMakeClippingMask": false,
-        "crossOrigin": "anonymous",
-        "outsideArtboard": false,
-        "src": "https://dev.korjl.com/assets/org/GS100001/svg/optimized/49/49cb017b05e89872",
-        "stroke": "#E81111",
-        "strokeWidth": 10,
-        "canReplaceImage": false,
-        "lockSize": false,
-        "lockStyle": false
-    },
-    "622b58": {
-        "elementKey": "622b58",
-        "sectionIndex": 1,
-        "originalText": "Nguyen\nTan\nVinh",
-        "left": 383.9866027832031,
-        "fontSize": 169.08750522176868,
-        "width": 989.0133972167969,
-        "height": 1088.859619140625,
-        "top": 332.54348725155313,
+        "originalText": "Clipping\nText",
+        "left": 429.77525384540405,
+        "fontSize": 314.2611649517904,
+        "width": 990.9770801998169,
+        "height": 620.8385620117188,
+        "top": 900.4354529220068,
         "type": "textbox",
-        "fill": "#02500A",
         "asset": {
-            "selected": "AF01JJ3JX4HNZY6C3C014S2MQA9A",
-            "selectedStyles": [],
+            "selected": "AF01J3PFV429770TKBA751TP04AC",
             "available": [
-                "AF01JJ3JX4HNZY6C3C014S2MQA9A"
+                "AF01J3PFV429770TKBA751TP04AC"
             ]
         },
         "transformMatrix": [
-            0.9999999999999998,
-            -5.551115123125783e-17,
-            5.551115123125783e-17,
-            0.9999999999999998,
-            -223.56430388792685,
-            403.40019615039694
+            -0.5948227867513411,
+            0.8038568606172167,
+            -0.8038568606172167,
+            -0.5948227867513411,
+            2115.4090270532342,
+            870.313101434029
         ],
-        "fontFamily": "font-lz1mk4024o",
+        "fontFamily": "font-ptlxvvrkph",
         "fontloadMap": {
-            "font-lz1mk4024o": {
-                "assetId": "AF01JJ3JX4HNZY6C3C014S2MQA9A"
+            "font-ptlxvvrkph": {
+                "assetId": "AF01J3PFV429770TKBA751TP04AC"
             }
         },
         "styles": {},
         "backstage": {
-            "corjl1Styles": {},
-            "shadow": {
-                "enabled": false,
-                "color": "#000000",
-                "blur": 10,
-                "angle": 0,
-                "distance": 180,
-                "opacity": 100
-            },
-            "outerGlow": {
-                "enabled": false,
-                "color": "#EA3434",
-                "blur": 200
-            },
-            "stroke": {
-                "enabled": false,
-                "color": "#000000",
-                "opacity": 100,
-                "width": 10
-            }
+            "corjl1Styles": {}
         },
-        "globalCompositeOperation": "",
-        "scaleX": 1.4026064649061776,
-        "resizeAsImage": true,
+        "angle": 127,
+        "scaleX": 1,
         "scaleY": 1,
         "cropX": 0,
         "cropY": 0,
@@ -379,20 +86,77 @@
         "flipX": false,
         "flipY": false,
         "opacity": 1,
-        "angle": 0,
         "skewX": 0,
         "skewY": 0,
+        "fill": "#000000",
         "selectable": true,
         "visible": true,
         "isMakeClippingMask": false,
         "crossOrigin": "anonymous",
         "outsideArtboard": false,
         "textAlign": "center",
+        "resizeAsImage": false,
         "lineHeight": 1,
         "placeholder": "Enter Text Here",
         "charSpacing": 0,
         "wrapText": false,
-        "text": "Nguyen\nTan\nVinh",
+        "text": "Clipping\nText",
+        "strokeWidth": 0,
+        "canReplaceImage": false,
+        "lockSize": false,
+        "lockStyle": false
+    },
+    "d78975": {
+        "elementKey": "d78975",
+        "sectionIndex": 1,
+        "left": 164.1652069091797,
+        "top": 78.21014404296875,
+        "type": "image",
+        "width": 720,
+        "height": 1080,
+        "asset": {
+            "selected": "AG01JGJE3997SJ4KMMVBWS5A5X31",
+            "available": [
+                "AG01JGJE3997SJ4KMMVBWS5A5X31"
+            ]
+        },
+        "transformMatrix": [
+            0.38751558645210277,
+            0.9218631515885001,
+            -0.9218631515885001,
+            0.38751558645210277,
+            966.7829984676468,
+            177.22523021680934
+        ],
+        "corjlFilters": [],
+        "backstage": {
+            "clipPath": {
+                "elementKey": "dc6f1a"
+            }
+        },
+        "angle": 67,
+        "scaleX": 1,
+        "scaleY": 1,
+        "cropX": 0,
+        "cropY": 0,
+        "originX": "left",
+        "originY": "top",
+        "flipX": false,
+        "flipY": false,
+        "opacity": 1,
+        "skewX": 0,
+        "skewY": 0,
+        "selectable": true,
+        "visible": true,
+        "isMakeClippingMask": false,
+        "crossOrigin": "anonymous",
+        "outsideArtboard": false,
+        "src": "https://dev.korjl.com/assets/org/GD01HHDVD004V53JAG0CM92CXE78/image/optimized/bc/bc3bc689054e0b17",
+        "thumbnail": "https://dev.korjl.com/assets/org/GD01HHDVD004V53JAG0CM92CXE78/image/thumb/d9/d917eb6784b4f550",
+        "clipPath": {
+            "elementKey": "dc6f1a"
+        },
+        "isError": false,
         "strokeWidth": 0,
         "canReplaceImage": false,
         "lockSize": false,

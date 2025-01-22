@@ -122,8 +122,10 @@ export class TextService {
 
   loadFont() {
     // const localPath = path.join(__dirname, '../fonts/font.woff');
+    // const localPath = path.join(__dirname, '../fonts/font_bug.woff');
+    const localPath = path.join(__dirname, '../fonts/font_1.woff');
     // const localPath = path.join(__dirname, '../fonts/wavsujv5preyca7l.woff');
-    const localPath = path.join(__dirname, '../fonts/7cvp1ivqus133n47_glyph.woff');
+    // const localPath = path.join(__dirname, '../fonts/7cvp1ivqus133n47_glyph.woff');
     const fontLoad = useFont().loadFontFromOpenTypeByLocalPath(localPath);
     if (!this.fontloadMap[this.object.fontFamily]) {
       this.fontloadMap[this.object.fontFamily] = { fontload: fontLoad };
@@ -643,8 +645,10 @@ export class TextService {
       filterTags: this.filterTags,
     }
     const textPathService = new TextPathService(newData);
-    const path = textPathService.getPaths();
-    callback && callback({ ...this.boundingElement, y: this.boundingElement.y - this.getDeltaBetweenTextTagAndBoundingBox() });
+    const path = textPathService.getPaths((res: any) => {
+      callback && callback(res);
+    });
+    // callback && callback({ ...this.boundingElement, y: this.boundingElement.y - this.getDeltaBetweenTextTagAndBoundingBox() });
     return {
       type: 'TEXT',
       elementTag: this.innerHTML,
