@@ -139,6 +139,13 @@ export const getImageParentTags = (html: string) => {
   return bodyHtml ?? [];
 }
 
+export const getTextStyleTags = (html: string) => {
+  const regix = new RegExp(`<g\\s+id="([^"]+)_canvas_group_text_style_([^"]+)"[^>]*>`, 'g');
+  let bodyHtml: string | string[] = html.replace(/\n/g, '');
+  bodyHtml = bodyHtml.match(regix) ?? [];
+  return bodyHtml ?? [];
+}
+
 export const getTextParentTags = (html: string) => {
   const regix = new RegExp(`<g\\s+id="([^"]+)_canvas_group_text_parent_([^"]+)"[^>]*>`, 'g');
   let bodyHtml: string | string[] = html.replace(/\n/g, '');
@@ -179,6 +186,48 @@ export const getTextParentsContent = (content: string, index = 'all') => {
     return matches[index] || '';
   }
   return matches;
+}
+
+export const getTextStylesContent = (content: string, index = 'all') => {
+  const regix = new RegExp(`<g\\s+id="([^"]+)_canvas_group_text_style_([^"]+)*"[^>]*>`, 'g');
+  let matches = [];
+  let match;
+
+  while ((match = regix.exec(content)) !== null) {
+    const startIndex = match.index;
+    const openTag = match[0];
+    let depth = 1;
+    let endIndex = startIndex + openTag.length;
+    // Find the corresponding closing </g> tag
+    while (depth > 0 && endIndex < content.length) {
+      const nextOpen = content.indexOf('<g', endIndex);
+      const nextClose = content.indexOf('</g>', endIndex);
+      if (nextClose === -1) {
+        break;
+      };
+      if (nextOpen !== -1 && nextOpen < nextClose) {
+        depth++;
+        endIndex = nextOpen + 4; // Move past the <svg
+      } else {
+        depth--;
+        endIndex = nextClose + 6; // Move past the </svg>
+      }
+    }
+    if (depth === 0) {
+      matches.push(content.substring(startIndex, endIndex));
+    }
+  }
+  if (typeof index === 'number') {
+    return matches[index] || '';
+  }
+  return matches;
+}
+
+export const getFilterUrl = (html: string) => {
+  const regix = new RegExp(`filter="([^"]+)"`, 'g');
+  let bodyHtml: string | string[] = html.replace(/\n/g, '');
+  bodyHtml = bodyHtml.match(regix) ?? [];
+  return bodyHtml ?? [];
 }
 
 export const getTextTags = (html: string) => {

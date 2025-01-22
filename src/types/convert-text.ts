@@ -87,6 +87,7 @@ export interface ITextPathServiceInput {
   fontloadMap: FontloadMap,
   deltaY: number,
   glyphsData: Array<GlyphData[]>,
+  filterTags?: string[],
 }
 
 export type FontloadMap = { [key: string]: { fontload: Font } }

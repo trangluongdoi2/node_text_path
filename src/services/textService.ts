@@ -31,6 +31,7 @@ export class TextService {
   lineHeightScale = 1;
   fontloadMap: Record<string, { fontload: Font }> = {};
   declare object: any;
+  declare filterTags: string[];
   declare textTagData: {
     content: string,
     params: Record<string, string | number>,
@@ -40,16 +41,19 @@ export class TextService {
     tspan: ['x', 'y', 'dx', 'dy'],
     text: ['x', 'y', 'textAnchor', 'transform', 'fontFamily', 'fontSize'],
   }
+  _pathContent: string;
 
-  constructor(innerHTML: string, outerHTML: string, object: any) {
-    this.outerHTML = outerHTML;
-    this.innerHTML = innerHTML;
+  constructor(html: { outerHTML: string, innerHTML: string }, object: any, filterTags: string[]) {
+    this.outerHTML = html.outerHTML;
+    this.innerHTML = html.innerHTML;
     this.object = { ...object };
     this.fontloadMap = {};
     this.textLines = {};
     this.textLines2 = [];
     this.__charBounds = {};
     this.tspanContents = [];
+    this.filterTags = filterTags;
+    // console.log(this.filterTags, '==> this.filterTags..');
     this.boundingElement = {
       x: 0,
       y: 0,
@@ -77,8 +81,6 @@ export class TextService {
   getTextLines() {
     this.textLinesArray = this.object.originalText.split('\n');
     this._textLines = this.textLinesArray.map((textLine: string) => textLine.split(''));
-    console.log(this.textLinesArray, '==> this.textLinesArray');
-    console.log(this._textLines, '==> this._textLines');
   }
 
   caculateCenterOfElementText({ x, y, angle }: { x: number, y: number, angle: number }) {
@@ -315,7 +317,7 @@ export class TextService {
 
   handleTspanContent2() {
     let top = -this.boundingElement.height / 2;
-    console.log(this.tspanContents, '==> this.tspanContents..');
+    // console.log(this.tspanContents, '==> this.tspanContents..');
     this.tspanContents.forEach((tspanData, lineIndex) => {
       // RELATIVE
       top += Number(tspanData.dy);
@@ -376,7 +378,7 @@ export class TextService {
       });
     });
 
-    console.log(this.textLines2, '==> this.textLines2...');
+    // console.log(this.textLines2, '==> this.textLines2...');
   }
 
   processTspanContent() {
@@ -638,10 +640,10 @@ export class TextService {
       fontloadMap: this.fontloadMap,
       deltaY: this.getDeltaBetweenTextTagAndBoundingBox(),
       glyphsData: this.glyphsData,
+      filterTags: this.filterTags,
     }
     const textPathService = new TextPathService(newData);
     const path = textPathService.getPaths();
-    console.log(this.boundingElement, '==> this.boundingElement...');
     callback && callback({ ...this.boundingElement, y: this.boundingElement.y - this.getDeltaBetweenTextTagAndBoundingBox() });
     return {
       type: 'TEXT',

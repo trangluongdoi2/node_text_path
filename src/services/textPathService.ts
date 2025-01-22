@@ -18,6 +18,7 @@ export class TextPathService {
   declare textLines: string[];
   declare _textLines: Array<string[]>;
   private glyphsData: Array<GlyphData[]>;
+  private filterTags: string[];
   ITALIC_ANGLE = 15;
   constructor(options: ITextPathServiceInput) {
     // this.charsMap = options.charsMap;
@@ -31,21 +32,26 @@ export class TextPathService {
       y: this.object.flipY ? -1 : 1,
     }
     this.glyphsData = options.glyphsData;
-    // this.getTextLines();
+    this.filterTags = options.filterTags || [];
   }
 
-  // private hasCharSpacing() {
-  //   return Boolean(this.object.charSpacing)
-  // }
+  private hasStroke() {
+    const { backstage } = this.object;
+    if (!Object.keys(backstage).length) {
+      return false;
+    }
+    const { stroke } = backstage;
+    return Boolean(stroke?.enabled);
+  }
 
-  // getTextLines() {
-  //   this._textLines = Object.entries(this.charsMap).map(([_, textLine]) => {
-  //     return Object.entries(textLine).map(([_, charData]) => {
-  //       return charData.char;
-  //     });
-  //   });
-  //   this.textLines = this._textLines.map((textLine) => textLine.join(''));
-  // }
+  private getStroke() {
+    const { backstage } = this.object;
+    if (!Object.keys(backstage).length) {
+      return null;
+    }
+    const { stroke } = backstage;
+    return stroke;
+  }
 
   getPathContent(path: any, transform: any) {
     if (!path.commands?.length) {
@@ -164,13 +170,13 @@ export class TextPathService {
   }
 
 
-  getGlyphPaths(): { multiPaths: string, singlePaths: string[] } {
+  getGlyphPaths(): { multiPaths: string, singlePath: string[] } {
     if (!this.glyphsData?.length) {
-      return { multiPaths: '', singlePaths: [] };
+      return { multiPaths: '', singlePath: [] };
     }
     const { angle = 0, scaleX = 1, scaleY = 1 } = this.object;
    
-    const singlePaths: string[] = [];
+    const singlePath: string[] = [];
     const multiPaths: string[] = [];
     for (const [lineIndex, textLine] of this.glyphsData.entries()) {
       for (const glyph of textLine) {
@@ -205,12 +211,12 @@ export class TextPathService {
           y: relativeTopNotRotate,
           isItalicStyle: fontStyle === 'italic',
         };
-        singlePaths.push(this.getDataPath(clone(glyph.path), transformNotRotate, lineIndex, glyph.charIndexStart));
+        singlePath.push(this.getDataPath(clone(glyph.path), transformNotRotate, lineIndex, glyph.charIndexStart));
       }
     }
     return {
       multiPaths: multiPaths.join(''),
-      singlePaths,
+      singlePath,
     }
   }
 
@@ -240,19 +246,82 @@ export class TextPathService {
   // }
 
   getTextPathsByGlyphs() {
-    const originalPaths: string[] = [];
-    const { multiPaths, singlePaths } = this.getGlyphPaths();
-    originalPaths.push(multiPaths);
+    const { multiPaths, singlePath } = this.getGlyphPaths();
     return {
-      path: originalPaths.join(''),
-      paths: singlePaths,
+      path: singlePath.join(''),
+      paths: multiPaths,
     }
   }
 
+  getOriginalCombineTextTransformContent() {
+    const { scaleX, scaleY } = this.object;
+    const { a, b, c, d } = getRotationMatrixRatios(this.object.angle);
+    const newA = a * scaleX * this.flip.x;
+    const newB = b * scaleX * this.flip.x;
+    const newC = c * scaleY * this.flip.y;
+    const newD = d * scaleY * this.flip.y;
+    const tx = this.boundingElement.cx;
+    const ty = this.boundingElement.cy;
+    const matrix = `matrix(${newA} ${newB} ${newC} ${newD} ${tx} ${ty})`;
+    return `transform="${matrix}"`;
+  }
+
+  getSvgStylesByObject(styles: { [key: string]: string | number }) {
+    const stylesContent = Object.keys(styles).map((key: string) => {
+      if (styles[key]) {
+        return `${key}: ${styles[key]};`
+      }
+    }).filter(part => part).join('');
+    return `style="${stylesContent}"`;
+  }
+
+  getStrokeStyles() {
+    const stroke = this.getStroke();
+    if (!stroke) {
+      return '';
+    }
+    const { color, width, opacity } = stroke;
+    const styles: { [key: string]: string | number } = {
+      stroke: color,
+      'stroke-width': width * 2,
+      'stroke-opacity': opacity / 100,
+    }
+    return this.getSvgStylesByObject(styles);
+  }
+
+  getStrokeContent(path: string) {
+    if (!this.hasStroke()) {
+      return '';
+    }
+    const strokeStyles = this.getStrokeStyles();
+    console.log(strokeStyles, '==> strokeStyles');
+    return `
+      <g ${this.getOriginalCombineTextTransformContent()} ${strokeStyles}>
+        <path d="${path}" />
+      </g>
+    `
+  }
+
+  getCombinePathContent() {
+    const { path, paths } = this.getTextPathsByGlyphs();
+    const filterPaths = this.filterTags?.map((filterTag: string) => `
+      <g ${this.getOriginalCombineTextTransformContent()} ${filterTag}>
+        <path d="${path}" />
+      </g>
+    `).join(' ');
+    console.log(this.filterTags, '==> this.filterTags');
+    return `
+      ${filterPaths}
+      ${this.getStrokeContent(path)}
+      <g ${this.getOriginalCombineTextTransformContent()}>
+        <path d="${path}" />
+      </g>
+      ${paths}
+    `;
+  }
+
   getPaths() {
-    // this.getTextPaths();
-    const res = this.getTextPathsByGlyphs();
-    const { path, paths } = res;
-    return path;
+    const res = this.getCombinePathContent();
+    return res;
   }
 }

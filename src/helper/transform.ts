@@ -133,7 +133,6 @@ export const useCaculateTransform = () => {
       flipX: element.flipX,
       flipY: element.flipY,
     };
-    console.log(options, '==> options..');
     const currentT = composeMatrix(options);
     const { transformMatrix = [1, 0, 0, 1, 0, 0] } = element;
     const mT = multiplyTransformMatrices(transformMatrix, currentT);

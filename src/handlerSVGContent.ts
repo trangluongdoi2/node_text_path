@@ -19,6 +19,9 @@ import {
   getImageParentTags,
   getClipPathId,
   removeDOCTYPE,
+  getTextStyleTags,
+  getTextStylesContent,
+  getFilterUrl,
 } from './utils-svg';
 import { Page } from 'puppeteer-core';
 import PotraceService from './services/potraceService';
@@ -81,7 +84,7 @@ class HandlerSVGContent {
     const { window } = new JSDOM(this.svgContent);
     this.elements = [...window.document.getElementsByClassName('not-select') as any];
     this.groupElement = window.document.getElementsByClassName('group_elements')[0];
-    // this.boundingElements = [];
+    // this.boundingElements = []; 
   }
 
   isTextElement(elementHtml: string) {
@@ -295,6 +298,11 @@ class HandlerSVGContent {
     return currentData;
   }
 
+  getAllFilterTags() {
+    // const filterTags = getFilterGradientTags(this.svgContent);
+    // return filterTags;
+  }
+
   async export() {
     const bleedSize = this.getBleedSize();
     const col = 1;
@@ -312,7 +320,9 @@ class HandlerSVGContent {
         const { innerHTML, outerHTML } = element;
         if (this.isTextElement(innerHTML)) {
           const elementData = this.getMasterElementByElementKey(innerHTML);
-          const textPathService = new TextService(innerHTML, outerHTML, elementData)
+          const textStyleTags = (getTextStylesContent(innerHTML) || []) as string[];
+          const filterTags = getFilterUrl(textStyleTags.join(''));
+          const textPathService = new TextService({ outerHTML, innerHTML }, elementData, filterTags);
           const res = textPathService.exportPath((boundingRect: BoundingElement) => {
             boundingRects.push(boundingRect);
           });
@@ -334,6 +344,9 @@ class HandlerSVGContent {
       switch (element.type) {
         case 'TEXT': {
           elementTag = elementTag.replace(/&nbsp;/g, ' ');
+          // console.log(elementTag, '==> elementTag...');
+          // const textStyleTags = getTextStyleTags(elementTag);
+          // console.log(textStyleTags, '==> textStyleTags...');
           this.svgContent = this.svgContent.replace(elementTag, path);
         }
           break;
