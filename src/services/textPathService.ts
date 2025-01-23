@@ -25,7 +25,7 @@ export class TextPathService {
     this.object = options.object;
     this.boundingElement = options.boundingElement;
     this.fontloadMap = options.fontloadMap;
-    this.deltaY = options.deltaY;
+    // this.deltaY = options.deltaY;
     this.paths = '';
     this.flip = {
       x: this.object.flipX ? -1 : 1,
@@ -36,8 +36,8 @@ export class TextPathService {
   }
 
   private hasStroke() {
-    const { backstage } = this.object;
-    if (!Object.keys(backstage).length) {
+    const { backstage = {} } = this.object;
+    if (!Object.keys(backstage)?.length) {
       return false;
     }
     const { stroke } = backstage;
@@ -45,8 +45,8 @@ export class TextPathService {
   }
 
   private getStroke() {
-    const { backstage } = this.object;
-    if (!Object.keys(backstage).length) {
+    const { backstage = {} } = this.object;
+    if (!Object.keys(backstage)?.length) {
       return null;
     }
     const { stroke } = backstage;
@@ -295,11 +295,6 @@ export class TextPathService {
       content: res,
       purePathContent,
     }
-    // return `
-    //   <g ${this.getOriginalCombineTextTransformContent()}>
-    //     <path d="${path}" />
-    //   </g>
-    // `;
   }
 
   getPaths(callback?: Function) {

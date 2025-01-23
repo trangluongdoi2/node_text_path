@@ -59,12 +59,12 @@
             ]
         },
         "transformMatrix": [
-            -0.5948227867513411,
-            0.8038568606172167,
-            -0.8038568606172167,
-            -0.5948227867513411,
-            2115.4090270532342,
-            870.313101434029
+            0.9999999999999996,
+            -2.220446049250313e-16,
+            2.220446049250313e-16,
+            0.9999999999999996,
+            -324.0420036346004,
+            -298.0894773081926
         ],
         "fontFamily": "font-ptlxvvrkph",
         "fontloadMap": {
@@ -76,7 +76,6 @@
         "backstage": {
             "corjl1Styles": {}
         },
-        "angle": 127,
         "scaleX": 1,
         "scaleY": 1,
         "cropX": 0,
@@ -86,6 +85,7 @@
         "flipX": false,
         "flipY": false,
         "opacity": 1,
+        "angle": 0,
         "skewX": 0,
         "skewY": 0,
         "fill": "#000000",
@@ -125,16 +125,34 @@
             0.9218631515885001,
             -0.9218631515885001,
             0.38751558645210277,
-            966.7829984676468,
-            177.22523021680934
+            932.4009759957368,
+            205.87691561006784
         ],
         "corjlFilters": [],
         "backstage": {
             "clipPath": {
                 "elementKey": "dc6f1a"
+            },
+            "contrast": {
+                "enabled": false,
+                "value": -12
+            },
+            "shadow": {
+                "enabled": false,
+                "color": "#000000",
+                "blur": 10,
+                "angle": 0,
+                "distance": 1,
+                "opacity": 100
+            },
+            "stroke": {
+                "enabled": false,
+                "color": "#E02020",
+                "opacity": 100,
+                "width": 23
             }
         },
-        "angle": 67,
+        "angle": 67.19999999999999,
         "scaleX": 1,
         "scaleY": 1,
         "cropX": 0,

@@ -85,7 +85,7 @@ export interface ITextPathServiceInput {
   boundingElement: BoundingElement,
   object: any,
   fontloadMap: FontloadMap,
-  deltaY: number,
+  // deltaY: number,
   glyphsData: Array<GlyphData[]>,
   filterTags?: string[],
 }
@@ -156,4 +156,14 @@ export interface GlyphData {
 
 export interface TextPath {
   commands: PathCommand[];
+}
+
+export interface ISectionSettings {
+  showBleed: boolean,
+  pageWidth: number;
+  pageHeight: number;
+  sectionWidth: number;
+  sectionHeight: number;
+  pageBleed: number;
+  sectionIndex: number
 }

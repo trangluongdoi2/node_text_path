@@ -10,6 +10,10 @@
 // // console.log(newMat, '==> newMat...');
 // // console.log(resultMath, '==> resultMath...');
 
+import { degreesToRadians } from "./helper/math";
+import { Point } from "./helper/point";
+import { getRotationMatrixRatios } from "./utils-svg";
+
 // const positionMatrix = math.matrix([[332.5307041694384], [66.33973670186208]]);
 // const result2 = math.subtract(positionMatrix, math.multiply(newMat1, newMat2));
 
@@ -29,5 +33,22 @@
 // const result2 = math.subtract(positionMatrix, math.multiply(newMat1, newMat2));
 
 
-const a = -100 / 2 || 0;
-console.log(a, '== a');
+// const a = -100 / 2 || 0;
+// console.log(a, '== a');
+
+import * as math from 'mathjs';
+
+const angle = 67.19999999999999;
+const { a, b, c, d } = getRotationMatrixRatios(angle);
+const tx = {
+  x: 736.4053863352294,
+  y: 76.56358443753766
+}
+const centerImage = new Point(967.3549092636106, 1020.7053536960773);
+const radians = degreesToRadians(-2 * angle);
+const p1 = new Point(tx.x, tx.y);
+const p2 = p1.rotate(radians, centerImage);
+console.log(p2, '==> p2...');
+// const p2 = new Point(tx.x + 100, tx.y + 100);
+const transformMatrix = math.matrix([[a, c], [b, d], [tx.x, tx.y]]);
+console.log(transformMatrix, '==> transformMatrix...');

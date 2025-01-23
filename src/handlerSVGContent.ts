@@ -26,6 +26,7 @@ import {
 import { Page } from 'puppeteer-core';
 import PotraceService from './services/potraceService';
 import { BoundingElement } from './types/convert-text';
+import { TextClippingPath } from './services/textClippingPathService';
 
 class HandlerSVGContent {
   private svgContent: string;
@@ -42,6 +43,8 @@ class HandlerSVGContent {
   private data: any;
   private filterGradientTags: string[];
   private shapeClipPaths: string[];
+  private shapeClipPathsByText: string[];
+  private shapeClipPathsExluceText: string[];
 
   constructor(svgContent: string, data: any, page?: Page) {
     this.configs = {
@@ -54,9 +57,8 @@ class HandlerSVGContent {
     this.shapeRectangles = getShapeRectanglesTag(svgContent);
     this.filterGradientTags = getFilterGradientTags(svgContent) as string[];
     this.shapeClipPaths = getShapeClipPathTags(getContentByTag(svgContent, 'defs')?.[0] || '') as string[];
-
-    console.log(this.shapeClipPaths, '==> this.shapeClipPaths...');
-
+    this.shapeClipPathsExluceText = this.shapeClipPaths.filter((shapeClipPath) => !shapeClipPath.includes('text'));
+    this.shapeClipPathsByText = this.shapeClipPaths.filter((shapeClipPath) => shapeClipPath.includes('text'));
     this.data = Object.values(data);
 
     if (this.filterGradientTags?.length) {
@@ -76,18 +78,30 @@ class HandlerSVGContent {
       });
     }
 
-    if (this.shapeClipPaths?.length) {
-      this.shapeClipPaths.forEach((shapeClipPath, index) => {
-        svgContent = svgContent.replace(shapeClipPath, `##shapeClipPaths${index}##`);
+    // if (this.shapeClipPaths?.length) {
+    //   this.shapeClipPaths.forEach((shapeClipPath, index) => {
+    //     svgContent = svgContent.replace(shapeClipPath, `##shapeClipPaths${index}##`);
+    //   });
+    // }
+
+    if (this.shapeClipPathsByText?.length) {
+      this.shapeClipPathsByText.forEach((shapeClipPath, index) => {
+        svgContent = svgContent.replace(shapeClipPath, `##shapeClipPathsByText${index}##`);
       });
     }
-    // svgContent = svgContent.replace(/<rect(.*?)<\/rect>/g, '');
+      
+    if (this.shapeClipPathsExluceText?.length) {
+      this.shapeClipPathsExluceText.forEach((shapeClipPath, index) => {
+        svgContent = svgContent.replace(shapeClipPath, `##shapeClipPathsExluceText${index}##`);
+      });
+    }
+
+    svgContent = svgContent.replace(/<rect(.*?)<\/rect>/g, '');
     this.svgContent = svgContent;
     this.backupSvgContent = svgContent;
     const { window } = new JSDOM(this.svgContent);
-    this.elements = [...window.document.getElementsByClassName('not-select') as any];
+    this.elements = [...window.document.getElementsByClassName('not-select')];
     this.groupElement = window.document.getElementsByClassName('group_elements')[0];
-    // this.boundingElements = []; 
   }
 
   isTextElement(elementHtml: string) {
@@ -227,19 +241,28 @@ class HandlerSVGContent {
   // }
 
   convertShape(svgContent: string) {
-    if (!this.shapeRectangles?.length) {
-      return svgContent;
-    }
+    // if (!this.shapeClipPaths?.length) {
+    //   return svgContent;
+    // }
+    // this.shapeClipPaths.forEach((shapeClipPath, index) => {
+    //   svgContent = svgContent.replace(`##shapeClipPaths${index}##`, shapeClipPath);
+    // });
+
+    this.shapeClipPathsByText.forEach((shapeClipPath, index) => {
+      svgContent = svgContent.replace(`##shapeClipPathsByText${index}##`, shapeClipPath);
+    });
+
+    this.shapeClipPathsExluceText.forEach((shapeClipPath, index) => {
+      svgContent = svgContent.replace(`##shapeClipPathsExluceText${index}##`, shapeClipPath);
+    });
+
+    // if (!this.shapeRectangles?.length) {
+    //   return svgContent;
+    // }
     this.shapeRectangles.forEach((shapeRectangle, index) => {
       svgContent = svgContent.replace(`##shapeRectangles${index}##`, shapeRectangle);
     });
 
-    if (!this.shapeClipPaths?.length) {
-      return svgContent;
-    }
-    this.shapeClipPaths.forEach((shapeClipPath, index) => {
-      svgContent = svgContent.replace(`##shapeClipPaths${index}##`, shapeClipPath);
-    });
 
     return svgContent;
   }
@@ -291,20 +314,25 @@ class HandlerSVGContent {
   updateTransformClippingPathWithBleedSize(outerHTML: string, {
     col = 1,
     row = 1,
-    bleedSize = 37.5,
+    // bleedSize = 37.5,
+    bleedSize = 0,
   }) {
     const clipPathId = getClipPathId(outerHTML);
-    let selectClipPath = this.shapeClipPaths.find(shapeClipPath => shapeClipPath.match(clipPathId)) as string;
-    const selectClipPathIndex = this.shapeClipPaths.findIndex(shapeClipPath => shapeClipPath.match(clipPathId));
+    let selectClipPath = this.shapeClipPathsExluceText.find(shapeClipPath => shapeClipPath.match(clipPathId)) as string;
+    // console.log(selectClipPath, '==> selectClipPath...');
+    const selectClipPathIndex = this.shapeClipPathsExluceText.findIndex(shapeClipPath => shapeClipPath.match(clipPathId));
     if (selectClipPath && selectClipPathIndex !== -1) {
       // @ts-ignore
       const transform = getMatrixFromTransform(selectClipPath.match(/transform="[^"]*"/)?.[0]);
-      const translateX = col === 1 ? bleedSize : 0;
-      const translateY = row === 1 ? bleedSize : 0;
+      // const translateX = col === 1 ? bleedSize : 0;
+      // const translateY = row === 1 ? bleedSize : 0;
+      const translateX = 0;
+      const translateY = 0;
+      // console.log(translateX, translateY, '==> translateX, translateY...');
       transform[4] = transform[4] + translateX;
       transform[5] = transform[5] + translateY;
       selectClipPath = selectClipPath.replace(/transform="[^"]*"/, `transform="matrix(${transform.join(',')})"`);
-      this.svgContent = this.svgContent.replace(`##shapeClipPaths${selectClipPathIndex}##`, selectClipPath);
+      this.svgContent = this.svgContent.replace(`##shapeClipPathsExluceText${selectClipPathIndex}##`, selectClipPath);
     }
   }
 
@@ -312,7 +340,7 @@ class HandlerSVGContent {
     return `<rect width="100%" height="100%" fill="red" x="0" y="0"/>`;
   }
 
-  getMasterElementByElementKey(innerHTML: string) {
+  getMasterElement(innerHTML: string) {
     const currentData = this.data.find((item: any) => innerHTML.includes(item.elementKey));
     return currentData;
   }
@@ -327,14 +355,24 @@ class HandlerSVGContent {
     const match = html.match(regex);
     return match ? match[1] : '';
   }
-  
 
   convertClippingPathText(index: number, elementTag: string, outerHTML: string) {
+    // console.log('==> convertClippingPathText..');
     const outerHtmlByClipPath: string = this.elements[index + 1]?.outerHTML || '';
+    const innerHtmlByClipPath: string = this.elements[index + 1]?.innerHTML || '';
     const clippingMaskTag = this.isClipPath(outerHtmlByClipPath) ? outerHtmlByClipPath : '';
-    // console.log(outerHtmlByClipPath, '==> outerHtmlByClipPath...');
-    // console.log(clippingMaskTag.slice(0, 500), '==> clippingMaskTag...');
-    // console.log(elementTag, 'elementTag');
+    const innerClippingMaskTag = clippingMaskTag ? innerHtmlByClipPath : '';
+    const masterElementClippingPath = this.getMasterElement(clippingMaskTag);
+    // console.log(masterElementClippingPath, '==> masterElementClippingPath..');
+
+    const textClippingPathService = new TextClippingPath({
+      html: { outerHTML: outerHtmlByClipPath, innerHTML: innerClippingMaskTag },
+      data: { masterElement: masterElementClippingPath }
+    });
+
+    const res2 = textClippingPathService.getNewClippingMaskContent();
+    console.log(res2, 'res2...');
+    // console.log(textClippingPathService, '==> textClippingPathService...');
 
     const imageClipPathTag = getContentByTag(clippingMaskTag, 'image')?.[0] || '';
     const styleImageClipPathTag = getElemAttributesByImage(imageClipPathTag);
@@ -344,30 +382,28 @@ class HandlerSVGContent {
       'opacity: 0',
     ];
 
-    if (displayNone.some((style: string) => (styleImageClipPathTag?.style || '').includes(style))) {
-      this.elements.splice(index + 1, 1);
-      const masterElement = this.getMasterElementByElementKey(elementTag);
-      const textStyleTags = (getTextStylesContent(elementTag) || []) as string[];
-      const filterTags = getFilterUrl(textStyleTags.join(''));
-      const textPathService = new TextService({ outerHTML, innerHTML: elementTag }, masterElement, filterTags);
-      const res = textPathService.exportPath();
-      return res;
-    }
-
-    const masterElement = this.getMasterElementByElementKey(elementTag);
+    const masterElement = this.getMasterElement(elementTag);
     const textStyleTags = (getTextStylesContent(elementTag) || []) as string[];
     const filterTags = getFilterUrl(textStyleTags.join(''));
-    const textPathService = new TextService({ outerHTML, innerHTML: elementTag }, masterElement, filterTags);
+    const textPathService = new TextService({
+      html: { outerHTML, innerHTML: elementTag },
+      data: { masterElement, filterTags }
+    });
     let newTransform = '';
     let pureContentPath = '';
     const res = textPathService.exportPath((res: any) => {
       pureContentPath = res.path;
       newTransform = res.transform;
     });
-    console.log(newTransform, '==> newTransform...');
+    if (displayNone.some((style: string) => (styleImageClipPathTag?.style || '').includes(style))) {
+      this.elements.splice(index + 1, 1);
+      return res;
+    }
+
+    // console.log(newTransform, '==> newTransform...');
     const clipPathId = this.getClipPathId(outerHtmlByClipPath);
-    let selectClipPath = this.shapeClipPaths.find(shapeClipPath => shapeClipPath.match(clipPathId));
-    const selectClipPathIndex = this.shapeClipPaths.findIndex(shapeClipPath => shapeClipPath.match(clipPathId));
+    let selectClipPath = this.shapeClipPathsByText.find(shapeClipPath => shapeClipPath.match(clipPathId));
+    const selectClipPathIndex = this.shapeClipPathsByText.findIndex(shapeClipPath => shapeClipPath.match(clipPathId));
     if (selectClipPath && selectClipPathIndex !== -1) {
       // const newTransform = 'transform="matrix(1,0,0,1,0,0)"';
       const textTag = getContentByTag(selectClipPath, 'text')?.[0] || '';
@@ -375,8 +411,10 @@ class HandlerSVGContent {
 
       // May be consider for bleed translate
       selectClipPath = selectClipPath.replace(/transform="[^"]*"/, newTransform);
-      this.svgContent = this.svgContent.replace(`##shapeClipPaths${selectClipPathIndex}##`, selectClipPath);
+      this.svgContent = this.svgContent.replace(`##shapeClipPathsByText${selectClipPathIndex}##`, selectClipPath);
     }
+
+    // Need replace clippingMaskTag by new!!
 
     return {
       ...res,
@@ -395,13 +433,11 @@ class HandlerSVGContent {
     formatSVGContent = window.document.body.innerHTML;
     this.svgContent = formatSVGContent;
 
-    const boundingRects: BoundingElement[] = [];
-
     const elementsResult = await Promise.all(
       this.elements.map((element, index) => {
         const { innerHTML, outerHTML } = element;
         if (this.isTextElement(innerHTML)) {
-          const masterElement = this.getMasterElementByElementKey(innerHTML);
+          const masterElement = this.getMasterElement(innerHTML);
           if (this.isCurvedText(masterElement)) {
             return {
               type: 'TEXT',
@@ -414,10 +450,11 @@ class HandlerSVGContent {
           }
           const textStyleTags = (getTextStylesContent(innerHTML) || []) as string[];
           const filterTags = getFilterUrl(textStyleTags.join(''));
-          const textPathService = new TextService({ outerHTML, innerHTML }, masterElement, filterTags);
-          const res = textPathService.exportPath((boundingRect: BoundingElement) => {
-            boundingRects.push(boundingRect);
-          });
+          const textPathService = new TextService({
+            html: { outerHTML, innerHTML },
+            data: { masterElement, filterTags }
+        });
+          const res = textPathService.exportPath();
           return res;
         }
         if (this.isImageElement(innerHTML)) {
@@ -434,13 +471,10 @@ class HandlerSVGContent {
 
       let { elementTag, path, clippingMaskTag } = element as any;
       switch (element.type) {
-        case 'TEXT': {
-          elementTag = elementTag.replace(/&nbsp;/g, ' ');
+        case 'TEXT': 
           this.svgContent = this.svgContent.replace(elementTag, path);
-        }
           break;
         case 'TEXT_CLIP_PATH':
-          console.log('Case TEXT_CLIP_PATH 99...');
           this.svgContent = this.svgContent.replace(elementTag, path);
           break;
         case 'IMAGE':
@@ -467,29 +501,28 @@ class HandlerSVGContent {
     // });
 
     this.svgContent = this.svgContent.replace(/&nbsp;/g, ' ');
-    this.svgContent = this.svgContent.replace(/<rect(.*?)<\/rect>/g, '');
+    // this.svgContent = this.svgContent.replace(/<rect(.*?)<\/rect>/g, '');
+    this.svgContent = this.convertBackground(this.svgContent);
+    this.svgContent = this.convertShape(this.svgContent);
     this.svgContent = this.convertFillTransparent(this.svgContent);
     this.svgContent = this.fixAdobeTag(this.svgContent);
-    this.svgContent = this.convertShape(this.svgContent);
-    this.svgContent = this.convertBackground(this.svgContent);
-    // console.log(this.groupElement, '==> this.groupElement');
 
     // Draw bounding rect for text element
-    const { window: newWindow } = new JSDOM(this.svgContent);
-    const groupElement = newWindow.document.getElementsByClassName('group_elements')[0];
-    boundingRects.forEach((boundingRect) => {
-      const rect = window.document.createElement('rect');
-      const { x, y, width, height } = boundingRect;
-      rect.setAttribute('width', `${width}px`);
-      rect.setAttribute('height', `${height}px`);
-      rect.setAttribute('fill', 'red');
-      rect.setAttribute('stroke', '10px');
-      rect.setAttribute('opacity', '0.1');
-      rect.setAttribute('x', `${x}px`);
-      rect.setAttribute('y', `${y}px`);
-      groupElement.appendChild(rect);
-    });
-    this.svgContent = newWindow.document.body.innerHTML;
+    // const { window: newWindow } = new JSDOM(this.svgContent);
+    // const groupElement = newWindow.document.getElementsByClassName('group_elements')[0];
+    // boundingRects.forEach((boundingRect) => {
+    //   const rect = window.document.createElement('rect');
+    //   const { x, y, width, height } = boundingRect;
+    //   rect.setAttribute('width', `${width}px`);
+    //   rect.setAttribute('height', `${height}px`);
+    //   rect.setAttribute('fill', 'red');
+    //   rect.setAttribute('stroke', '10px');
+    //   rect.setAttribute('opacity', '0.1');
+    //   rect.setAttribute('x', `${x}px`);
+    //   rect.setAttribute('y', `${y}px`);
+    //   groupElement.appendChild(rect);
+    // });
+    // this.svgContent = newWindow.document.body.innerHTML;
     // this.svgContent = this.svgContent.replace(/<rect(.*?)<\/rect>/g, '');
     return this.svgContent;
   }

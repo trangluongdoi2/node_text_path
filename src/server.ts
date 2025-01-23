@@ -35,7 +35,7 @@ app.post('/api/post-html', (req: Request, res: Response) => {
 });
 
 app.use('/', async (req: Request, res: Response) => {
-  let svgContent = fs.readFileSync(path.join(__dirname, './files/input_text.svg'), 'utf8');
+  let svgContent = fs.readFileSync(path.join(__dirname, './files/input_text_2.svg'), 'utf8');
   function preProcessSVG(svgContent: string) {
     const dom = new JSDOM(svgContent);
     const { window } = dom;
