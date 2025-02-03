@@ -8,6 +8,7 @@ import { HTMLService } from './services/htmlService';
 import HandlerSVGContent from './handlerSVGContent';
 import { ChromiumHandler } from './chromium/chromiumHandler';
 import { Page } from 'puppeteer-core';
+import ExportSVGFilterService from './services/svgFilter';
 
 const PORT = 3000;
 const app = express();
@@ -59,8 +60,13 @@ app.use('/', async (req: Request, res: Response) => {
   const data = fs.readFileSync(path.join(__dirname, './data/index_3.json'), 'utf8');
   const handlerSVGContent = new HandlerSVGContent(svgContent.replace(/\s+/g, ' '), JSON.parse(data));
   const output = await handlerSVGContent.export();
-  res.render('index', { input: svgContent, output });
-  fs.writeFileSync(path.join(__dirname, './files/output_text.svg'), output);
+  // res.render('index', { input: svgContent, output });
+  // fs.writeFileSync(path.join(__dirname, './files/output_text.svg'), output);
+  const svgFilter = new ExportSVGFilterService(output);
+  const newOutput = await svgFilter.export();
+  // console.log(newOutput, '==> newOutput...');
+  fs.writeFileSync(path.join(__dirname, './files/output_text.svg'), newOutput);
+  res.render('index', { input: svgContent, output: newOutput });
   console.log('Write file output_text.svg SUCCESS!!!');
 });
 

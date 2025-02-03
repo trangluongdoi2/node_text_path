@@ -137,9 +137,10 @@ export class TextService {
   loadFont() {
     // const localPath = path.join(__dirname, '../fonts/font.woff');
     // const localPath = path.join(__dirname, '../fonts/font_bug.woff');
-    const localPath = path.join(__dirname, '../fonts/font_1.woff');
+    // const localPath = path.join(__dirname, '../fonts/font_1.woff');
     // const localPath = path.join(__dirname, '../fonts/wavsujv5preyca7l.woff');
     // const localPath = path.join(__dirname, '../fonts/7cvp1ivqus133n47_glyph.woff');
+    const localPath = path.join(__dirname, '../fonts/rloq4egbh7fl8rw0.woff');
     const fontLoad = useFont().loadFontFromOpenTypeByLocalPath(localPath);
     if (!this.fontloadMap[this.object.fontFamily]) {
       this.fontloadMap[this.object.fontFamily] = { fontload: fontLoad };
@@ -174,18 +175,21 @@ export class TextService {
   }
 
   getAdvanceWidthOfTextLine() {
+    // console.log(this.textLines2, '==> getAdvanceWidthOfTextLine()');
     const advanceWidths: number[] = [];
+    // console.log(this._textLines, 'getAdvanceWidthOfTextLine()');
+
     this.tspanContents.forEach((tspanData, lineIndex) => {
       let advanceWidth = 0;
-      const charsEachLine = tspanData.text.split('');
-      const widthSpacing = ((charsEachLine.length - 1) || 0) * this._getWidthOfCharSpacing();
-      charsEachLine.forEach((char: string, charIndex: number) => {
-        const fontSize = this.getValueOfPropertyAt(lineIndex, charIndex, 'fontSize');
-        const fontFamily = this.getValueOfPropertyAt(lineIndex, charIndex, 'fontFamily');
-        const fontload = this.fontloadMap[fontFamily].fontload;
-        advanceWidth += fontload.getAdvanceWidth(char, fontSize);
+      // const charsEachLine = tspanData.split('');
+      // const widthSpacing = ((tspanData.text.length - 1) || 0) * this._getWidthOfCharSpacing();
+      tspanData.text.split('').forEach((char: string, charIndex: number) => {
+        // const fontSize = this.getValueOfPropertyAt(lineIndex, charIndex, 'fontSize');
+        // const fontFamily = this.getValueOfPropertyAt(lineIndex, charIndex, 'fontFamily');
+        // const fontload = this.fontloadMap[fontFamily].fontload;
+        advanceWidth += this.textLines2[lineIndex][charIndex].kernedWidth;
       });
-      advanceWidth += widthSpacing;
+      // advanceWidth += widthSpacing;
       advanceWidths.push(advanceWidth);
     });
     return advanceWidths;
@@ -200,6 +204,7 @@ export class TextService {
   }
 
   measureLine(lineIndex: number) {
+    console.log('measureLine()');
     const lineWidth = this.getAdvanceWidthOfTextLine()[lineIndex];
     return lineWidth;
   }
@@ -380,6 +385,7 @@ export class TextService {
           top,
           left,
           width,
+          kernedWidth,
         });
       });
     });
@@ -388,12 +394,10 @@ export class TextService {
 
     this.textLines2.forEach((line, lineIndex) => {
       const leftLineOffset = this._getLineLeftOffset(lineIndex);
-      line.forEach((char, charIndex) => {
+      line.forEach(char => {
         char.left += letfOffset + leftLineOffset;
       });
     });
-
-    // console.log(this.textLines2, '==> this.textLines2...');
   }
 
   processTspanContent() {

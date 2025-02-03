@@ -146,6 +146,7 @@ export class TextClippingPath {
     }
 
     console.log(translateText, '==> translateText...');
+
     const translateFinal = {
       x: translateImage.x + translateText.x,
       y: translateImage.y + translateText.y

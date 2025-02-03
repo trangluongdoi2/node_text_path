@@ -61,6 +61,7 @@ export type RenderCharInfo = {
   top: number,
   left: number,
   width: number,
+  kernedWidth: number,
   // dyNew: number,
 }
 

@@ -3,22 +3,22 @@
         "name": "Background",
         "type": "background",
         "elementKey": "bg-1",
-        "typeBackground": "color",
         "sectionIndex": 1,
         "left": 0,
         "top": 0,
-        "fill": "#DFDFDF",
         "assetConfigs": [],
         "behavior": "fill-canvas",
         "width": 0,
         "height": 0,
-        "noImage": true,
+        "noImage": false,
+        "typeBackground": "color",
         "backstage": {
             "fill": {
-                "value": "#DFDFDF",
+                "value": "#BEACAC",
                 "enabled": true
             }
         },
+        "fill": "#BEACAC",
         "scaleX": 1,
         "scaleY": 1,
         "cropX": 0,
@@ -42,40 +42,143 @@
         "lockSize": false,
         "lockStyle": false
     },
-    "dc6f1a": {
-        "elementKey": "dc6f1a",
-        "sectionIndex": 1,
-        "originalText": "Clipping\nText",
-        "left": 429.77525384540405,
-        "fontSize": 314.2611649517904,
-        "width": 990.9770801998169,
-        "height": 620.8385620117188,
-        "top": 900.4354529220068,
+    "1b0de1": {
         "type": "textbox",
-        "asset": {
-            "selected": "AF01J3PFV429770TKBA751TP04AC",
-            "available": [
-                "AF01J3PFV429770TKBA751TP04AC"
-            ]
-        },
+        "elementKey": "1b0de1",
+        "sectionIndex": 1,
+        "lockByDesigner": false,
+        "lockByCustomer": false,
+        "left": 342.3395633454,
+        "top": 448.38400268555,
+        "width": 1420.041051888971,
+        "height": 657.4918212890625,
+        "alwaysOnTop": false,
         "transformMatrix": [
-            0.9999999999999996,
-            -2.220446049250313e-16,
-            2.220446049250313e-16,
-            0.9999999999999996,
-            -324.0420036346004,
-            -298.0894773081926
+            1,
+            0,
+            0,
+            1,
+            -535.1361806658022,
+            962.8981487329258
         ],
-        "fontFamily": "font-ptlxvvrkph",
-        "fontloadMap": {
-            "font-ptlxvvrkph": {
-                "assetId": "AF01J3PFV429770TKBA751TP04AC"
+        "hideInDownload": false,
+        "protection": {
+            "elementSettings": {
+                "customerHiddenLayers": false,
+                "requireText": false,
+                "lockSize": false,
+                "lockColor": false,
+                "lockFont": false,
+                "lockText": false,
+                "lockStyle": false,
+                "lockResizeAsImage": false
             }
         },
+        "name": null,
+        "originalText": "HELLO",
+        "asset": {
+            "selected": "AF01HHEEKT9W92QVW7T287A44B22",
+            "selectedStyles": [
+                "AF01HHEEKT9W92QVW7T287A44B22"
+            ],
+            "available": [
+                "AF01HHEEKT9W92QVW7T287A44B22"
+            ]
+        },
+        "uppercase": false,
+        "underline": false,
+        "linethrough": false,
+        "fill": "#157434",
+        "fontFamily": "font-xlr26csu9m",
+        "fontSize": 495.834375,
+        "fontWeight": "normal",
+        "fontStyle": "normal",
+        "globalCompositeOperation": "",
         "styles": {},
         "backstage": {
-            "corjl1Styles": {}
+            "stroke": {
+                "enabled": false,
+                "width": 10,
+                "color": "#000000",
+                "opacity": 100
+            },
+            "shadow": {
+                "enabled": false,
+                "color": "#000000",
+                "blur": 10,
+                "offsetX": 10,
+                "offsetY": 0,
+                "distance": 10,
+                "angle": 0
+            },
+            "outerGlow": {
+                "enabled": false,
+                "color": "#000000",
+                "blur": 10
+            },
+            "gradient": {
+                "enabled": false,
+                "colorStops": [
+                    {
+                        "color": "#000000",
+                        "opacity": 100
+                    },
+                    {
+                        "color": "#000000",
+                        "opacity": 100
+                    }
+                ],
+                "deg": 0,
+                "gradientUnits": "percentage",
+                "type": "linear"
+            },
+            "curved": {
+                "enabled": false,
+                "type": "circle",
+                "degrees": 50,
+                "position": "DOWN"
+            },
+            "opacity": {
+                "enabled": false,
+                "value": 100
+            },
+            "rotation": {
+                "enabled": false,
+                "value": 0
+            },
+            "corjl1Styles": {
+                "enabled": true,
+                "fontFileInfo": {
+                    "unitsPerEm": 2048,
+                    "ascender": 2193,
+                    "descender": -538
+                },
+                "textLines": [
+                    "HELLO"
+                ]
+            }
         },
+        "fontloadMap": {
+            "font-xlr26csu9m": {
+                "assetId": "AF01HHEEKT9W92QVW7T287A44B22"
+            }
+        },
+        "corjl1Styles": {
+            "enabled": true,
+            "fontFileInfo": {
+                "unitsPerEm": 2048,
+                "ascender": 2193,
+                "descender": -538
+            },
+            "textLines": [
+                "HELLO"
+            ]
+        },
+        "requireText": false,
+        "lockColor": false,
+        "lockFont": false,
+        "lockText": false,
+        "lockResizeAsImage": false,
         "scaleX": 1,
         "scaleY": 1,
         "cropX": 0,
@@ -88,7 +191,6 @@
         "angle": 0,
         "skewX": 0,
         "skewY": 0,
-        "fill": "#000000",
         "selectable": true,
         "visible": true,
         "isMakeClippingMask": false,
@@ -100,84 +202,11 @@
         "placeholder": "Enter Text Here",
         "charSpacing": 0,
         "wrapText": false,
-        "text": "Clipping\nText",
+        "text": "HELLO",
         "strokeWidth": 0,
-        "canReplaceImage": false,
+        "customerHiddenLayers": false,
         "lockSize": false,
-        "lockStyle": false
-    },
-    "d78975": {
-        "elementKey": "d78975",
-        "sectionIndex": 1,
-        "left": 164.1652069091797,
-        "top": 78.21014404296875,
-        "type": "image",
-        "width": 720,
-        "height": 1080,
-        "asset": {
-            "selected": "AG01JGJE3997SJ4KMMVBWS5A5X31",
-            "available": [
-                "AG01JGJE3997SJ4KMMVBWS5A5X31"
-            ]
-        },
-        "transformMatrix": [
-            0.38751558645210277,
-            0.9218631515885001,
-            -0.9218631515885001,
-            0.38751558645210277,
-            932.4009759957368,
-            205.87691561006784
-        ],
-        "corjlFilters": [],
-        "backstage": {
-            "clipPath": {
-                "elementKey": "dc6f1a"
-            },
-            "contrast": {
-                "enabled": false,
-                "value": -12
-            },
-            "shadow": {
-                "enabled": false,
-                "color": "#000000",
-                "blur": 10,
-                "angle": 0,
-                "distance": 1,
-                "opacity": 100
-            },
-            "stroke": {
-                "enabled": false,
-                "color": "#E02020",
-                "opacity": 100,
-                "width": 23
-            }
-        },
-        "angle": 67.19999999999999,
-        "scaleX": 1,
-        "scaleY": 1,
-        "cropX": 0,
-        "cropY": 0,
-        "originX": "left",
-        "originY": "top",
-        "flipX": false,
-        "flipY": false,
-        "opacity": 1,
-        "skewX": 0,
-        "skewY": 0,
-        "selectable": true,
-        "visible": true,
-        "isMakeClippingMask": false,
-        "crossOrigin": "anonymous",
-        "outsideArtboard": false,
-        "src": "https://dev.korjl.com/assets/org/GD01HHDVD004V53JAG0CM92CXE78/image/optimized/bc/bc3bc689054e0b17",
-        "thumbnail": "https://dev.korjl.com/assets/org/GD01HHDVD004V53JAG0CM92CXE78/image/thumb/d9/d917eb6784b4f550",
-        "clipPath": {
-            "elementKey": "dc6f1a"
-        },
-        "isError": false,
-        "strokeWidth": 0,
-        "canReplaceImage": false,
-        "lockSize": false,
-        "lockStyle": false
+        "lockStyle": false,
+        "canReplaceImage": false
     }
 }
