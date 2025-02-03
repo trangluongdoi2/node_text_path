@@ -356,6 +356,26 @@ class HandlerSVGContent {
     return match ? match[1] : '';
   }
 
+  getNewClippingPathTagsContent(input: any) {
+    const { elementKey } = input;
+    let { clipPath, path, transform } = input;
+    const idPath = `clipingText_path_${elementKey}`;
+    const textTag = getContentByTag(clipPath, 'text')?.[0] || '';
+    const contentClipPathTag = `
+      <use
+        ${transform}
+        width="100%"
+        height="100%"
+        xlink:href="#${idPath}"
+      />
+    `
+    clipPath = clipPath.replace(textTag, contentClipPathTag);
+    clipPath = clipPath.replace(/transform="[^"]*"/, '')
+    path = path.replace('<path', `<path id="${idPath}" fill="none"`)
+    const newClipPath = [clipPath, path];
+    return newClipPath.join('');
+  }
+
   convertClippingPathText(index: number, elementTag: string, outerHTML: string) {
     // console.log('==> convertClippingPathText..');
     const outerHtmlByClipPath: string = this.elements[index + 1]?.outerHTML || '';
@@ -383,6 +403,7 @@ class HandlerSVGContent {
     ];
 
     const masterElement = this.getMasterElement(elementTag);
+    const { elementKey } = masterElement;
     const textStyleTags = (getTextStylesContent(elementTag) || []) as string[];
     const filterTags = getFilterUrl(textStyleTags.join(''));
     const textPathService = new TextService({
@@ -400,17 +421,16 @@ class HandlerSVGContent {
       return res;
     }
 
-    // console.log(newTransform, '==> newTransform...');
     const clipPathId = this.getClipPathId(outerHtmlByClipPath);
     let selectClipPath = this.shapeClipPathsByText.find(shapeClipPath => shapeClipPath.match(clipPathId));
     const selectClipPathIndex = this.shapeClipPathsByText.findIndex(shapeClipPath => shapeClipPath.match(clipPathId));
     if (selectClipPath && selectClipPathIndex !== -1) {
-      // const newTransform = 'transform="matrix(1,0,0,1,0,0)"';
-      const textTag = getContentByTag(selectClipPath, 'text')?.[0] || '';
-      selectClipPath = selectClipPath.replace(textTag, pureContentPath);
-
-      // May be consider for bleed translate
-      selectClipPath = selectClipPath.replace(/transform="[^"]*"/, newTransform);
+      selectClipPath = this.getNewClippingPathTagsContent({
+        elementKey,
+        transform: newTransform,
+        clipPath: selectClipPath,
+        path: pureContentPath,
+      })
       this.svgContent = this.svgContent.replace(`##shapeClipPathsByText${selectClipPathIndex}##`, selectClipPath);
     }
 

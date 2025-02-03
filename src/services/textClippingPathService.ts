@@ -125,20 +125,57 @@ export class TextClippingPath {
     const newC = c * scaleY;
     const newD = d * scaleY;
 
-    const matrix = `matrix(${newA} ${newB} ${newC} ${newD} ${translate.x} ${translate.y})`;
-    const matrix2 = `matrix(${newA} ${newB} ${newC} ${newD} ${translate2.x} ${translate2.y})`;
-    const matrix3 = `matrix(${newA} ${newB} ${newC} ${newD} ${this.boundingElement.width / 2} ${this.boundingElement.height / 2})`;
-    const matrix4 = `matrix(${newA} ${newB} ${newC} ${newD} ${boundText.width / 2} ${boundText.height / 2})`;
-    // const matrix = `matrix(${1} ${0} ${0} ${1} ${translate.x} ${translate.y})`;
-    // console.log(matrix, '==> matrix...');
-    const transformContent = `transform="${matrix}"`;
-    const transformContent2 = `transform="${matrix2}"`;
-    const transformContent3 = `transform="${matrix3}"`;
-    const transformContent4 = `transform="${matrix4}"`;
-    console.log(transformContent, '==> transformContent...');
-    console.log(transformContent2, '==> transformContent2...');
-    console.log(transformContent3, '==> transformContent3...');
-    console.log(transformContent4, '==> transformContent4...');
+    const translateImage = {
+      x: 932.4009759957368,
+      y: 205.87691561006784
+    }
+
+    const halfWidth = boundText.width / 2;
+    const halfHeight = boundText.height / 2;
+
+    // console.log(deltaCenter, '==> delateCenter...');
+
+    const translateText = {
+      x: (-halfWidth / 2 + deltaCenter.x) * a + (-halfHeight / 2 + deltaCenter.y) * c,
+      y: (-halfWidth / 2 + deltaCenter.x) * b + (-halfHeight / 2 + deltaCenter.y) * d,
+    }
+
+    const translateText2 = {
+      x: (-boundText.width / 2) * a1 + (-boundText.height / 2) * c1,
+      y: (-boundText.width / 2) * b1 + (-boundText.height / 2) * d1,
+    }
+
+    console.log(translateText, '==> translateText...');
+    const translateFinal = {
+      x: translateImage.x + translateText.x,
+      y: translateImage.y + translateText.y
+    }
+    const translateFinal2 = {
+      x: translateImage.x + translateText2.x,
+      y: translateImage.y + translateText2.y,
+    }
+    console.log(translateFinal, '==> translateFinal...');
+    const matrix6 = `matrix(${newA} ${newB} ${newC} ${newD} ${translateFinal.x} ${translateFinal.y})`;
+    const transformContent6 = `transform="${matrix6}"`;
+    console.log(transformContent6, '===> transformContent6.');
+
+    const matrix5 = `matrix(${newA} ${newB} ${newC} ${newD} ${translateImage.x} ${translateImage.y})`;
+    const transformContent = `transform="${matrix5}"`;
+    console.log(transformContent, '===> transformContent.');
+
+    // const matrix = `matrix(${newA} ${newB} ${newC} ${newD} ${translate.x} ${translate.y})`;
+    // const matrix2 = `matrix(${newA} ${newB} ${newC} ${newD} ${translate2.x} ${translate2.y})`;
+    // const matrix3 = `matrix(${newA} ${newB} ${newC} ${newD} ${this.boundingElement.width / 2} ${this.boundingElement.height / 2})`;
+    // const matrix4 = `matrix(${newA} ${newB} ${newC} ${newD} ${boundText.width / 2} ${boundText.height / 2})`;
+
+    // const transformContent = `transform="${matrix}"`;
+    // const transformContent2 = `transform="${matrix2}"`;
+    // const transformContent3 = `transform="${matrix3}"`;
+    // const transformContent4 = `transform="${matrix4}"`;
+    // console.log(transformContent, '==> transformContent...');
+    // console.log(transformContent2, '==> transformContent2...');
+    // console.log(transformContent3, '==> transformContent3...');
+    // console.log(transformContent4, '==> transformContent4...');
   }
 
   private getOriginalClipPathsTransformContent = () => {
@@ -242,10 +279,7 @@ export class TextClippingPath {
   }
 
   getNewClippingMaskContent() {
-    // const res = this.getOriginalClipPathsTransformContent();
-    // console.log(res, '==> res..');
     this.getOriginalImageTransformContent();
-    // return res;
     return ''
   }
 }
