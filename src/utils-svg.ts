@@ -500,40 +500,6 @@ export const saturateToMatrix = (saturateValue: number) => {
   ];
 }
 
-// export const rotateToZero = (matrix) => {
-//   // Extract the current rotation angle from the matrix
-//   const a = matrix[0];
-//   const b = matrix[1];
-//   const c = matrix[2];
-//   const d = matrix[3];
-//   const e = matrix[4];
-//   const f = matrix[5];
-
-//   // Calculate the current rotation angle in radians
-//   const currentAngle = Math.atan2(b, a);
-//   console.log(currentAngle * 180 / Math.PI, '>>> deg...');
-
-//   // Calculate the inverse rotation angle to rotate to 0 degrees
-//   const inverseAngle = -currentAngle;
-
-//   // Calculate the inverse rotation matrix
-//   const cosTheta = Math.cos(inverseAngle);
-//   const sinTheta = Math.sin(inverseAngle);
-
-//   // Apply the inverse rotation to the current matrix
-//   const newA = a * cosTheta + b * sinTheta;
-//   const newB = -a * sinTheta + b * cosTheta;
-//   const newC = c * cosTheta + d * sinTheta;
-//   const newD = -c * sinTheta + d * cosTheta;
-
-//   // The translation components remain the same
-//   const newE = e;
-//   const newF = f;
-
-//   // Return the new transformation matrix
-//   return [newA, newB, newC, newD, newE, newF];
-// }
-
 export const getImagePng = async (file: any) => {
   let image = sharp(file);
   const metadata = await image.metadata();
@@ -568,4 +534,72 @@ export function isEqual<T>(a: T, b: T): boolean {
     return JSON.stringify(a) === JSON.stringify(b);
   }
   return a === b;
+}
+
+export function getAllStrokeDasharrayContents(content: string) {
+  const styleRegex = /stroke-dasharray\s*:\s*([^;"]+)/g;
+  const attrRegex = /stroke-dasharray\s*=\s*["']([^"']+)["']/g;
+  const styleMatch = content.match(styleRegex);
+  const attrMatch = content.match(attrRegex);
+  return [...(styleMatch || []), ...(attrMatch || [])];
+}
+
+export function getStrokeDasharrayValueContent(content: string) {
+  const styleRegex = /stroke-dasharray\s*:\s*([^;"]+)/;
+  const attrRegex = /stroke-dasharray\s*=\s*["']([^"']+)["']/;
+  const styleMatch = content.match(styleRegex);
+  const attrMatch = content.match(attrRegex);
+  return (styleMatch?.[1] || attrMatch?.[1] || '').trim();
+}
+
+export function getStrokeDasharrayValues(value: string): number[] {
+  if (!value) {
+    return [];
+  }
+
+  return value
+    .replace(/['"]/g, '')  // Remove quotes
+    .replace(/;$/, '')     // Remove trailing semicolon
+    .split(/\s+/)          // Split by one or more whitespace characters
+    .map(Number)
+    .filter(val => !isNaN(val));
+}
+
+export function arraysEqual(arr1: any[], arr2: any[]) {
+  return arr1.length === arr2.length && 
+		arr1.join(' ') === arr2.join(' ');
+}
+
+export function findRepeatingPattern(arrPatterns: number[]) {
+	// Find potential pattern lengths (try from 2 values up to half the array)
+	const maxPatternLength = Math.floor(arrPatterns.length / 2);
+	
+	for (let patternLength = 2; patternLength <= maxPatternLength; patternLength++) {
+		// Skip if the array length isn't divisible by pattern length
+		if (arrPatterns.length % patternLength !== 0) {
+			continue;
+		};
+
+		// Get the first pattern
+		const pattern = arrPatterns.slice(0, patternLength);
+		let isRepeating = true;
+		
+		// Check if this pattern repeats throughout the array
+		for (let i = patternLength; i < arrPatterns.length; i += patternLength) {
+			const chunk = arrPatterns.slice(i, i + patternLength);
+			if (!arraysEqual(pattern, chunk)) {
+				isRepeating = false;
+				break;
+			}
+		}
+
+		if (isRepeating) {
+			return {
+				pattern,
+				repetitions: arrPatterns.length / patternLength
+			};
+		}
+	}
+
+	return null;
 }

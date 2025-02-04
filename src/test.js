@@ -1,54 +1,64 @@
-// const mat1 = calcRotateMatrix({ angle: 13 });
-// const mat2 = calcTranslateMatrix({ x: -674.9304336458374, y: -431.9554775333359 });
-// const center = { x: 1200, y: 1200 };
-// // console.log(mat1, mat2, '==> mat1, mat2...');
-// const newMat1 = math.matrix([[mat1[0], mat1[2]], [mat1[1], mat1[3]]]);
-// const newMat2 = math.matrix([[-674.9304336458374], [-431.9554775333359]]);
-// // const matCenter = math.matrix([[center.x], [center.y]]);
-// // const newMat = math.multiply(newMat1, newMat2);
-// // const resultMath = math.add(newMat, matCenter);
-// // console.log(newMat, '==> newMat...');
-// // console.log(resultMath, '==> resultMath...');
+const testCases = [
+  "0 4 0 4 0 4",
+  "0,9.99, 0, 9.99, 0, 9.99",
+  "1 3 1 3",
+  "5 0 4 0 4 0 4",
+  "2 2 2 2",
+  "1 2 3 1 2 3",
+];
 
-import { degreesToRadians } from "./helper/math";
-import { Point } from "./helper/point";
-import { getRotationMatrixRatios } from "./utils-svg";
-
-// const positionMatrix = math.matrix([[332.5307041694384], [66.33973670186208]]);
-// const result2 = math.subtract(positionMatrix, math.multiply(newMat1, newMat2));
-
-// console.log(result2, '==> result2...');
-
-// const w = 1085.146691010979
-// const h = 316.5347900390625
-// const top = 536.9351612255139
-// const left = 528.2675360752617 
-
-// const mat1 = calcRotateMatrix({ angle: 52 });
-// console.log(mat1, '==> mat1...');
-// const mat2 = calcTranslateMatrix({ x: -w / 2, y: -h / 2 });
-// const newMat1 = math.matrix([[mat1[0], mat1[2]], [mat1[1], mat1[3]]]);
-// const newMat2 = math.matrix([[-w / 2], [-h / 2]]);
-// const positionMatrix = math.matrix([[left], [top]]);
-// const result2 = math.subtract(positionMatrix, math.multiply(newMat1, newMat2));
-
-
-// const a = -100 / 2 || 0;
-// console.log(a, '== a');
-
-import * as math from 'mathjs';
-
-const angle = 67.19999999999999;
-const { a, b, c, d } = getRotationMatrixRatios(angle);
-const tx = {
-  x: 736.4053863352294,
-  y: 76.56358443753766
+function arraysEqual(arr1, arr2) {
+  return arr1.length === arr2.length && 
+		arr1.join(' ') === arr2.join(' ');
 }
-const centerImage = new Point(967.3549092636106, 1020.7053536960773);
-const radians = degreesToRadians(-2 * angle);
-const p1 = new Point(tx.x, tx.y);
-const p2 = p1.rotate(radians, centerImage);
-console.log(p2, '==> p2...');
-// const p2 = new Point(tx.x + 100, tx.y + 100);
-const transformMatrix = math.matrix([[a, c], [b, d], [tx.x, tx.y]]);
-console.log(transformMatrix, '==> transformMatrix...');
+
+function findRepeatingPattern(str) {
+	// Clean and convert string to array of numbers
+	const values = str
+		.replace(/;$/, '')
+		.trim()
+		.split(/[\s,]+/)
+		.map(Number);
+
+	// Find potential pattern lengths (try from 2 values up to half the array)
+	const maxPatternLength = Math.floor(values.length / 2);
+	
+	for (let patternLength = 2; patternLength <= maxPatternLength; patternLength++) {
+		// Skip if the array length isn't divisible by pattern length
+		if (values.length % patternLength !== 0) {
+			continue;
+		};
+
+		// Get the first pattern
+		const pattern = values.slice(0, patternLength);
+		console.log(pattern, '==> pattern...');
+		let isRepeating = true;
+		
+		// Check if this pattern repeats throughout the array
+		for (let i = patternLength; i < values.length; i += patternLength) {
+			const chunk = values.slice(i, i + patternLength);
+			if (!arraysEqual(pattern, chunk)) {
+				isRepeating = false;
+				break;
+			}
+		}
+
+		if (isRepeating) {
+			return {
+				pattern,
+				repetitions: values.length / patternLength
+			};
+		}
+	}
+
+	return null;
+}
+
+function getStrokeDasharrayValues(dasharray) {
+  return dasharray.replace(/;$/, '').trim().split(/[\s,]+/).map(Number);
+}
+
+testCases.forEach(test => {
+  const result = getStrokeDasharrayValues(test);
+  console.log(result, '==> result...');
+});

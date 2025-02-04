@@ -62,9 +62,10 @@ app.use('/', async (req: Request, res: Response) => {
   const output = await handlerSVGContent.export();
   // res.render('index', { input: svgContent, output });
   // fs.writeFileSync(path.join(__dirname, './files/output_text.svg'), output);
-  const svgFilter = new ExportSVGFilterService(output);
+
+  const test = fs.readFileSync(path.join(__dirname, './files/bug_inskape.svg'), 'utf8');
+  const svgFilter = new ExportSVGFilterService(test);
   const newOutput = await svgFilter.export();
-  // console.log(newOutput, '==> newOutput...');
   fs.writeFileSync(path.join(__dirname, './files/output_text.svg'), newOutput);
   res.render('index', { input: svgContent, output: newOutput });
   console.log('Write file output_text.svg SUCCESS!!!');

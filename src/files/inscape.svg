@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
+    <defs></defs>
+    <style>
+        .dash {
+            stroke-dasharray: 0 4.05 0 4.05 0 4.05;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-width: 3px;
+            fill: none;
+            stroke: black;
+            stroke-miterlimit: 10;
+        }
+        .dash-2 {
+            stroke-dasharray: 0 4.05;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-width: 4px;
+            fill: none;
+            stroke: red;
+            stroke-miterlimit: 10;
+        }
+        .dash-3 {
+            stroke-dasharray: 15 10;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-width: 3px;
+            fill: none;
+            stroke: blue;
+        }
+    </style>
+    <!-- Line with simple dash pattern (5 units dash, 5 units gap) -->
+    <line x1="50" y1="50" x2="350" y2="50" 
+        class="dash"/>
+
+    <!-- Rectangle with more complex dash pattern -->
+    <rect x="50" y="100" width="300" height="60" 
+          class="dash-2"/>
+
+    <!-- Circle with dash pattern -->
+    <circle cx="200" cy="220" r="50" 
+            class="dash-3"/>
+</svg>

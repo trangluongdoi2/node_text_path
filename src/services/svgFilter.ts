@@ -1,6 +1,14 @@
 import { JSDOM } from 'jsdom';
 // import { Resvg } from '@resvg/resvg-js';
-import { getContentByTag, getElemAttributesByImage, getSVGSectionTags } from '@/utils-svg';
+import {
+  getContentByTag,
+  getElemAttributesByImage,
+  getAllStrokeDasharrayContents,
+  getStrokeDasharrayValueContent,
+  getStrokeDasharrayValues,
+  getSVGSectionTags,
+  findRepeatingPattern,
+} from '@/utils-svg';
 
 export type FileGeneratorInput = {
   pageWidth: number;
@@ -35,7 +43,24 @@ class ExportSVGFilterService {
     this.configs = { ...defaultInput };
     this.svgContent = svgContent;
     this.svgContentBySections = [];
+    this.processDasharray();
     this.preHandler();
+  }
+
+  processDasharray() {
+    const dasharrayContents = getAllStrokeDasharrayContents(this.svgContent);
+    dasharrayContents.forEach((val: string, index: number) => {
+      const dasharrayValues = getStrokeDasharrayValueContent(val);
+      this.svgContent = this.svgContent.replace(dasharrayValues, `##dasharrayValues_${index}##`);
+      const arr = dasharrayValues.split(/\s+/).map(Number);
+      const result = findRepeatingPattern(arr);
+      if (result) {
+        const newDasharrayValues = result.pattern.join(' ');
+        this.svgContent = this.svgContent.replace(`##dasharrayValues_${index}##`, newDasharrayValues);
+      } else {
+        this.svgContent = this.svgContent.replace(`##dasharrayValues_${index}##`, dasharrayValues);
+      }
+    });
   }
 
   preHandler() {
@@ -49,6 +74,7 @@ class ExportSVGFilterService {
     this.svgContentBySections.forEach((svgContentBySection, index) => {
       this.svgContent = this.svgContent.replace(svgContentBySection, `##svgContentBySection_${index}##`);
     });
+
   }
 
   getBleedSize() {
