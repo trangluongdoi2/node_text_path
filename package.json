@@ -12,9 +12,11 @@
   "dependencies": {
     "@resvg/resvg-js": "^2.6.2",
     "@xmldom/xmldom": "^0.9.5",
+    "aws-sdk": "^2.1692.0",
     "body-parser": "^1.20.3",
     "canvas": "^3.0.1",
     "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
     "express": "^4.21.1",
     "fabric": "^6.5.3",
     "jade": "^1.11.0",

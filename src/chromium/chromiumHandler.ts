@@ -3,6 +3,16 @@ import { Page, Browser, Viewport } from 'puppeteer-core';
 export class ChromiumHandler {
   private static browser: Browser | undefined = undefined;
 
+  public static async asyncFunction() {
+    // console.log('asyncFunction');
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const a = 1 + 2;
+        resolve(a);
+      }, 1000);
+    });
+  }
+
   public static async launchBrowser() {
     if (!this.browser) {
       const puppeteer = require('puppeteer-core');
@@ -75,6 +85,15 @@ export class ChromiumHandler {
       await page.setViewport(viewport);
     }
     await page.goto('https://www.google.com', { waitUntil: 'networkidle2', timeout: 0 });
+    const test = await page.evaluate(async () => {
+      const a = (new Promise((resolve, reject) => {
+        setTimeout(() => {
+          resolve(4 * 6);
+        }, 1000);
+      }));
+      return a;
+    });
+    console.log(test, '==> test');
     // await page.waitForSelector('.canvas-loaded', { timeout: 0 });
     return page;
   }

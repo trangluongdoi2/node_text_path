@@ -60,11 +60,7 @@ app.use('/', async (req: Request, res: Response) => {
   const data = fs.readFileSync(path.join(__dirname, './data/index_3.json'), 'utf8');
   const handlerSVGContent = new HandlerSVGContent(svgContent.replace(/\s+/g, ' '), JSON.parse(data));
   const output = await handlerSVGContent.export();
-  // res.render('index', { input: svgContent, output });
-  // fs.writeFileSync(path.join(__dirname, './files/output_text.svg'), output);
-
-  const test = fs.readFileSync(path.join(__dirname, './files/bug_inskape.svg'), 'utf8');
-  const svgFilter = new ExportSVGFilterService(test);
+  const svgFilter = new ExportSVGFilterService(output);
   const newOutput = await svgFilter.export();
   fs.writeFileSync(path.join(__dirname, './files/output_text.svg'), newOutput);
   res.render('index', { input: svgContent, output: newOutput });

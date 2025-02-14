@@ -14,11 +14,11 @@
         "typeBackground": "color",
         "backstage": {
             "fill": {
-                "value": "#BEACAC",
+                "value": "#1D1A1A",
                 "enabled": true
             }
         },
-        "fill": "#BEACAC",
+        "fill": "#1D1A1A",
         "scaleX": 1,
         "scaleY": 1,
         "cropX": 0,
@@ -42,24 +42,24 @@
         "lockSize": false,
         "lockStyle": false
     },
-    "1b0de1": {
+    "32729e": {
         "type": "textbox",
-        "elementKey": "1b0de1",
+        "elementKey": "32729e",
         "sectionIndex": 1,
         "lockByDesigner": false,
         "lockByCustomer": false,
-        "left": 342.3395633454,
-        "top": 448.38400268555,
-        "width": 1420.041051888971,
-        "height": 657.4918212890625,
+        "left": -200,
+        "top": 185.20176696777,
+        "width": 2016,
+        "height": 383.7952880859375,
         "alwaysOnTop": false,
         "transformMatrix": [
             1,
             0,
             0,
             1,
-            -535.1361806658022,
-            962.8981487329258
+            42.93613009503055,
+            -200.88858522989264
         ],
         "hideInDownload": false,
         "protection": {
@@ -75,24 +75,25 @@
             }
         },
         "name": null,
-        "originalText": "HELLO",
+        "originalText": "Hooray, Hooray! I'm back to play! I missed you more than you can believe! But now I'll be here until Christmas Eve.",
         "asset": {
-            "selected": "AF01HHEEKT9W92QVW7T287A44B22",
+            "selected": "AF01HHEEKRQQS9ZCPXFKZME4XK6P",
             "selectedStyles": [
-                "AF01HHEEKT9W92QVW7T287A44B22"
+                "AF01HHEEKRQQS9ZCPXFKZME4XK6P"
             ],
             "available": [
-                "AF01HHEEKT9W92QVW7T287A44B22"
+                "AF01HHEEKRQQS9ZCPXFKZME4XK6P"
             ]
         },
         "uppercase": false,
         "underline": false,
         "linethrough": false,
-        "fill": "#157434",
-        "fontFamily": "font-xlr26csu9m",
-        "fontSize": 495.834375,
+        "fill": "#c40101",
+        "fontFamily": "font-9zrx9n3n2i",
+        "fontSize": 104.16562499999999,
         "fontWeight": "normal",
         "fontStyle": "normal",
+        "lineHeight": 1.2,
         "globalCompositeOperation": "",
         "styles": {},
         "backstage": {
@@ -149,29 +150,33 @@
             "corjl1Styles": {
                 "enabled": true,
                 "fontFileInfo": {
-                    "unitsPerEm": 2048,
-                    "ascender": 2193,
-                    "descender": -538
+                    "unitsPerEm": 1024,
+                    "ascender": 1175,
+                    "descender": -360
                 },
                 "textLines": [
-                    "HELLO"
+                    "Hooray, Hooray! I'm back to play! I",
+                    "missed you more than you can believe!",
+                    "But now I'll be here until Christmas Eve."
                 ]
             }
         },
         "fontloadMap": {
-            "font-xlr26csu9m": {
-                "assetId": "AF01HHEEKT9W92QVW7T287A44B22"
+            "font-9zrx9n3n2i": {
+                "assetId": "AF01HHEEKRQQS9ZCPXFKZME4XK6P"
             }
         },
         "corjl1Styles": {
             "enabled": true,
             "fontFileInfo": {
-                "unitsPerEm": 2048,
-                "ascender": 2193,
-                "descender": -538
+                "unitsPerEm": 1024,
+                "ascender": 1175,
+                "descender": -360
             },
             "textLines": [
-                "HELLO"
+                "Hooray, Hooray! I'm back to play! I",
+                "missed you more than you can believe!",
+                "But now I'll be here until Christmas Eve."
             ]
         },
         "requireText": false,
@@ -198,11 +203,10 @@
         "outsideArtboard": false,
         "textAlign": "center",
         "resizeAsImage": false,
-        "lineHeight": 1,
         "placeholder": "Enter Text Here",
         "charSpacing": 0,
         "wrapText": false,
-        "text": "HELLO",
+        "text": "Hooray, Hooray! I'm back to play! I missed you more than you can believe! But now I'll be here until Christmas Eve.",
         "strokeWidth": 0,
         "customerHiddenLayers": false,
         "lockSize": false,

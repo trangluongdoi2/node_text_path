@@ -58,7 +58,25 @@ function getStrokeDasharrayValues(dasharray) {
   return dasharray.replace(/;$/, '').trim().split(/[\s,]+/).map(Number);
 }
 
-testCases.forEach(test => {
-  const result = getStrokeDasharrayValues(test);
-  console.log(result, '==> result...');
-});
+// testCases.forEach(test => {
+//   const result = getStrokeDasharrayValues(test);
+//   console.log(result, '==> result...');
+// });
+
+
+function getRowColumnIndex(columns, rows, index) {
+	if (index === columns * rows) {
+	  return { row: rows, col: columns };
+	}
+	const col = index % columns === 0 ? columns : index % columns;
+	let row = 1;
+	for (let i = 1; i < index; i++) {
+	  if (i % columns === 0) {
+		row += 1;
+	  }
+	}
+	return { row, col };
+};
+
+const { row, col } = getRowColumnIndex(2, 2, 3);
+console.log(row, col, '==> row, col...');
