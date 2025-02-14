@@ -84,16 +84,16 @@ export class ChromiumHandler {
     if (viewport) {
       await page.setViewport(viewport);
     }
-    await page.goto('https://www.google.com', { waitUntil: 'networkidle2', timeout: 0 });
-    const test = await page.evaluate(async () => {
-      const a = (new Promise((resolve, reject) => {
-        setTimeout(() => {
-          resolve(4 * 6);
-        }, 1000);
-      }));
-      return a;
-    });
-    console.log(test, '==> test');
+    // await page.goto('https://www.google.com', { waitUntil: 'networkidle2', timeout: 0 });
+    // const test = await page.evaluate(async () => {
+    //   const a = (new Promise((resolve, reject) => {
+    //     setTimeout(() => {
+    //       resolve(4 * 6);
+    //     }, 1000);
+    //   }));
+    //   return a;
+    // });
+    // console.log(test, '==> test');
     // await page.waitForSelector('.canvas-loaded', { timeout: 0 });
     return page;
   }

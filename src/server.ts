@@ -9,6 +9,7 @@ import HandlerSVGContent from './handlerSVGContent';
 import { ChromiumHandler } from './chromium/chromiumHandler';
 import { Page } from 'puppeteer-core';
 import ExportSVGFilterService from './services/svgFilter';
+import measureCharsRouter from './routes/measure-chars';
 
 const PORT = 3000;
 const app = express();
@@ -35,7 +36,11 @@ app.post('/api/post-html', (req: Request, res: Response) => {
   console.log(pureSVGContent, '==> pureSVGContent...');
 });
 
-app.use('/', async (req: Request, res: Response) => {
+// app.get('/', async (req: Request, res: Response) => {
+//   res.send('Health check');
+// });
+
+app.get('/', async (req: Request, res: Response) => {
   let svgContent = fs.readFileSync(path.join(__dirname, './files/input_text_2.svg'), 'utf8');
   function preProcessSVG(svgContent: string) {
     const dom = new JSDOM(svgContent);
@@ -67,13 +72,9 @@ app.use('/', async (req: Request, res: Response) => {
   console.log('Write file output_text.svg SUCCESS!!!');
 });
 
+app.use('/measure-chars', measureCharsRouter);  
+
 app.listen(PORT, async () => {
   console.log(`Server is running on port ${PORT} ` + `http://localhost:${PORT}/`);
   fetch(`http://localhost:${PORT}/`);
-  // try {
-  //   const page = await ChromiumHandler.newPage();
-  //   console.log('Chromium DONE!');
-  // } catch (error) {
-  //   console.log(error, '==> error');
-  // }
 });

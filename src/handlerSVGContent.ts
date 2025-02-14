@@ -483,6 +483,7 @@ class HandlerSVGContent {
         }
       }).filter(element => Boolean(element))
     ) as SVGElement[];
+    
 
     for (const [elementIndex, element] of elementsResult.entries()) {
       if (!element) {

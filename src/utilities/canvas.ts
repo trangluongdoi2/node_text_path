@@ -10,7 +10,6 @@ export function extractFilename(key: string): string {
   return key.substring(lastSlash);
 }
 
-
 export function deleteFolderContents(path: string, recursive = false) {
   if (fs.existsSync(path)) {
     fs.readdirSync(path).forEach((file) => {
@@ -68,17 +67,17 @@ export const getMeasuringCanvasForLoadFont = (data: any) => {
   const { fontStyleDecalaration, fontFamily } = data;
   const fontPath = path.join(__dirname, '../fonts/hko14aqrnq2hdelg.woff');
 
-  const randomString = Math.random().toString(36).substring(2, 15);
-  const workingDirTmp = `/tmp/${randomString}`;
-  prepareWorkingDir(workingDirTmp);
-  const tmpFontPath = `${workingDirTmp}/${extractFilename(fontPath)}`;
-  console.log(tmpFontPath, '==> tmpFontPath...');
-  fs.writeFileSync(tmpFontPath, fs.readFileSync(fontPath));
+  // const randomString = Math.random().toString(36).substring(2, 15);
+  // const workingDirTmp = `/tmp/${randomString}`;
+  // prepareWorkingDir(workingDirTmp);
+  // const tmpFontPath = `${workingDirTmp}/${extractFilename(fontPath)}`;
+  // console.log(tmpFontPath, '==> tmpFontPath...');
+  // fs.writeFileSync(tmpFontPath, fs.readFileSync(fontPath));
 
   registerFont(fontPath, { family: fontFamily });
   const canvas = new Canvas(0, 0);
   const ctx = canvas.getContext('2d') as unknown as CanvasRenderingContext2D;
   ctx.font = fontStyleDecalaration;
   ctx.textBaseline = 'alphabetic';
-  return { canvas, ctx, tmpFontPath };
+  return { canvas, ctx };
 };

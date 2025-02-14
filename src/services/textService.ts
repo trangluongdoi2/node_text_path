@@ -7,8 +7,8 @@ import * as math from 'mathjs';
 import { Font, Glyph } from 'opentype.js';
 import { useFont } from '@/composables/useFont';
 import { TextPathService } from './textPathService';
-// import {} from 'node-can'
 import { getMeasuringCanvasForLoadFont } from '@/utilities/canvas';
+// import fetch from 'node-fetch';
 
 const { reCaculateTransform  }  = useCaculateTransform();
 
@@ -73,19 +73,19 @@ export class TextService {
       height: 0,
     }
     this.glyphsData = [];
-    this.initTextData();
+    // this.initTextData();
 
     this.fontPath = 'https://dev.korjl.com/assets/org/GD01HHDZSQWX9002TXZ25HFC8MM1/font/optimized/hk/hko14aqrnq2hdelg.woff';
   }
 
-  private initTextData() {
+  private async initTextData() {
     this.processTextParentContent();
     this.processTextTagContent();
     // this.processTextRectContent();
     this.getPositionOfBoundingBoxText();
-    this.getCharsData();
+    await this.getCharsData();
     this.getTextLines();
-    console.log(this.boundingElement, '==> this.boundingElement TEXT...');
+    // console.log(this.boundingElement, '==> this.boundingElement TEXT...');
   }
 
   private hasCharSpacing() {
@@ -381,7 +381,7 @@ export class TextService {
       // const coupleWidth = fontload.getAdvanceWidth(coupleChar, fontSize);
       const coupleWidth = ctx.measureText(coupleChar).width;
       const prevAdvanceWidth = ctx.measureText(previousChar).width;
-      console.log(coupleWidth, width, prevAdvanceWidth, char, '==> coupleWidth, width, prevAdvanceWidth...');
+      // console.log(coupleWidth, width, prevAdvanceWidth, char, '==> coupleWidth, width, prevAdvanceWidth...');
 
       kernedWidth = coupleWidth - prevAdvanceWidth;
     }
@@ -500,9 +500,33 @@ export class TextService {
   //   });
   // }
 
-  handleTspanContent2() {
+  async handleTspanContent2() {
+    // console.log(this.tspanContents, '==> this.tspanContents...');
+    // const test = await fetch('/measure-chars', {
+    //   method: 'POST',
+    //   headers: {
+    //     'Content-Type': 'application/json',
+    //   },
+    //   body: JSON.stringify(this.tspanContents),
+    // });
+    // console.log(test, '==> test...');
+
+    try {
+      const res = await fetch('http://localhost:3000/measure-chars', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(this.tspanContents),
+      })
+      const data = await res.json();
+      console.log(data, '==> data test...');
+    } catch (error) {
+      console.log(error, '==> error...');
+    }
+
     let top = -this.boundingElement.height / 2;
-    // console.log(this.tspanContents, '==> this.tspanContents..');
+
     this.tspanContents.forEach((tspanData, lineIndex) => {
       // RELATIVE
       top += Number(tspanData.dy);
@@ -534,6 +558,10 @@ export class TextService {
         
         // const info = this._measureChar2(char, stylesChar, prevChar?.char, prevStylesChar);
         const info = this._measureChar3(char, stylesChar, prevChar?.char, prevStylesChar);
+
+        // TODO: Need recaculate this function!
+        // const info = data[lineIndex][charIndex];
+
         let width = info.width,
         kernedWidth = info.kernedWidth,
         charSpacing = 0;
@@ -569,20 +597,19 @@ export class TextService {
     
     this.textLines2.forEach((line, lineIndex) => {
       const leftLineOffset = this._getLineLeftOffset(lineIndex);
-      // console.log(leftLineOffset, '==> leftLineOffset..');
       line.forEach(char => {
         char.left += letfOffset + leftLineOffset;
       });
     });
   }
 
-  processTspanContent() {
+  async processTspanContent() {
     const { window } = new JSDOM(this.textTagData.content);
     const textElement = window.document.getElementsByTagName('text')[0] as any;
     if (textElement) {
       this.tspanContents = this.getTagElements(textElement);
       // this.handleTspanContent();
-      this.handleTspanContent2();
+      await this.handleTspanContent2();
     }
   }
 
@@ -607,9 +634,9 @@ export class TextService {
     return results;
   }
 
-  getCharsData() {
+  async getCharsData() {
     this.loadFont();
-    this.processTspanContent();
+    await this.processTspanContent();
     return this.textLines;
   }
 
@@ -818,7 +845,7 @@ export class TextService {
     return this.handleRelativePositionOfGlyphs();
   }
 
-  exportPath(callback?: Function) {
+  async exportPath(callback?: Function) {
     if (!this.object) {
       return {
         type: 'TEXT',
@@ -827,6 +854,7 @@ export class TextService {
       };
     }
     // this.getCharsData();
+    await this.initTextData();
     this.glyphsData = this.getGlyphsData();
     const newData = {
       boundingElement: this.boundingElement,
