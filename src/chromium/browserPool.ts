@@ -75,7 +75,6 @@ export class BrowserPool {
       '--disable-domain-reliability',
       '--disable-print-preview',
       '--disable-speech-api',
-      //'--disk-cache-size=33554432',
       '--mute-audio',
       '--no-default-browser-check',
       '--no-pings',

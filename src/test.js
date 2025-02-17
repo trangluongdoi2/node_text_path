@@ -80,3 +80,9 @@ function getRowColumnIndex(columns, rows, index) {
 
 const { row, col } = getRowColumnIndex(2, 2, 3);
 console.log(row, col, '==> row, col...');
+
+
+const fontPath = 'https://dev.korjl.com/assets/org/GD01HHDZSQWX9002TXZ25HFC8MM1/font/optimized/hk/hko14aqrnq2hdelg.woff';
+
+const test = fontPath.split('/').pop();
+console.log(test, '==> test...');

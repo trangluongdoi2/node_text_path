@@ -35,7 +35,7 @@ export class TextService {
   private glyphsData: Array<GlyphData[]>;
   _fontSizeFraction = 0.222;
   lineHeightScale = 1;
-  fontloadMap: Record<string, { fontload: Font }> = {};
+  fontloadMap: Record<string, { fontload: Font, fontPath: string }> = {};
   fontPath = 'https://dev.korjl.com/assets/org/GD01HHDZSQWX9002TXZ25HFC8MM1/font/optimized/hk/hko14aqrnq2hdelg.woff';
   private textSettings: ISectionSettings;
   declare object: any;
@@ -81,7 +81,6 @@ export class TextService {
   private async initTextData() {
     this.processTextParentContent();
     this.processTextTagContent();
-    // this.processTextRectContent();
     this.getPositionOfBoundingBoxText();
     await this.getCharsData();
     this.getTextLines();
@@ -143,7 +142,10 @@ export class TextService {
     const localPath = path.join(__dirname, '../fonts/hko14aqrnq2hdelg.woff');
     const fontLoad = useFont().loadFontFromOpenTypeByLocalPath(localPath);
     if (!this.fontloadMap[this.object.fontFamily]) {
-      this.fontloadMap[this.object.fontFamily] = { fontload: fontLoad };
+      this.fontloadMap[this.object.fontFamily] = { 
+        fontload: fontLoad,
+        fontPath: this.fontPath,
+      };
     }
   }
 
@@ -217,13 +219,7 @@ export class TextService {
 
     this.tspanContents.forEach((tspanData, lineIndex) => {
       let advanceWidth = 0;
-      // if (lineIndex === 0) {
-      //   console.log(tspanData.text.split('').length, 'LENGTH OF TEXT..');
-      // }
       tspanData.text.split('').forEach((char: string, charIndex: number) => {
-        // if (lineIndex === 0) {
-        //   console.log(this.textLines2[lineIndex][charIndex].kernedWidth, char, `==>  this.textLines2[${lineIndex}][${charIndex}]}`);
-        // }
         advanceWidth += this.textLines2[lineIndex][charIndex].kernedWidth - charSpacing;
       });
       // advanceWidth += widthSpacing;
@@ -242,9 +238,6 @@ export class TextService {
 
   measureLine(lineIndex: number) {
     const lineWidth = this.getAdvanceWidthOfTextLine()[lineIndex];
-    // if (lineIndex === 0) {
-    //   console.log(lineWidth, '==> lineWidth..');
-    // }
     return lineWidth;
   }
 
@@ -365,7 +358,6 @@ export class TextService {
       fontStyleDecalaration: fontDeclaration,
     }
     const { ctx } = getMeasuringCanvasForLoadFont(data);
-    // console.log(ctx, '==> ctx...');
     let width = 0;
     // let kernedWidth = width = fontload.getAdvanceWidth(char, fontSize, { kerning: true });
     // let kernedWidth = width = fontload.getAdvanceWidth(char, fontSize);
@@ -500,16 +492,19 @@ export class TextService {
   //   });
   // }
 
-  async handleTspanContent2() {
-    // console.log(this.tspanContents, '==> this.tspanContents...');
-    // const test = await fetch('/measure-chars', {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //   },
-    //   body: JSON.stringify(this.tspanContents),
-    // });
-    // console.log(test, '==> test...');
+  async onCaculateCharWidth() {
+    const handleFontLoad = Object.entries(this.fontloadMap).map(([fontFamily, { fontPath }]) => {
+      return {
+        fontFamily,
+        fontPath,
+      }
+    });
+
+    const payload = {
+      masterElement: this.object,
+      tspanContents: this.tspanContents,
+      fontloadInfos: handleFontLoad,
+    }
 
     try {
       const res = await fetch('http://localhost:3000/measure-chars', {
@@ -517,16 +512,21 @@ export class TextService {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(this.tspanContents),
+        body: JSON.stringify(payload),
       })
       const data = await res.json();
-      console.log(data, '==> data test...');
+      return data;
     } catch (error) {
       console.log(error, '==> error...');
+      return [];
     }
+  }
+
+  async handleTspanContent2() {
+    const { data: dataWidth } = await this.onCaculateCharWidth();
+    console.log(dataWidth.length, '==> dataWidth...');
 
     let top = -this.boundingElement.height / 2;
-
     this.tspanContents.forEach((tspanData, lineIndex) => {
       // RELATIVE
       top += Number(tspanData.dy);
@@ -539,28 +539,29 @@ export class TextService {
         const fontFamily = this.getValueOfPropertyAt(lineIndex, charIndex, 'fontFamily');
         const prevChar = this.textLines2[lineIndex][charIndex - 1];
 
-        const stylesChar = {
-          fontFamily,
-          fontSize,
-          fontWeight: this.getValueOfPropertyAt(lineIndex, charIndex, 'fontWeight'),
-          fontStyle: this.getValueOfPropertyAt(lineIndex, charIndex, 'fontStyle') || 'normal',
-          linethrough: this.getValueOfPropertyAt(lineIndex, charIndex, 'linethrough') || false,
-          overline: this.getValueOfPropertyAt(lineIndex, charIndex, 'overline') || false,
-        }
-        const prevStylesChar = {
-          fontFamily: this.getValueOfPropertyAt(lineIndex, charIndex - 1, 'fontFamily'),
-          fontSize: this.getValueOfPropertyAt(lineIndex, charIndex - 1, 'fontSize'),
-          fontWeight: this.getValueOfPropertyAt(lineIndex, charIndex - 1, 'fontWeight'),
-          fontStyle: this.getValueOfPropertyAt(lineIndex, charIndex - 1, 'fontStyle') || 'normal',
-          linethrough: this.getValueOfPropertyAt(lineIndex, charIndex - 1, 'linethrough') || false,
-          overline: this.getValueOfPropertyAt(lineIndex, charIndex - 1, 'overline') || false,
-        }
+        // const stylesChar = {
+        //   fontFamily,
+        //   fontSize,
+        //   fontWeight: this.getValueOfPropertyAt(lineIndex, charIndex, 'fontWeight'),
+        //   fontStyle: this.getValueOfPropertyAt(lineIndex, charIndex, 'fontStyle') || 'normal',
+        //   linethrough: this.getValueOfPropertyAt(lineIndex, charIndex, 'linethrough') || false,
+        //   overline: this.getValueOfPropertyAt(lineIndex, charIndex, 'overline') || false,
+        // }
+        // const prevStylesChar = {
+        //   fontFamily: this.getValueOfPropertyAt(lineIndex, charIndex - 1, 'fontFamily'),
+        //   fontSize: this.getValueOfPropertyAt(lineIndex, charIndex - 1, 'fontSize'),
+        //   fontWeight: this.getValueOfPropertyAt(lineIndex, charIndex - 1, 'fontWeight'),
+        //   fontStyle: this.getValueOfPropertyAt(lineIndex, charIndex - 1, 'fontStyle') || 'normal',
+        //   linethrough: this.getValueOfPropertyAt(lineIndex, charIndex - 1, 'linethrough') || false,
+        //   overline: this.getValueOfPropertyAt(lineIndex, charIndex - 1, 'overline') || false,
+        // }
         
         // const info = this._measureChar2(char, stylesChar, prevChar?.char, prevStylesChar);
-        const info = this._measureChar3(char, stylesChar, prevChar?.char, prevStylesChar);
+        // const info = this._measureChar3(char, stylesChar, prevChar?.char, prevStylesChar);
 
         // TODO: Need recaculate this function!
-        // const info = data[lineIndex][charIndex];
+        const info = dataWidth[lineIndex][charIndex];
+        console.log(info, '==> info...');
 
         let width = info.width,
         kernedWidth = info.kernedWidth,

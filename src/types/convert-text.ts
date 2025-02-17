@@ -168,3 +168,12 @@ export interface ISectionSettings {
   pageBleed: number;
   sectionIndex: number
 }
+
+export type MeasureCharsPayload = {
+  masterElement: any,
+  tspanContents: TspanContent[],
+  fontloadInfos: {
+    fontFamily: string,
+    fontPath: string,
+  }[],
+}

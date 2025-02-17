@@ -9,7 +9,6 @@ router.get('/', (req: Request, res: Response) => {
 
 router.post('/', async (req: Request, res: Response) => {
   const data = await MeasureCharsService.measureChars(req.body);
-  console.log(data, '==> data router..')
   res.json({
     message: 'Hello measure chars',
     data,
