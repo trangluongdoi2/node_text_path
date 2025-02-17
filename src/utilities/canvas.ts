@@ -79,5 +79,6 @@ export const getMeasuringCanvasForLoadFont = (data: any) => {
   const ctx = canvas.getContext('2d') as unknown as CanvasRenderingContext2D;
   ctx.font = fontStyleDecalaration;
   ctx.textBaseline = 'alphabetic';
+  // console.log(ctx.font, '==> ctx.font...');
   return { canvas, ctx };
 };

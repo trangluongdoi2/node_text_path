@@ -1,5 +1,5 @@
-import { Browser, Page } from "puppeteer-core";
 import * as fs from 'fs';
+import { Browser, Page } from "puppeteer-core";
 import { randomString } from "@/shared/helpers/string";
 
 export class BrowserPool {

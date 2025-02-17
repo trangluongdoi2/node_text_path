@@ -8,6 +8,9 @@ dependencies:
   '@resvg/resvg-js':
     specifier: ^2.6.2
     version: 2.6.2
+  '@sparticuz/chromium':
+    specifier: ^132.0.0
+    version: 132.0.0
   '@xmldom/xmldom':
     specifier: ^0.9.5
     version: 0.9.6
@@ -1099,6 +1102,17 @@ packages:
       '@resvg/resvg-js-win32-arm64-msvc': 2.6.2
       '@resvg/resvg-js-win32-ia32-msvc': 2.6.2
       '@resvg/resvg-js-win32-x64-msvc': 2.6.2
+    dev: false
+
+  /@sparticuz/chromium@132.0.0:
+    resolution: {integrity: sha512-7SAhVa4nHAP7bxEhnMFuwV7KNDqAF4RVGZNwRhvyss8lJNT7Syi9nPwIPYvsHtjJ1S7Nx8OL8uqe9V3a/ED/Mg==}
+    engines: {node: '>= 16'}
+    dependencies:
+      follow-redirects: 1.15.9
+      tar-fs: 3.0.8
+    transitivePeerDependencies:
+      - bare-buffer
+      - debug
     dev: false
 
   /@tokenizer/token@0.3.0:

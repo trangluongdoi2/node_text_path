@@ -339,16 +339,20 @@ export class TextService {
   }
 
   _measureChar3(char: string, charStyle: any, previousChar: string | undefined, prevCharStyle: any) {
-    const fontload = this.fontloadMap[charStyle?.fontFamily]?.fontload;
-    const prevFontload = this.fontloadMap[prevCharStyle?.fontFamily]?.fontload;
+    function validChar(char: string | undefined | null) {
+      return char !== null && char !== undefined && char !== ' ';
+    }
+
+    // const fontload = this.fontloadMap[charStyle?.fontFamily]?.fontload;
+    // const prevFontload = this.fontloadMap[prevCharStyle?.fontFamily]?.fontload;
     const fontDeclaration = this._getFontDeclaration(charStyle);
     const stylesAreEqual = 
       previousChar && 
       fontDeclaration === this._getFontDeclaration(prevCharStyle);
 
-    if (!fontload) {
-      return { width: 0, kernedWidth: 0 };
-    }
+    // if (!fontload) {
+    //   return { width: 0, kernedWidth: 0 };
+    // }
     const fontSize = charStyle?.fontSize || this.object.fontSize;
     const fontFamily = charStyle?.fontFamily || this.object.fontFamily;
     const data = {
@@ -359,22 +363,12 @@ export class TextService {
     }
     const { ctx } = getMeasuringCanvasForLoadFont(data);
     let width = 0;
-    // let kernedWidth = width = fontload.getAdvanceWidth(char, fontSize, { kerning: true });
-    // let kernedWidth = width = fontload.getAdvanceWidth(char, fontSize);
     let kernedWidth = width = ctx.measureText(char).width;
-
-    function validChar(char: string | undefined | null) {
-      return char !== null && char !== undefined && char !== ' ';
-    }
 
     if (validChar(previousChar) && validChar(char) && stylesAreEqual) {
       const coupleChar = previousChar + char;
-      // const prevAdvanceWidth = prevFontload.getAdvanceWidth(previousChar, fontSize);
-      // const coupleWidth = fontload.getAdvanceWidth(coupleChar, fontSize);
       const coupleWidth = ctx.measureText(coupleChar).width;
       const prevAdvanceWidth = ctx.measureText(previousChar).width;
-      // console.log(coupleWidth, width, prevAdvanceWidth, char, '==> coupleWidth, width, prevAdvanceWidth...');
-
       kernedWidth = coupleWidth - prevAdvanceWidth;
     }
 
@@ -524,7 +518,7 @@ export class TextService {
 
   async handleTspanContent2() {
     const { data: dataWidth } = await this.onCaculateCharWidth();
-    console.log(dataWidth.length, '==> dataWidth...');
+    // console.log(dataWidth.length, '==> dataWidth...');
 
     let top = -this.boundingElement.height / 2;
     this.tspanContents.forEach((tspanData, lineIndex) => {
@@ -539,24 +533,22 @@ export class TextService {
         const fontFamily = this.getValueOfPropertyAt(lineIndex, charIndex, 'fontFamily');
         const prevChar = this.textLines2[lineIndex][charIndex - 1];
 
-        // const stylesChar = {
-        //   fontFamily,
-        //   fontSize,
-        //   fontWeight: this.getValueOfPropertyAt(lineIndex, charIndex, 'fontWeight'),
-        //   fontStyle: this.getValueOfPropertyAt(lineIndex, charIndex, 'fontStyle') || 'normal',
-        //   linethrough: this.getValueOfPropertyAt(lineIndex, charIndex, 'linethrough') || false,
-        //   overline: this.getValueOfPropertyAt(lineIndex, charIndex, 'overline') || false,
-        // }
-        // const prevStylesChar = {
-        //   fontFamily: this.getValueOfPropertyAt(lineIndex, charIndex - 1, 'fontFamily'),
-        //   fontSize: this.getValueOfPropertyAt(lineIndex, charIndex - 1, 'fontSize'),
-        //   fontWeight: this.getValueOfPropertyAt(lineIndex, charIndex - 1, 'fontWeight'),
-        //   fontStyle: this.getValueOfPropertyAt(lineIndex, charIndex - 1, 'fontStyle') || 'normal',
-        //   linethrough: this.getValueOfPropertyAt(lineIndex, charIndex - 1, 'linethrough') || false,
-        //   overline: this.getValueOfPropertyAt(lineIndex, charIndex - 1, 'overline') || false,
-        // }
-        
-        // const info = this._measureChar2(char, stylesChar, prevChar?.char, prevStylesChar);
+        const stylesChar = {
+          fontFamily,
+          fontSize,
+          fontWeight: this.getValueOfPropertyAt(lineIndex, charIndex, 'fontWeight'),
+          fontStyle: this.getValueOfPropertyAt(lineIndex, charIndex, 'fontStyle') || 'normal',
+          linethrough: this.getValueOfPropertyAt(lineIndex, charIndex, 'linethrough') || false,
+          overline: this.getValueOfPropertyAt(lineIndex, charIndex, 'overline') || false,
+        }
+        const prevStylesChar = {
+          fontFamily: this.getValueOfPropertyAt(lineIndex, charIndex - 1, 'fontFamily'),
+          fontSize: this.getValueOfPropertyAt(lineIndex, charIndex - 1, 'fontSize'),
+          fontWeight: this.getValueOfPropertyAt(lineIndex, charIndex - 1, 'fontWeight'),
+          fontStyle: this.getValueOfPropertyAt(lineIndex, charIndex - 1, 'fontStyle') || 'normal',
+          linethrough: this.getValueOfPropertyAt(lineIndex, charIndex - 1, 'linethrough') || false,
+          overline: this.getValueOfPropertyAt(lineIndex, charIndex - 1, 'overline') || false,
+        }
         // const info = this._measureChar3(char, stylesChar, prevChar?.char, prevStylesChar);
 
         // TODO: Need recaculate this function!
