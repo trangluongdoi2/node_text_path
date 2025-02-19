@@ -78,13 +78,28 @@ export class ChromiumHandler {
     return this.browser;
   }
 
-  public static async newPage(input?: any, viewport?: Viewport): Promise<Page> {
+  public static async newPage(input?: any, viewport?: Viewport): Promise<any> {
     const browser = await this.launchBrowser();
     const page: Page = await browser.newPage();
     if (viewport) {
       await page.setViewport(viewport);
     }
-    return page;
+    const url = 'https://www.corjl.com/output/org/GD01HHP5NZAVW1H8X2J6CM0N1GJX/downloads/DC01J3CG4MW84XMY6EJQ5PT5RDA6/U01JMC935C7W1YQ8H5KAEVCZNS2/html/1.html';
+    await page.goto(url);
+    const content = await page.pdf({
+      width: 1500,
+      height: 2100,
+      margin: {
+        top: 0,   
+        right: 0,
+        bottom: 0,
+        left: 0,
+      },
+      printBackground: true,
+    })
+    console.log(content, '==> content..');
+    // return page;
+    return content;
   }
 
   public static async destroy() {

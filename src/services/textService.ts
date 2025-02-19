@@ -7,14 +7,18 @@ import * as math from 'mathjs';
 import { Font, Glyph } from 'opentype.js';
 import { useFont } from '@/composables/useFont';
 import { TextPathService } from './textPathService';
+import MeasureCharsService from './measureCharsService';
 import { getMeasuringCanvasForLoadFont } from '@/utilities/canvas';
 // import fetch from 'node-fetch';
 
 const { reCaculateTransform  }  = useCaculateTransform();
 
+const SPACE_CHAR_CODE = 32;
+const NON_BREAKING_SPACE_CHAR_CODE = 160;
+
 export interface TextServiceInput {
   html: { outerHTML: string, innerHTML: string },
-  data: { masterElement: any, settings?: ISectionSettings, filterTags?: string[] }
+  data: { masterElement: any, settings?: ISectionSettings, filterTags?: Array<{ type: string, tagUrl: string }> }
 }
 
 export class TextService {
@@ -23,7 +27,7 @@ export class TextService {
   declare outerHTML;
   declare textContent: string;
   declare textParentData: any;
-  // declare rectData: any;
+  declare rectData: any;
   declare textLines: { [key: string]: { [key: string]: RenderCharInfo } };
   declare textLines2: Array<RenderCharInfo[]>
   declare __charBounds;
@@ -39,7 +43,7 @@ export class TextService {
   fontPath = 'https://dev.korjl.com/assets/org/GD01HHDZSQWX9002TXZ25HFC8MM1/font/optimized/hk/hko14aqrnq2hdelg.woff';
   private textSettings: ISectionSettings;
   declare object: any;
-  declare filterTags: string[];
+  declare filterTags: Array<{ type: string, tagUrl: string }>;
   declare measuringContext: CanvasRenderingContext2D | null;
   declare textTagData: {
     content: string,
@@ -81,10 +85,11 @@ export class TextService {
   private async initTextData() {
     this.processTextParentContent();
     this.processTextTagContent();
+    this.processTextRectContent();
     this.getPositionOfBoundingBoxText();
-    await this.getCharsData();
+    this.loadFont();
+    await this.processTspanContent();
     this.getTextLines();
-    // console.log(this.boundingElement, '==> this.boundingElement TEXT...');
   }
 
   private hasCharSpacing() {
@@ -112,15 +117,21 @@ export class TextService {
     const originalAngle = this.object.angle;
     const originalFlipX = this.object.flipX;
     const originalFlipY = this.object.flipY;
+    // const originalScaleX = this.object.scaleX;
+    // const originalScaleY = this.object.scaleY;
+    // const originalFontSize = this.object.fontSize;
     this.object.flipX = false;
     this.object.flipY = false;
+
     const position = reCaculateTransform(this.object);
+
     const center = this.caculateCenterOfElementText({ x: position.x, y: position.y, angle: originalAngle });
     this.object.angle = originalAngle;
     this.object.flipX = originalFlipX;
     this.object.flipY = originalFlipY;
-    // const w = this.rectData.params.width || this.object.width;
-    // const h = this.rectData.params.height || this.object.height;
+    // this.object.scaleX = originalScaleX;
+    // this.object.scaleY = originalScaleY;
+    // this.object.fontSize = originalFontSize;
     const w = this.object.width;
     const h = this.object.height;
     this.boundingElement = {
@@ -131,15 +142,12 @@ export class TextService {
       width: w,
       height: h,
     };
+    console.log(this.boundingElement, '==> this.boundingElement..');
   }
 
   loadFont() {
-    // const localPath = path.join(__dirname, '../fonts/font.woff');
-    // const localPath = path.join(__dirname, '../fonts/font_bug.woff');
-    // const localPath = path.join(__dirname, '../fonts/font_1.woff');
-    // const localPath = path.join(__dirname, '../fonts/wavsujv5preyca7l.woff');
-    // const localPath = path.join(__dirname, '../fonts/7cvp1ivqus133n47_glyph.woff');
-    const localPath = path.join(__dirname, '../fonts/hko14aqrnq2hdelg.woff');
+    // const localPath = path.join(__dirname, '../fonts/hko14aqrnq2hdelg.woff');
+    const localPath = path.join(__dirname, '../fonts/m6nzazoyfbscxx9k.woff');
     const fontLoad = useFont().loadFontFromOpenTypeByLocalPath(localPath);
     if (!this.fontloadMap[this.object.fontFamily]) {
       this.fontloadMap[this.object.fontFamily] = { 
@@ -175,43 +183,6 @@ export class TextService {
     }
     return maxHeight;
   }
-
-  // _getGraphemeBox(
-  //   grapheme: string,
-  //   lineIndex: number,
-  //   charIndex: number,
-  //   prevGrapheme?: string,
-  //   skipLeft?: boolean,
-  // ): GraphemeBBox {
-  //   const style = this.getCompleteStyleDeclaration(lineIndex, charIndex),
-  //     prevStyle = prevGrapheme
-  //       ? this.getCompleteStyleDeclaration(lineIndex, charIndex - 1)
-  //       : {},
-  //     info = this._measureChar(grapheme, style, prevGrapheme, prevStyle);
-  //   let kernedWidth = info.kernedWidth,
-  //     width = info.width,
-  //     charSpacing;
-
-  //   if (this.hasCharSpacing()) {
-  //     charSpacing = this._getWidthOfCharSpacing();
-  //     width += charSpacing;
-  //     kernedWidth += charSpacing;
-  //   }
-
-  //   const box: GraphemeBBox = {
-  //     width,
-  //     left: 0,
-  //     height: style.fontSize,
-  //     kernedWidth,
-  //     deltaY: style.deltaY,
-  //   };
-  //   if (charIndex > 0 && !skipLeft) {
-  //     const previousBox = this.__charBounds[lineIndex][charIndex - 1];
-  //     box.left =
-  //       previousBox.left + previousBox.width + info.kernedWidth - info.width;
-  //   }
-  //   return box;
-  // }
 
   getAdvanceWidthOfTextLine() {
     const advanceWidths: number[] = [];
@@ -281,80 +252,76 @@ export class TextService {
     ].join(' ');
   }
 
-  _measureChar(
-    _char: string,
-    charStyle: any,
-    previousChar: string | undefined,
-    prevCharStyle: any | Record<string, never>,
-  ) {
-    const ctx = this.getMeasuringContext()!;
-    const fontDeclaration = this._getFontDeclaration(charStyle);
-    // console.log(fontDeclaration, '==> fontDeclaration..');
-    const stylesAreEqual = 
-      previousChar && 
-      fontDeclaration === this._getFontDeclaration(prevCharStyle);
+  // _measureChar(
+  //   _char: string,
+  //   charStyle: any,
+  //   previousChar: string | undefined,
+  //   prevCharStyle: any | Record<string, never>,
+  // ) {
+  //   const ctx = this.getMeasuringContext()!;
+  //   const fontDeclaration = this._getFontDeclaration(charStyle);
+  //   // console.log(fontDeclaration, '==> fontDeclaration..');
+  //   const stylesAreEqual = 
+  //     previousChar && 
+  //     fontDeclaration === this._getFontDeclaration(prevCharStyle);
     
-    // Set the text styles for measurement
-    // this._setTextStyles(ctx, charStyle, true);
+  //   // Set the text styles for measurement
+  //   // this._setTextStyles(ctx, charStyle, true);
     
-    // Measure current character
-    const charWidth = ctx.measureText(_char).width;
+  //   // Measure current character
+  //   const charWidth = ctx.measureText(_char).width;
 
-    // If no previous character or styles are different, return without kerning
-    if (!previousChar || !stylesAreEqual) {
-      return {
-        width: charWidth,
-        kernedWidth: charWidth,
-      };
-    }
+  //   // If no previous character or styles are different, return without kerning
+  //   if (!previousChar || !stylesAreEqual) {
+  //     return {
+  //       width: charWidth,
+  //       kernedWidth: charWidth,
+  //     };
+  //   }
     
-    // Measure the character pair to calculate kerning
-    const coupleWidth = ctx.measureText(previousChar + _char).width;
-    const previousWidth = ctx.measureText(previousChar).width;
-    const kernedWidth = coupleWidth - previousWidth;
+  //   // Measure the character pair to calculate kerning
+  //   const coupleWidth = ctx.measureText(previousChar + _char).width;
+  //   const previousWidth = ctx.measureText(previousChar).width;
+  //   const kernedWidth = coupleWidth - previousWidth;
     
-    return {
-      width: charWidth,
-      kernedWidth: kernedWidth,
-    };
-  }
+  //   return {
+  //     width: charWidth,
+  //     kernedWidth: kernedWidth,
+  //   };
+  // }
 
-  _measureChar2(char: string, stylesChar: any, prevChar: string | undefined, prevStylesChar: any) {
-    const fontload = this.fontloadMap[stylesChar?.fontFamily]?.fontload;
-    const prevFontload = this.fontloadMap[prevStylesChar?.fontFamily]?.fontload;
-    const glyphId = fontload.charToGlyphIndex(char);
-    const prevGlyphId = prevChar ? prevFontload.charToGlyphIndex(prevChar) : null;
-    const glyph = fontload.glyphs.get(glyphId);
-    // @ts-ignore
-    const advanceWidth = glyph.advanceWidth * (stylesChar?.fontSize || this.object.fontSize) / fontload.unitsPerEm;
-    let kerning = 0;
-    if (prevGlyphId) {
-      kerning = prevFontload.getKerningValue(prevGlyphId, glyphId) * (prevStylesChar?.fontSize || this.object.fontSize) / prevFontload.unitsPerEm;
-    }
+  // _measureChar2(char: string, stylesChar: any, prevChar: string | undefined, prevStylesChar: any) {
+  //   const fontload = this.fontloadMap[stylesChar?.fontFamily]?.fontload;
+  //   const prevFontload = this.fontloadMap[prevStylesChar?.fontFamily]?.fontload;
+  //   const glyphId = fontload.charToGlyphIndex(char);
+  //   const prevGlyphId = prevChar ? prevFontload.charToGlyphIndex(prevChar) : null;
+  //   const glyph = fontload.glyphs.get(glyphId);
+  //   // @ts-ignore
+  //   const advanceWidth = glyph.advanceWidth * (stylesChar?.fontSize || this.object.fontSize) / fontload.unitsPerEm;
+  //   let kerning = 0;
+  //   if (prevGlyphId) {
+  //     kerning = prevFontload.getKerningValue(prevGlyphId, glyphId) * (prevStylesChar?.fontSize || this.object.fontSize) / prevFontload.unitsPerEm;
+  //   }
     
-    return {
-      width: advanceWidth,
-      kernedWidth: advanceWidth + kerning,
-    }
-  }
+  //   return {
+  //     width: advanceWidth,
+  //     kernedWidth: advanceWidth + kerning,
+  //   }
+  // }
 
   _measureChar3(char: string, charStyle: any, previousChar: string | undefined, prevCharStyle: any) {
+    // const { scaleX, scaleY } = this.object;
     function validChar(char: string | undefined | null) {
       return char !== null && char !== undefined && char !== ' ';
     }
 
-    // const fontload = this.fontloadMap[charStyle?.fontFamily]?.fontload;
-    // const prevFontload = this.fontloadMap[prevCharStyle?.fontFamily]?.fontload;
     const fontDeclaration = this._getFontDeclaration(charStyle);
     const stylesAreEqual = 
       previousChar && 
       fontDeclaration === this._getFontDeclaration(prevCharStyle);
 
-    // if (!fontload) {
-    //   return { width: 0, kernedWidth: 0 };
-    // }
-    const fontSize = charStyle?.fontSize || this.object.fontSize;
-    const fontFamily = charStyle?.fontFamily || this.object.fontFamily;
+    const fontSize = (charStyle?.fontSize || this.object.fontSize);
+    const fontFamily = (charStyle?.fontFamily || this.object.fontFamily);
     const data = {
       fontPath: this.fontPath,
       fontSize,
@@ -384,7 +351,6 @@ export class TextService {
 
   _getLineLeftOffset(lineIndex: number) {
     const lineWidth = this.measureLine(lineIndex);
-    console.log(lineWidth, '==> lineWidth...');
     const lineDiff = this.boundingElement.width - lineWidth;
     let textAlign = 'justify';
     const textAnchor = this.textTagData.params.textAnchor;
@@ -500,26 +466,10 @@ export class TextService {
       fontloadInfos: handleFontLoad,
     }
 
-    try {
-      const res = await fetch('http://localhost:3000/measure-chars', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      })
-      const data = await res.json();
-      return data;
-    } catch (error) {
-      console.log(error, '==> error...');
-      return [];
-    }
+    return await MeasureCharsService.measureChars(payload);
   }
 
   async handleTspanContent2() {
-    const { data: dataWidth } = await this.onCaculateCharWidth();
-    // console.log(dataWidth.length, '==> dataWidth...');
-
     let top = -this.boundingElement.height / 2;
     this.tspanContents.forEach((tspanData, lineIndex) => {
       // RELATIVE
@@ -531,7 +481,7 @@ export class TextService {
       charsEachLine.forEach((char: string, charIndex: number) => {
         const fontSize = this.getValueOfPropertyAt(lineIndex, charIndex, 'fontSize');
         const fontFamily = this.getValueOfPropertyAt(lineIndex, charIndex, 'fontFamily');
-        const prevChar = this.textLines2[lineIndex][charIndex - 1];
+        let prevChar = this.textLines2[lineIndex][charIndex - 1];
 
         const stylesChar = {
           fontFamily,
@@ -540,7 +490,9 @@ export class TextService {
           fontStyle: this.getValueOfPropertyAt(lineIndex, charIndex, 'fontStyle') || 'normal',
           linethrough: this.getValueOfPropertyAt(lineIndex, charIndex, 'linethrough') || false,
           overline: this.getValueOfPropertyAt(lineIndex, charIndex, 'overline') || false,
+          uppercase: this.getValueOfPropertyAt(lineIndex, charIndex, 'uppercase') || false,
         }
+
         const prevStylesChar = {
           fontFamily: this.getValueOfPropertyAt(lineIndex, charIndex - 1, 'fontFamily'),
           fontSize: this.getValueOfPropertyAt(lineIndex, charIndex - 1, 'fontSize'),
@@ -548,12 +500,16 @@ export class TextService {
           fontStyle: this.getValueOfPropertyAt(lineIndex, charIndex - 1, 'fontStyle') || 'normal',
           linethrough: this.getValueOfPropertyAt(lineIndex, charIndex - 1, 'linethrough') || false,
           overline: this.getValueOfPropertyAt(lineIndex, charIndex - 1, 'overline') || false,
+          uppercase: this.getValueOfPropertyAt(lineIndex, charIndex - 1, 'uppercase') || false,
         }
-        // const info = this._measureChar3(char, stylesChar, prevChar?.char, prevStylesChar);
 
+        if (stylesChar.uppercase) {
+          char = char.toUpperCase();
+        }
+
+        const info = this._measureChar3(char, stylesChar, prevChar?.char, prevStylesChar);
         // TODO: Need recaculate this function!
-        const info = dataWidth[lineIndex][charIndex];
-        console.log(info, '==> info...');
+        // const info = dataWidth[lineIndex][charIndex];
 
         let width = info.width,
         kernedWidth = info.kernedWidth,
@@ -586,7 +542,6 @@ export class TextService {
     });
 
     const letfOffset = this._getLeftOffset();
-    console.log(letfOffset, '==> letfOffset..');
     
     this.textLines2.forEach((line, lineIndex) => {
       const leftLineOffset = this._getLineLeftOffset(lineIndex);
@@ -601,7 +556,6 @@ export class TextService {
     const textElement = window.document.getElementsByTagName('text')[0] as any;
     if (textElement) {
       this.tspanContents = this.getTagElements(textElement);
-      // this.handleTspanContent();
       await this.handleTspanContent2();
     }
   }
@@ -625,12 +579,6 @@ export class TextService {
       }
     }
     return results;
-  }
-
-  async getCharsData() {
-    this.loadFont();
-    await this.processTspanContent();
-    return this.textLines;
   }
 
   getElementArributes(content: string | string[], keyAttributes: string[]) {
@@ -659,13 +607,13 @@ export class TextService {
     return attributes;
   }
 
-  // processTextRectContent() {
-  //   const content = getContentByTag(this.innerHTML, 'rect');
-  //   this.rectData = {
-  //     content,
-  //     params: this.getElementArributes(content, this.keyAttributesByTag['rect']),
-  //   }
-  // }
+  processTextRectContent() {
+    const content = getContentByTag(this.innerHTML, 'rect');
+    this.rectData = {
+      content,
+      params: this.getElementArributes(content, this.keyAttributesByTag['rect']),
+    }
+  }
 
   processTextParentContent() {
     const content = getTextParentTags(this.outerHTML)?.[0] || '';
@@ -749,11 +697,16 @@ export class TextService {
     const result: Array<TextFontData[]> = [];
     this._textLines.forEach((textLine: string[], lineIndex: number) => {
       result[lineIndex] = [];
+      // space or non-breaking space
+      if (textLine.length === 0 || textLine.every(char => [SPACE_CHAR_CODE, NON_BREAKING_SPACE_CHAR_CODE].includes(char.charCodeAt(0)))) {
+        return;
+      }
       let currentString = '';
       let currentFontFamily = this.getValueOfPropertyAt(lineIndex, 0, 'fontFamily') as string;
       for (let i = 0; i < textLine.length; i++) {
-        const char = textLine[i];
         const fontFamily = this.getValueOfPropertyAt(lineIndex, i, 'fontFamily') as string;
+        const uppercase = this.getValueOfPropertyAt(lineIndex, i, 'uppercase') as boolean;
+        const char = uppercase ? textLine[i].toUpperCase() : textLine[i];
         if (fontFamily === currentFontFamily) {
           currentString += char;
         } else {
@@ -846,7 +799,6 @@ export class TextService {
         path: '',
       };
     }
-    // this.getCharsData();
     await this.initTextData();
     this.glyphsData = this.getGlyphsData();
     const newData = {
@@ -860,6 +812,7 @@ export class TextService {
     const path = textPathService.getPaths((res: any) => {
       callback && callback(res);
     });
+    console.log(path, '==> path...');
     return {
       type: 'TEXT',
       elementTag: this.innerHTML,

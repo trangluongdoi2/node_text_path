@@ -65,20 +65,12 @@ export function getFontPathInFolder(fontPath: string, fontFamily: string) {
 
 export const getMeasuringCanvasForLoadFont = (data: any) => {
   const { fontStyleDecalaration, fontFamily } = data;
-  const fontPath = path.join(__dirname, '../fonts/hko14aqrnq2hdelg.woff');
-
-  // const randomString = Math.random().toString(36).substring(2, 15);
-  // const workingDirTmp = `/tmp/${randomString}`;
-  // prepareWorkingDir(workingDirTmp);
-  // const tmpFontPath = `${workingDirTmp}/${extractFilename(fontPath)}`;
-  // console.log(tmpFontPath, '==> tmpFontPath...');
-  // fs.writeFileSync(tmpFontPath, fs.readFileSync(fontPath));
+  const fontPath = path.join(__dirname, '../fonts/m6nzazoyfbscxx9k.woff');
 
   registerFont(fontPath, { family: fontFamily });
   const canvas = new Canvas(0, 0);
   const ctx = canvas.getContext('2d') as unknown as CanvasRenderingContext2D;
   ctx.font = fontStyleDecalaration;
   ctx.textBaseline = 'alphabetic';
-  // console.log(ctx.font, '==> ctx.font...');
   return { canvas, ctx };
 };

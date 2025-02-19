@@ -18,14 +18,12 @@ export class TextPathService {
   declare textLines: string[];
   declare _textLines: Array<string[]>;
   private glyphsData: Array<GlyphData[]>;
-  private filterTags: string[];
+  private filterTags: Array<{ type: string, tagUrl: string }>;
   ITALIC_ANGLE = 15;
   constructor(options: ITextPathServiceInput) {
-    // this.charsMap = options.charsMap;
     this.object = options.object;
     this.boundingElement = options.boundingElement;
     this.fontloadMap = options.fontloadMap;
-    // this.deltaY = options.deltaY;
     this.paths = '';
     this.flip = {
       x: this.object.flipX ? -1 : 1,
@@ -134,30 +132,30 @@ export class TextPathService {
     return `<path ${fillStyles} d="${paths}" />`;
   }
 
-  getPathByChar(charData: any, lineIndex: number, charIndex: number) {
-    const { cx, cy } = this.boundingElement;
-    const fontload = this.fontloadMap[this.object.fontFamily].fontload;
-    const path = fontload.getPath(charData.char, 0, 0, charData.fontSize);
-    const initTransform = {
-      x: 0,
-      y: 0,
-      isItalicStyle: charData.fontStyle === 'italic',
-    }
-    const caculatedPath = this.getDataPath(path, initTransform, lineIndex, charIndex);
-    const { a, b, c, d } = getRotationMatrixRatios(this.object.angle);
-    const { left = 0, top = 0 } = charData;
-    const newTop = top;
-    const tx = a * left + c * newTop + cx;
-    const ty = b * left + d * newTop + cy;
+  // getPathByChar(charData: any, lineIndex: number, charIndex: number) {
+  //   const { cx, cy } = this.boundingElement;
+  //   const fontload = this.fontloadMap[this.object.fontFamily].fontload;
+  //   const path = fontload.getPath(charData.char, 0, 0, charData.fontSize);
+  //   const initTransform = {
+  //     x: 0,
+  //     y: 0,
+  //     isItalicStyle: charData.fontStyle === 'italic',
+  //   }
+  //   const caculatedPath = this.getDataPath(path, initTransform, lineIndex, charIndex);
+  //   const { a, b, c, d } = getRotationMatrixRatios(this.object.angle);
+  //   const { left = 0, top = 0 } = charData;
+  //   console.log('charData', charData);
+  //   const tx = a * left + c * top + cx;
+  //   const ty = b * left + d * top + cy;
 
-    const matrix = `matrix(${a} ${b} ${c} ${d} ${tx} ${ty})`;
+  //   const matrix = `matrix(${a} ${b} ${c} ${d} ${tx} ${ty})`;
 
-    const pathContent = `
-      <g transform="${matrix}">
-        ${this.getPathWithStyles(caculatedPath, { fill: charData.fill, fontStyle: charData.fontStyle })}
-      </g>`;
-    return pathContent;
-  }
+  //   const pathContent = `
+  //     <g transform="${matrix}">
+  //       ${this.getPathWithStyles(caculatedPath, { fill: charData.fill, fontStyle: charData.fontStyle })}
+  //     </g>`;
+  //   return pathContent;
+  // }
   
   getStyleDeclaration(multiStyles: any, lineIndex: number, charIndex: number) {
     const lineStyle = multiStyles && multiStyles[lineIndex];
@@ -174,6 +172,7 @@ export class TextPathService {
       return { multiPaths: '', singlePath: [] };
     }
     const { angle = 0, scaleX = 1, scaleY = 1 } = this.object;
+    console.log(scaleX, scaleY, '==> scaleX, scaleY...');
    
     const singlePath: string[] = [];
     const multiPaths: string[] = [];
@@ -277,11 +276,28 @@ export class TextPathService {
 
   getCombinePathContent(): { content: string, purePathContent: string } {
     const { path, paths } = this.getTextPathsByGlyphs();
-    const filterPaths = this.filterTags?.map((filterTag: string) => `
-      <g ${this.getOriginalCombineTextTransformContent()} ${filterTag}>
-        <path d="${path}" />
-      </g>
-    `).join(' ');
+
+    const filterPaths = this.filterTags?.map((filterTag: any) => {
+      if (filterTag.type === 'outer_glow') {
+        const { outerGlow } = this.object;
+        const { color } = outerGlow;
+        return `
+          <g ${this.getOriginalCombineTextTransformContent()} ${filterTag.tagUrl}>
+            <path d="${path}" fill="${color}" />
+          </g>
+        `;
+      }
+      if (filterTag.type === 'drop_shadow') {
+        const { shadow } = this.object;
+        const { color } = shadow;
+        return `
+          <g ${this.getOriginalCombineTextTransformContent()} ${filterTag.tagUrl}>
+            <path d="${path}" fill="${color}" />
+          </g>
+        `;
+      }
+      return '';
+    }).join(' ');
     const res = `
       ${filterPaths}
       ${this.getStrokeContent(path)}

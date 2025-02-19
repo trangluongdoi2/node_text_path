@@ -1,40 +1,8 @@
 import { BrowserPool } from "@/chromium/browserPool";
 import { ChromiumHandler } from "@/chromium/chromiumHandler";
 import { MeasureCharsPayload, TextStyleDeclaration } from "@/types/convert-text";
-import { Page } from "puppeteer-core";
 
 class MeasureCharsService {
-  private fontloadMap: any;
-  private object: any;
-  // private fontPath: any;
-  private fontPath = 'https://dev.korjl.com/assets/org/GD01HHDZSQWX9002TXZ25HFC8MM1/font/optimized/hk/hko14aqrnq2hdelg.woff'
-
-  _getFontDeclaration(
-    {
-      fontFamily = this.object.fontFamily,
-      fontStyle = this.object.fontStyle,
-      fontWeight = this.object.fontWeight,
-      fontSize = this.object.fontSize,
-    }: Partial<
-      Pick<
-        TextStyleDeclaration,
-        'fontFamily' | 'fontStyle' | 'fontWeight' | 'fontSize'
-      >
-    > = {},
-  ): string {
-    const parsedFontFamily =
-      fontFamily.includes("'") ||
-      fontFamily.includes('"') ||
-      fontFamily.includes(',') ||
-      `"${fontFamily}"`;
-    return [
-      fontStyle,
-      fontWeight,
-      `${fontSize}px`,
-      parsedFontFamily,
-    ].join(' ');
-  }
-
   async measureChars(input: MeasureCharsPayload) {
     const { tspanContents, fontloadInfos } = input;
     const browserPool = new BrowserPool();
@@ -43,6 +11,7 @@ class MeasureCharsService {
       const fontfaceLoadString = fontloadInfos.map(({ fontFamily, fontPath }) => {
         return `@font-face { font-family: '${fontFamily}'; src: url('${fontPath}'); font-weight: normal; font-style: normal; }`
       });
+
       const htmlContent = `
         <!DOCTYPE html>
           <html>
@@ -55,30 +24,23 @@ class MeasureCharsService {
         `;
       const configs = { ...input }
   
-      // await page?.setContent(htmlContent, { waitUntil: 'domcontentloaded', timeout: 0 });
-      // await page?.setContent(htmlContent, { waitUntil: 'load', timeout: 1000 * 60 });
-      await page?.setContent(htmlContent, { waitUntil: 'networkidle0', timeout: 0 });
-
-      const width = await page?.evaluate(async (configs) => {
+      await page?.setContent(htmlContent, { waitUntil: 'networkidle2', timeout: 0 });
+    
+      const width = await page?.evaluate(async (configs: any) => {
         // BLOCK FUNCTION
-        function getFontLoadFromUrl(fontFamily: string, fontPath: string) {
-          return new Promise((resolve, reject) => {
-            fetch(fontPath)
-              .then(response => response.arrayBuffer())
-              .then(arrayBuffer => {
-                const font = window.opentype.parse(arrayBuffer);
-                resolve({
-                  fontFamily,
-                  fontPath,
-                  fontload: font
-                });
-              })
-              .catch(error => {
-                reject(error);
-              });
-          })
+        function loadFontFace(fontFamily: string, fontPath: string) {
+          return new Promise(resolve => {
+            const font = new FontFace(fontFamily, `url(${fontPath})`);
+            document.fonts.add(font);
+            font.load().then(() => {
+              resolve(fontFamily);
+            }).catch(err => {
+              console.error('Font loading failed:', err);
+              resolve(fontFamily);
+            });
+          });
         }
-  
+        
         function _getFontDeclaration(
           {
             fontFamily = '',
@@ -154,16 +116,13 @@ class MeasureCharsService {
         let widthValue: Array<{ width: number, kernedWidth: number }[]> = [];
         const { masterElement, tspanContents, fontloadInfos } = configs;
         let fontloadMap: Record<string, any> = {};
-        const fontLoadPromises = await Promise.all(fontloadInfos.map(({ fontFamily, fontPath }) => {
-          return getFontLoadFromUrl(fontFamily, fontPath)
+
+        await Promise.all(fontloadInfos.map(({ fontFamily, fontPath }: { fontFamily: string, fontPath: string }) => {
+          return loadFontFace(fontFamily, fontPath)
         }));
-  
-        fontLoadPromises.forEach(({ fontFamily, fontPath, fontload }: any) => {
-          fontloadMap[fontFamily] = fontload;
-        });
-  
+
         let textLines: any[] = [];
-        tspanContents.forEach((tspanData, lineIndex) => {
+        tspanContents.forEach((tspanData: any, lineIndex: number) => {
           if (widthValue[lineIndex] === undefined) {
             widthValue[lineIndex] = [];
           }

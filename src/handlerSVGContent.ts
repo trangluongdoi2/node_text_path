@@ -22,6 +22,7 @@ import {
   getTextStyleTags,
   getTextStylesContent,
   getFilterUrl,
+  getTypeFiltersFormFilterTag,
 } from './utils-svg';
 import { Page } from 'puppeteer-core';
 import PotraceService from './services/potraceService';
@@ -405,9 +406,16 @@ class HandlerSVGContent {
     const masterElement = this.getMasterElement(elementTag);
     const { elementKey } = masterElement;
     const textStyleTags = (getTextStylesContent(elementTag) || []) as string[];
-    const filterTags = getFilterUrl(textStyleTags.join(''));
+    // const filterTags = getFilterUrl(textStyleTags.join(''));
+    const filterTags = textStyleTags.map((textStyleTag) => {
+      return {
+        type: getTypeFiltersFormFilterTag(textStyleTag) || '',
+        tagUrl: getFilterUrl(textStyleTag),
+      }
+    });
     const textPathService = new TextService({
       html: { outerHTML, innerHTML: elementTag },
+      // @ts-ignore
       data: { masterElement, filterTags }
     });
     let newTransform = '';
@@ -469,9 +477,15 @@ class HandlerSVGContent {
             return this.convertClippingPathText(index, innerHTML, outerHTML);
           }
           const textStyleTags = (getTextStylesContent(innerHTML) || []) as string[];
-          const filterTags = getFilterUrl(textStyleTags.join(''));
+          const filterTags = textStyleTags.map((textStyleTag) => {
+            return {
+              type: getTypeFiltersFormFilterTag(textStyleTag) || '',
+              tagUrl: getFilterUrl(textStyleTag),
+            }
+          });
           const textPathService = new TextService({
             html: { outerHTML, innerHTML },
+            // @ts-ignore
             data: { masterElement, filterTags }
         });
           const res = textPathService.exportPath();

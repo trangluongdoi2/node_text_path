@@ -188,10 +188,13 @@ export const getTextParentsContent = (content: string, index = 'all') => {
   return matches;
 }
 
-export const getTextStylesContent = (content: string, index = 'all') => {
-  const regix = new RegExp(`<g\\s+id="([^"]+)_canvas_group_text_style_([^"]+)*"[^>]*>`, 'g');
+export const getTextStylesContent = (content: string, tag = 'text', index = 'all') => {
+  const regix = new RegExp('<text[^>]*class="[^"]*_canvas_text_style_[^"]*"[^>]*>', 'g');
   let matches = [];
   let match;
+
+  const openTag = `<${tag}`;
+  const closeTag = `</${tag}>`;
 
   while ((match = regix.exec(content)) !== null) {
     const startIndex = match.index;
@@ -200,17 +203,17 @@ export const getTextStylesContent = (content: string, index = 'all') => {
     let endIndex = startIndex + openTag.length;
     // Find the corresponding closing </g> tag
     while (depth > 0 && endIndex < content.length) {
-      const nextOpen = content.indexOf('<g', endIndex);
-      const nextClose = content.indexOf('</g>', endIndex);
+      const nextOpen = content.indexOf(openTag, endIndex);
+      const nextClose = content.indexOf(closeTag, endIndex);
       if (nextClose === -1) {
         break;
       };
       if (nextOpen !== -1 && nextOpen < nextClose) {
         depth++;
-        endIndex = nextOpen + 4; // Move past the <svg
+        endIndex = nextOpen + openTag.length; // Move past the <text
       } else {
         depth--;
-        endIndex = nextClose + 6; // Move past the </svg>
+        endIndex = nextClose + closeTag.length; // Move past the </text>
       }
     }
     if (depth === 0) {
@@ -232,6 +235,17 @@ export const getFilterUrl = (html: string) => {
 
 export const getTextTags = (html: string) => {
   return getContentByTag(html, 'text');
+}
+
+export const getTypeFiltersFormFilterTag = (filterTag: string) => {
+  console.log(filterTag, '==> filterTag...');
+  if (filterTag.includes('outer_glow')) {
+    return 'outer_glow';
+  }
+  if (filterTag.includes('drop_shadow')) {
+    return 'drop_shadow';
+  }
+  return ;;
 }
 
 export const getShapeRectanglesTag = (html: string) => {

@@ -6,19 +6,22 @@
         "sectionIndex": 1,
         "left": 0,
         "top": 0,
-        "assetConfigs": [],
-        "behavior": "fill-canvas",
-        "width": 0,
-        "height": 0,
-        "noImage": false,
-        "typeBackground": "color",
+        "fill": "#423C3C",
         "backstage": {
             "fill": {
-                "value": "#1D1A1A",
+                "value": "#423C3C",
                 "enabled": true
             }
         },
-        "fill": "#1D1A1A",
+        "transparentFill": {
+            "enabled": true,
+            "value": "#ffffff"
+        },
+        "assetConfigs": [],
+        "behavior": "fill-canvas",
+        "width": 1500,
+        "height": 1050,
+        "typeBackground": "color",
         "scaleX": 1,
         "scaleY": 1,
         "cropX": 0,
@@ -42,148 +45,77 @@
         "lockSize": false,
         "lockStyle": false
     },
-    "32729e": {
-        "type": "textbox",
-        "elementKey": "32729e",
+    "337ef1": {
+        "elementKey": "337ef1",
         "sectionIndex": 1,
-        "lockByDesigner": false,
-        "lockByCustomer": false,
-        "left": -200,
-        "top": 185.20176696777,
-        "width": 2016,
-        "height": 383.7952880859375,
-        "alwaysOnTop": false,
+        "originalText": "Nguyen Tan Vinh",
+        "left": -11.201991081237793,
+        "fontSize": 165.70617533383415,
+        "width": 1054.2019910812378,
+        "height": 414.3946533203125,
+        "top": 678.2773370647838,
+        "type": "textbox",
+        "asset": {
+            "selected": "AF01HHE49M6Y1BQXZJV5CQ5WAVXP",
+            "selectedStyles": [],
+            "available": [
+                "AF01HHE49M6Y1BQXZJV5CQ5WAVXP"
+            ]
+        },
         "transformMatrix": [
             1,
             0,
             0,
             1,
-            42.93613009503055,
-            -200.88858522989264
+            234.1010745361893,
+            -346.30023595991725
         ],
-        "hideInDownload": false,
-        "protection": {
-            "elementSettings": {
-                "customerHiddenLayers": false,
-                "requireText": false,
-                "lockSize": false,
-                "lockColor": false,
-                "lockFont": false,
-                "lockText": false,
-                "lockStyle": false,
-                "lockResizeAsImage": false
+        "fontFamily": "font-pdhksyz8sd",
+        "fontloadMap": {
+            "font-pdhksyz8sd": {
+                "assetId": "AF01HHE49M6Y1BQXZJV5CQ5WAVXP"
             }
         },
-        "name": null,
-        "originalText": "Hooray, Hooray! I'm back to play! I missed you more than you can believe! But now I'll be here until Christmas Eve.",
-        "asset": {
-            "selected": "AF01HHEEKRQQS9ZCPXFKZME4XK6P",
-            "selectedStyles": [
-                "AF01HHEEKRQQS9ZCPXFKZME4XK6P"
-            ],
-            "available": [
-                "AF01HHEEKRQQS9ZCPXFKZME4XK6P"
-            ]
-        },
-        "uppercase": false,
-        "underline": false,
-        "linethrough": false,
-        "fill": "#c40101",
-        "fontFamily": "font-9zrx9n3n2i",
-        "fontSize": 104.16562499999999,
-        "fontWeight": "normal",
-        "fontStyle": "normal",
-        "lineHeight": 1.2,
-        "globalCompositeOperation": "",
         "styles": {},
         "backstage": {
-            "stroke": {
-                "enabled": false,
-                "width": 10,
-                "color": "#000000",
-                "opacity": 100
+            "corjl1Styles": {},
+            "outerGlow": {
+                "enabled": true,
+                "color": "#EF3030",
+                "blur": 139
             },
             "shadow": {
-                "enabled": false,
-                "color": "#000000",
+                "enabled": true,
+                "color": "#7A00FF",
                 "blur": 10,
-                "offsetX": 10,
-                "offsetY": 0,
-                "distance": 10,
-                "angle": 0
-            },
-            "outerGlow": {
-                "enabled": false,
-                "color": "#000000",
-                "blur": 10
+                "angle": 0,
+                "distance": 350,
+                "opacity": 100
             },
             "gradient": {
-                "enabled": false,
+                "enabled": true,
+                "deg": 0,
                 "colorStops": [
                     {
                         "color": "#000000",
                         "opacity": 100
                     },
                     {
-                        "color": "#000000",
+                        "color": "#9C3C3C",
                         "opacity": 100
                     }
                 ],
-                "deg": 0,
                 "gradientUnits": "percentage",
                 "type": "linear"
-            },
-            "curved": {
-                "enabled": false,
-                "type": "circle",
-                "degrees": 50,
-                "position": "DOWN"
-            },
-            "opacity": {
-                "enabled": false,
-                "value": 100
-            },
-            "rotation": {
-                "enabled": false,
-                "value": 0
-            },
-            "corjl1Styles": {
-                "enabled": true,
-                "fontFileInfo": {
-                    "unitsPerEm": 1024,
-                    "ascender": 1175,
-                    "descender": -360
-                },
-                "textLines": [
-                    "Hooray, Hooray! I'm back to play! I",
-                    "missed you more than you can believe!",
-                    "But now I'll be here until Christmas Eve."
-                ]
             }
         },
-        "fontloadMap": {
-            "font-9zrx9n3n2i": {
-                "assetId": "AF01HHEEKRQQS9ZCPXFKZME4XK6P"
-            }
-        },
-        "corjl1Styles": {
+        "uppercase": true,
+        "outerGlow": {
             "enabled": true,
-            "fontFileInfo": {
-                "unitsPerEm": 1024,
-                "ascender": 1175,
-                "descender": -360
-            },
-            "textLines": [
-                "Hooray, Hooray! I'm back to play! I",
-                "missed you more than you can believe!",
-                "But now I'll be here until Christmas Eve."
-            ]
+            "color": "#EF3030",
+            "blur": 139
         },
-        "requireText": false,
-        "lockColor": false,
-        "lockFont": false,
-        "lockText": false,
-        "lockResizeAsImage": false,
+        "transparent": false,
         "scaleX": 1,
         "scaleY": 1,
         "cropX": 0,
@@ -196,6 +128,7 @@
         "angle": 0,
         "skewX": 0,
         "skewY": 0,
+        "fill": "#000000",
         "selectable": true,
         "visible": true,
         "isMakeClippingMask": false,
@@ -203,14 +136,38 @@
         "outsideArtboard": false,
         "textAlign": "center",
         "resizeAsImage": false,
+        "lineHeight": 1,
         "placeholder": "Enter Text Here",
         "charSpacing": 0,
         "wrapText": false,
-        "text": "Hooray, Hooray! I'm back to play! I missed you more than you can believe! But now I'll be here until Christmas Eve.",
+        "text": "NGUYEN TAN VINH",
+        "shadow": {
+            "color": "#7A00FF",
+            "blur": 10,
+            "angle": 0,
+            "distance": 350,
+            "opacity": 100,
+            "offsetX": 350,
+            "offsetY": 0
+        },
+        "gradient": {
+            "deg": 0,
+            "colorStops": [
+                {
+                    "color": "#000000",
+                    "opacity": 1
+                },
+                {
+                    "color": "#9C3C3C",
+                    "opacity": 1
+                }
+            ],
+            "gradientUnits": "percentage",
+            "type": "linear"
+        },
         "strokeWidth": 0,
-        "customerHiddenLayers": false,
+        "canReplaceImage": false,
         "lockSize": false,
-        "lockStyle": false,
-        "canReplaceImage": false
+        "lockStyle": false
     }
 }

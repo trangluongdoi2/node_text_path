@@ -42,6 +42,7 @@ app.post('/api/post-html', (req: Request, res: Response) => {
 
 app.get('/', async (req: Request, res: Response) => {
   let svgContent = fs.readFileSync(path.join(__dirname, './files/input_text_2.svg'), 'utf8');
+  // let svgContent = fs.readFileSync(path.join(__dirname, './files/input_1.svg'), 'utf8');
   function preProcessSVG(svgContent: string) {
     const dom = new JSDOM(svgContent);
     const { window } = dom;
@@ -61,6 +62,10 @@ app.get('/', async (req: Request, res: Response) => {
   // } catch (error) {
   //   console.log(error, '==> error');
   // }
+  // console.log(page, '==> page..');
+  // res.contentType("application/pdf");
+  // res.send(page);
+
 
   const data = fs.readFileSync(path.join(__dirname, './data/index_3.json'), 'utf8');
   const handlerSVGContent = new HandlerSVGContent(svgContent.replace(/\s+/g, ' '), JSON.parse(data));
@@ -72,7 +77,7 @@ app.get('/', async (req: Request, res: Response) => {
   console.log('Write file output_text.svg SUCCESS!!!');
 });
 
-app.use('/measure-chars', measureCharsRouter);  
+// app.use('/measure-chars', measureCharsRouter);
 
 app.listen(PORT, async () => {
   console.log(`Server is running on port ${PORT} ` + `http://localhost:${PORT}/`);
