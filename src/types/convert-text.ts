@@ -32,8 +32,8 @@ export type TBBox = {
 } & TSize;
 
 export type BoundingElement = {
-  x: number,
-  y: number,
+  x?: number,
+  y?: number,
   cx: number,
   cy: number,
   width: number,
@@ -176,3 +176,12 @@ export type MeasureCharsPayload = {
     fontPath: string,
   }[],
 }
+
+export interface IClippathTagsInput {
+  elementKey: string,
+  transform: string,
+  clipPath: string,
+  path: string,
+}
+
+export type ClippathTagsOutput = Pick<IClippathTagsInput, 'transform' | 'path'>

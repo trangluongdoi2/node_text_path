@@ -15,6 +15,7 @@ export class ChromiumHandler {
 
   public static async launchBrowser() {
     if (!this.browser) {
+      console.log('Case none browser...')
       const puppeteer = require('puppeteer-core');
       const executablePath = '/opt/homebrew/bin/chromium';
       this.browser = <Browser>await puppeteer.launch({
@@ -71,6 +72,7 @@ export class ChromiumHandler {
         ],
         executablePath,
         headless: false,
+        protocolTimeout: 15 * 60 * 1000
       });
 
       console.log('Chromium version: ' + (await this.browser.version()));
@@ -84,22 +86,18 @@ export class ChromiumHandler {
     if (viewport) {
       await page.setViewport(viewport);
     }
-    const url = 'https://www.corjl.com/output/org/GD01HHP5NZAVW1H8X2J6CM0N1GJX/downloads/DC01J3CG4MW84XMY6EJQ5PT5RDA6/U01JMC935C7W1YQ8H5KAEVCZNS2/html/1.html';
-    await page.goto(url);
-    const content = await page.pdf({
-      width: 1500,
-      height: 2100,
-      margin: {
-        top: 0,   
-        right: 0,
-        bottom: 0,
-        left: 0,
-      },
-      printBackground: true,
-    })
-    console.log(content, '==> content..');
-    // return page;
-    return content;
+  //   const url = 'https://www.corjl.com/output/org/GD01HHP605E91ESTTSY8BAT6DPV4/downloads/DC01JCEEZQZEVTTJHYBCXV6G575A/U01JPMA69YJT09P7D1AQMM3HZ5G/html/2.html';
+  //   await page.goto(url);
+  //   const options = {
+  //     exportWidth: 5100,
+  //     exportHeight: 3300,
+  //     scale: 1,
+  //     bleedSize: 0
+  // }
+
+  //   const res = await page.evaluate((opt) => (window as any).exportNew('SVG', opt), options);
+  //   console.log(res, '===> res.../');
+    return page;
   }
 
   public static async destroy() {

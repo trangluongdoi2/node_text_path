@@ -150,7 +150,6 @@ class ExportSVGFilterService {
         elements.map((element) => {
           const { innerHTML } = element;
           if (this.hasFilter(innerHTML) || this.hasPatternTag(innerHTML)) {
-            console.log('>>> hasFilter 9999');
             return this.convertImageFilterForUnflattenCase(innerHTML);
           }
           return undefined;

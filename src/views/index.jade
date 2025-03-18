@@ -75,7 +75,6 @@ html
       async function loadContent(e) {
         e.preventDefault();
         content = await getPureSVG(url);
-        console.log(content, '==> content...');
         const serverURL = 'http://localhost:3000/api/post-html';
         const headers = {
           'Accept': 'application/json',

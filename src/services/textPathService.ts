@@ -172,12 +172,13 @@ export class TextPathService {
       return { multiPaths: '', singlePath: [] };
     }
     const { angle = 0, scaleX = 1, scaleY = 1 } = this.object;
-    console.log(scaleX, scaleY, '==> scaleX, scaleY...');
-   
     const singlePath: string[] = [];
     const multiPaths: string[] = [];
     for (const [lineIndex, textLine] of this.glyphsData.entries()) {
       for (const glyph of textLine) {
+        // if (['.notdef', '.null'].includes(glyph.name as string)) {
+        //   continue;
+        // }
         const { top, left, fill, fontStyle } = glyph;
         const initTransform = {
           x: 0,
@@ -192,8 +193,10 @@ export class TextPathService {
         const newD = d * scaleY * this.flip.y;
         const relativeLeft = newA * left + newC * top;
         const relativeTop = newB * left + newD * top;
+
         const tx = this.boundingElement.cx + relativeLeft;
         const ty = this.boundingElement.cy + relativeTop;
+
         const matrix = `matrix(${newA} ${newB} ${newC} ${newD} ${tx} ${ty})`;
         multiPaths.push(
           `<g transform="${matrix}">
@@ -262,6 +265,24 @@ export class TextPathService {
     return this.getSvgStylesByObject(styles);
   }
 
+  getDropShadowData() {
+    const { backstage = {} } = this.object;
+    if (!Object.keys(backstage)?.length) {
+      return null;
+    }
+    const { shadow } = backstage;
+    return shadow;
+  }
+
+  getOuterglowData() {
+    const { backstage = {} } = this.object;
+    if (!Object.keys(backstage)?.length) {
+      return null;
+    }
+    const { outerGlow } = backstage;
+    return outerGlow;
+  }
+
   getStrokeContent(path: string) {
     if (!this.hasStroke()) {
       return '';
@@ -279,8 +300,11 @@ export class TextPathService {
 
     const filterPaths = this.filterTags?.map((filterTag: any) => {
       if (filterTag.type === 'outer_glow') {
-        const { outerGlow } = this.object;
-        const { color } = outerGlow;
+        const outerGlowData = this.getOuterglowData();
+        if (!outerGlowData) {
+          return '';
+        }
+        const { color } = outerGlowData;
         return `
           <g ${this.getOriginalCombineTextTransformContent()} ${filterTag.tagUrl}>
             <path d="${path}" fill="${color}" />
@@ -288,8 +312,11 @@ export class TextPathService {
         `;
       }
       if (filterTag.type === 'drop_shadow') {
-        const { shadow } = this.object;
-        const { color } = shadow;
+        const shadowData = this.getDropShadowData();
+        if (!shadowData) {
+          return '';
+        }
+        const { color } = shadowData;
         return `
           <g ${this.getOriginalCombineTextTransformContent()} ${filterTag.tagUrl}>
             <path d="${path}" fill="${color}" />
@@ -304,8 +331,12 @@ export class TextPathService {
       <g ${this.getOriginalCombineTextTransformContent()}>
         <path d="${path}" />
       </g>
-      ${paths}
     `;
+    // const res = `
+    //   ${filterPaths}
+    //   ${this.getStrokeContent(path)}
+    //   ${paths}
+    // `;
     const purePathContent = `<path d="${path}" />`;
     return {
       content: res,
@@ -315,6 +346,7 @@ export class TextPathService {
 
   getPaths(callback?: Function) {
     const { content, purePathContent } = this.getCombinePathContent();
+    // console.log(purePathContent, '==> forCallback..')
     callback && callback({
       transform: this.getOriginalCombineTextTransformContent(),
       path: purePathContent,

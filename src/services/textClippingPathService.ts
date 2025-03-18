@@ -27,7 +27,6 @@ export class TextClippingPath {
       height: 0,
     }
     this.initTextClippingPathData();
-    console.log(this.boundingElement, '==> this.boundingElement CLIPPING PATH....');
   }
 
   initTextClippingPathData() {
@@ -83,16 +82,6 @@ export class TextClippingPath {
 
     const { a, b, c, d } = getRotationMatrixRatios(-this.object.angle);
     const { a: a1, b: b1, c: c1, d: d1 } = getRotationMatrixRatios(this.object.angle);
-
-    const test = {
-      x: (this.boundingElement.width / 2) * a + (this.boundingElement.height / 2) * c,
-      y: (this.boundingElement.width / 2) * b + (this.boundingElement.height / 2) * d,
-    }
-
-    const test2 = {
-      x: (this.boundingElement.width / 2) * a1 + (this.boundingElement.height / 2) * c1,
-      y: (this.boundingElement.width / 2) * b1 + (this.boundingElement.height / 2) * d1,
-    }
 
     const deltaCenter = {
       x: boundText.cx - this.boundingElement.cx,
@@ -200,7 +189,6 @@ export class TextClippingPath {
     const leftRelative = -width / 2;
     const topRelative = -height / 2;
 
-    // console.log(tx, ty, '==> tx, ty...');
     const x1 = 932.4009759957368;
     const y1 = 205.87691561006784;
     const tx = x1 - width / 2;

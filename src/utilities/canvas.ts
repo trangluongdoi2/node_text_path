@@ -59,13 +59,13 @@ export async function fetchAndSaveFont(url: string, fileName: string) {
 // }
 
 export function getFontPathInFolder(fontPath: string, fontFamily: string) {
-  const fontPathInFolder = path.join(__dirname, '../fonts/hko14aqrnq2hdelg.woff');
+  const fontPathInFolder = path.join(__dirname, '../fonts/ir8dpooohek1j28h.woff');
   return fontPathInFolder;
 }
 
 export const getMeasuringCanvasForLoadFont = (data: any) => {
   const { fontStyleDecalaration, fontFamily } = data;
-  const fontPath = path.join(__dirname, '../fonts/m6nzazoyfbscxx9k.woff');
+  const fontPath = path.join(__dirname, '../fonts/ir8dpooohek1j28h.woff');
 
   registerFont(fontPath, { family: fontFamily });
   const canvas = new Canvas(0, 0);

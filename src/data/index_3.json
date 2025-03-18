@@ -6,22 +6,11 @@
         "sectionIndex": 1,
         "left": 0,
         "top": 0,
-        "fill": "#423C3C",
-        "backstage": {
-            "fill": {
-                "value": "#423C3C",
-                "enabled": true
-            }
-        },
-        "transparentFill": {
-            "enabled": true,
-            "value": "#ffffff"
-        },
         "assetConfigs": [],
         "behavior": "fill-canvas",
-        "width": 1500,
-        "height": 1050,
-        "typeBackground": "color",
+        "width": 0,
+        "noImage": false,
+        "height": 1800,
         "scaleX": 1,
         "scaleY": 1,
         "cropX": 0,
@@ -45,77 +34,133 @@
         "lockSize": false,
         "lockStyle": false
     },
-    "337ef1": {
-        "elementKey": "337ef1",
-        "sectionIndex": 1,
-        "originalText": "Nguyen Tan Vinh",
-        "left": -11.201991081237793,
-        "fontSize": 165.70617533383415,
-        "width": 1054.2019910812378,
-        "height": 414.3946533203125,
-        "top": 678.2773370647838,
+    "c7dc08": {
         "type": "textbox",
-        "asset": {
-            "selected": "AF01HHE49M6Y1BQXZJV5CQ5WAVXP",
-            "selectedStyles": [],
-            "available": [
-                "AF01HHE49M6Y1BQXZJV5CQ5WAVXP"
-            ]
-        },
+        "elementKey": "c7dc08",
+        "sectionIndex": 1,
+        "lockByDesigner": false,
+        "lockByCustomer": false,
+        "left": 595,
+        "top": 239,
+        "width": 450,
+        "height": 150,
+        "alwaysOnTop": false,
         "transformMatrix": [
             1,
             0,
             0,
             1,
-            234.1010745361893,
-            -346.30023595991725
+            0,
+            0
         ],
-        "fontFamily": "font-pdhksyz8sd",
-        "fontloadMap": {
-            "font-pdhksyz8sd": {
-                "assetId": "AF01HHE49M6Y1BQXZJV5CQ5WAVXP"
+        "hideInDownload": false,
+        "protection": {
+            "elementSettings": {
+                "customerHiddenLayers": false,
+                "requireText": false,
+                "lockSize": false,
+                "lockColor": false,
+                "lockFont": false,
+                "lockText": false,
+                "lockStyle": false,
+                "lockResizeAsImage": false
             }
         },
+        "name": "",
+        "asset": {
+            "selected": "AF01HHE0JT8A77C8A5F0ZEJRJ48R",
+            "selectedStyles": [
+                "AF01HHE0JT8A77C8A5F0ZEJRJ48R"
+            ],
+            "available": [
+                "AF01HHE0JT8A77C8A5F0ZEJRJ48R"
+            ]
+        },
+        "uppercase": false,
+        "underline": false,
+        "linethrough": false,
+        "fontFamily": "font-1l34hubmj3",
+        "fontSize": 66.409375,
+        "fontWeight": "normal",
+        "fontStyle": "normal",
         "styles": {},
         "backstage": {
-            "corjl1Styles": {},
-            "outerGlow": {
-                "enabled": true,
-                "color": "#EF3030",
-                "blur": 139
-            },
-            "shadow": {
-                "enabled": true,
-                "color": "#7A00FF",
-                "blur": 10,
-                "angle": 0,
-                "distance": 350,
+            "stroke": {
+                "enabled": false,
+                "width": 10,
+                "color": "#000000",
                 "opacity": 100
             },
+            "shadow": {
+                "enabled": false,
+                "color": "#000000",
+                "blur": 10,
+                "offsetX": 10,
+                "offsetY": 10,
+                "angle": 0
+            },
+            "outerGlow": {
+                "enabled": false,
+                "color": "#000000",
+                "blur": 10
+            },
             "gradient": {
-                "enabled": true,
-                "deg": 0,
+                "enabled": false,
                 "colorStops": [
                     {
                         "color": "#000000",
                         "opacity": 100
                     },
                     {
-                        "color": "#9C3C3C",
+                        "color": "#000000",
                         "opacity": 100
                     }
                 ],
+                "deg": 0,
                 "gradientUnits": "percentage",
                 "type": "linear"
+            },
+            "curved": {
+                "enabled": false,
+                "degrees": null,
+                "position": "DOWN"
+            },
+            "opacity": {
+                "enabled": false,
+                "value": null
+            },
+            "rotation": {
+                "enabled": false,
+                "value": 0
+            },
+            "corjl1Styles": {
+                "enabled": true,
+                "fontFileInfo": {
+                    "unitsPerEm": 1000,
+                    "ascender": 645,
+                    "descender": -455
+                }
             }
         },
-        "uppercase": true,
-        "outerGlow": {
-            "enabled": true,
-            "color": "#EF3030",
-            "blur": 139
+        "fontloadMap": {
+            "font-1l34hubmj3": {
+                "assetId": "AF01HHE0JT8A77C8A5F0ZEJRJ48R",
+                "fontPath": "https://dev.korjl.com/assets/org/GD01HHDXZESGQTBP9FZ3G25Y6EP6/font/optimized/ad/adbm6nrhecgcaci0.woff"
+            }
         },
-        "transparent": false,
+        "corjl1Styles": {
+            "enabled": true,
+            "fontFileInfo": {
+                "unitsPerEm": 1000,
+                "ascender": 645,
+                "descender": -455
+            }
+        },
+        "requireText": false,
+        "lockColor": false,
+        "lockFont": false,
+        "lockText": false,
+        "lockResizeAsImage": false,
         "scaleX": 1,
         "scaleY": 1,
         "cropX": 0,
@@ -138,33 +183,225 @@
         "resizeAsImage": false,
         "lineHeight": 1,
         "placeholder": "Enter Text Here",
+        "originalText": "",
         "charSpacing": 0,
         "wrapText": false,
-        "text": "NGUYEN TAN VINH",
-        "shadow": {
-            "color": "#7A00FF",
-            "blur": 10,
-            "angle": 0,
-            "distance": 350,
-            "opacity": 100,
-            "offsetX": 350,
-            "offsetY": 0
+        "text": "",
+        "strokeWidth": 0,
+        "customerHiddenLayers": false,
+        "lockSize": false,
+        "lockStyle": false,
+        "canReplaceImage": false
+    },
+    "74da5e": {
+        "type": "image",
+        "elementKey": "74da5e",
+        "sectionIndex": 1,
+        "lockByDesigner": false,
+        "lockByCustomer": false,
+        "left": 890,
+        "top": 760,
+        "width": 1080,
+        "height": 1080,
+        "alwaysOnTop": false,
+        "globalCompositeOperation": "",
+        "transformMatrix": [
+            1,
+            0,
+            0,
+            1,
+            1371.774193548387,
+            -834.6774193548387
+        ],
+        "hideInDownload": false,
+        "protection": {
+            "elementSettings": {
+                "customerHiddenLayers": false
+            }
         },
-        "gradient": {
-            "deg": 0,
-            "colorStops": [
-                {
-                    "color": "#000000",
-                    "opacity": 1
-                },
-                {
-                    "color": "#9C3C3C",
-                    "opacity": 1
-                }
-            ],
-            "gradientUnits": "percentage",
-            "type": "linear"
+        "name": "Blue",
+        "asset": {
+            "selected": "AG01HHE24WTXCV0222T17ZNKB66J",
+            "available": [
+                "AG01HHE24WTXCV0222T17ZNKB66J"
+            ]
         },
+        "backstage": {
+            "stroke": {
+                "enabled": false,
+                "width": 10,
+                "color": "#000000",
+                "opacity": 100
+            },
+            "shadow": {
+                "enabled": false,
+                "color": "#000000",
+                "blur": 10,
+                "offsetX": 10,
+                "offsetY": 0,
+                "distance": 10,
+                "angle": 0
+            },
+            "outerGlow": {
+                "enabled": false,
+                "color": "#000000",
+                "blur": 10
+            },
+            "gradient": {
+                "enabled": false,
+                "colorStops": [
+                    {
+                        "color": "#000000",
+                        "opacity": 100
+                    },
+                    {
+                        "color": "#000000",
+                        "opacity": 100
+                    }
+                ],
+                "deg": 0,
+                "gradientUnits": "percentage",
+                "type": "linear"
+            },
+            "opacity": {
+                "enabled": false,
+                "value": 100
+            },
+            "rotation": {
+                "enabled": false,
+                "value": 0
+            },
+            "saturation": {
+                "enabled": false,
+                "value": -50
+            },
+            "brightness": {
+                "enabled": false,
+                "value": 0
+            },
+            "contrast": {
+                "enabled": false,
+                "value": 0
+            },
+            "sepia": {
+                "enabled": false,
+                "value": 0
+            },
+            "hue": {
+                "enabled": false,
+                "value": 0
+            },
+            "blur": {
+                "enabled": false,
+                "value": 0
+            }
+        },
+        "corjlFilters": [],
+        "scaleX": 1,
+        "scaleY": 1,
+        "cropX": 0,
+        "cropY": 0,
+        "originX": "left",
+        "originY": "top",
+        "flipX": false,
+        "flipY": false,
+        "opacity": 1,
+        "angle": 0,
+        "skewX": 0,
+        "skewY": 0,
+        "selectable": true,
+        "visible": true,
+        "isMakeClippingMask": false,
+        "crossOrigin": "anonymous",
+        "outsideArtboard": false,
+        "src": "https://dev.korjl.com/assets/org/GD01HHDZSMZQ57K00R3XXZ50CCT6/image/optimized/7b/7b8211e5e23d79a6",
+        "thumbnail": "https://dev.korjl.com/assets/org/GD01HHDZSMZQ57K00R3XXZ50CCT6/image/thumb/27/273768c45c9df258",
+        "isError": false,
+        "strokeWidth": 0,
+        "customerHiddenLayers": false,
+        "canReplaceImage": false,
+        "lockSize": false,
+        "lockStyle": false
+    },
+    "91a2f4": {
+        "elementKey": "91a2f4",
+        "sectionIndex": 1,
+        "left": 495.703125,
+        "top": 820.1612903225806,
+        "type": "image",
+        "width": 2700,
+        "height": 1800,
+        "transformMatrix": [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+        ],
+        "corjlFilters": [],
+        "scaleX": 1,
+        "scaleY": 1,
+        "cropX": 0,
+        "cropY": 0,
+        "originX": "left",
+        "originY": "top",
+        "flipX": false,
+        "flipY": false,
+        "opacity": 1,
+        "angle": 0,
+        "skewX": 0,
+        "skewY": 0,
+        "selectable": true,
+        "visible": true,
+        "isMakeClippingMask": false,
+        "crossOrigin": "anonymous",
+        "outsideArtboard": false,
+        "src": "",
+        "thumbnail": "",
+        "isError": true,
+        "strokeWidth": 0,
+        "canReplaceImage": false,
+        "lockSize": false,
+        "lockStyle": false
+    },
+    "3a8e11": {
+        "elementKey": "3a8e11",
+        "sectionIndex": 1,
+        "left": 602.4193548387096,
+        "top": 431.85483870967744,
+        "type": "image",
+        "width": 1280,
+        "height": 1219,
+        "transformMatrix": [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+        ],
+        "corjlFilters": [],
+        "scaleX": 1,
+        "scaleY": 1,
+        "cropX": 0,
+        "cropY": 0,
+        "originX": "left",
+        "originY": "top",
+        "flipX": false,
+        "flipY": false,
+        "opacity": 1,
+        "angle": 0,
+        "skewX": 0,
+        "skewY": 0,
+        "selectable": true,
+        "visible": true,
+        "isMakeClippingMask": false,
+        "crossOrigin": "anonymous",
+        "outsideArtboard": false,
+        "src": "",
+        "thumbnail": "",
+        "isError": true,
         "strokeWidth": 0,
         "canReplaceImage": false,
         "lockSize": false,

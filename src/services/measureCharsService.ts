@@ -5,11 +5,11 @@ import { MeasureCharsPayload, TextStyleDeclaration } from "@/types/convert-text"
 class MeasureCharsService {
   async measureChars(input: MeasureCharsPayload) {
     const { tspanContents, fontloadInfos } = input;
-    const browserPool = new BrowserPool();
+    // const browserPool = new BrowserPool();
+    const page = await ChromiumHandler.newPage();
     try {
-      const page = await ChromiumHandler.newPage();
       const fontfaceLoadString = fontloadInfos.map(({ fontFamily, fontPath }) => {
-        return `@font-face { font-family: '${fontFamily}'; src: url('${fontPath}'); font-weight: normal; font-style: normal; }`
+        return `@font-face { font-family: '${fontFamily}'; src: url('${fontPath}'); }`
       });
 
       const htmlContent = `
@@ -94,9 +94,7 @@ class MeasureCharsService {
           let width = 0;
           let kernedWidth = width = ctx.measureText(char).width;
   
-          // if (char == 'y') {
-          // }
-          console.log(ctx.measureText(char).width, '=> ctx.measureText..', char)
+          // console.log(ctx.measureText(char).width, '=> ctx.measureText..', char)
       
           if (validChar(previousChar) && validChar(char) && stylesAreEqual) {
             ctx.font = fontDeclaration;
@@ -133,15 +131,22 @@ class MeasureCharsService {
           charsEachLine.forEach((char: string, charIndex: number) => {
             const fontSize = getValueOfPropertyAt(masterElement, lineIndex, charIndex, 'fontSize');
             const fontFamily = getValueOfPropertyAt(masterElement, lineIndex, charIndex, 'fontFamily');
+            const fontWeight = getValueOfPropertyAt(masterElement, lineIndex, charIndex, 'fontWeight') || 'normal';
+            const fontStyle = getValueOfPropertyAt(masterElement, lineIndex, charIndex, 'fontStyle') || 'normal';
+            const linethrough = getValueOfPropertyAt(masterElement, lineIndex, charIndex, 'linethrough') || false;
+            const overline = getValueOfPropertyAt(masterElement, lineIndex, charIndex, 'overline') || false;
+            const fill = getValueOfPropertyAt(masterElement, lineIndex, charIndex, 'fill') || '#000000';
+            
             const prevChar = textLines[lineIndex][charIndex - 1];
     
             const stylesChar = {
               fontFamily,
               fontSize,
-              fontWeight: getValueOfPropertyAt(masterElement, lineIndex, charIndex, 'fontWeight') || 'normal',
-              fontStyle: getValueOfPropertyAt(masterElement, lineIndex, charIndex, 'fontStyle') || 'normal',
-              linethrough: getValueOfPropertyAt(masterElement, lineIndex, charIndex, 'linethrough') || false,
-              overline: getValueOfPropertyAt(masterElement, lineIndex, charIndex, 'overline') || false,
+              fontWeight,
+              fontStyle,
+              linethrough,
+              overline,
+              fill,
             }
   
             const prevStylesChar = {
@@ -155,10 +160,13 @@ class MeasureCharsService {
   
             textLines[lineIndex][charIndex] = {
               char,
-              fill: getValueOfPropertyAt(masterElement, lineIndex, charIndex, 'fill'),
+              fill,
               fontFamily,
               fontSize,
-              fontWeight: getValueOfPropertyAt(masterElement, lineIndex, charIndex, 'fontWeight'),
+              fontWeight,
+              fontStyle,
+              linethrough,
+              overline,
             }
   
             const info = _measureChar(char, stylesChar, prevChar?.char, prevStylesChar);
@@ -175,8 +183,8 @@ class MeasureCharsService {
       console.log(error, '==> error');
       return [];
     } finally {
-      await browserPool.cleanup();
-      // await page?.close();
+      // await browserPool.cleanup();
+      await page?.close();
     }
     // try {
     //   page = await ChromiumHandler.newPage();

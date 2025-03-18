@@ -193,8 +193,8 @@ export const getTextStylesContent = (content: string, tag = 'text', index = 'all
   let matches = [];
   let match;
 
-  const openTag = `<${tag}`;
-  const closeTag = `</${tag}>`;
+  const openTagContent = `<${tag}`;
+  const closeTagContent = `</${tag}>`;
 
   while ((match = regix.exec(content)) !== null) {
     const startIndex = match.index;
@@ -203,17 +203,17 @@ export const getTextStylesContent = (content: string, tag = 'text', index = 'all
     let endIndex = startIndex + openTag.length;
     // Find the corresponding closing </g> tag
     while (depth > 0 && endIndex < content.length) {
-      const nextOpen = content.indexOf(openTag, endIndex);
-      const nextClose = content.indexOf(closeTag, endIndex);
+      const nextOpen = content.indexOf(openTagContent, endIndex);
+      const nextClose = content.indexOf(closeTagContent, endIndex);
       if (nextClose === -1) {
         break;
       };
       if (nextOpen !== -1 && nextOpen < nextClose) {
         depth++;
-        endIndex = nextOpen + openTag.length; // Move past the <text
+        endIndex = nextOpen + openTagContent.length; // Move past the <text
       } else {
         depth--;
-        endIndex = nextClose + closeTag.length; // Move past the </text>
+        endIndex = nextClose + closeTagContent.length; // Move past the </text>
       }
     }
     if (depth === 0) {
@@ -226,7 +226,7 @@ export const getTextStylesContent = (content: string, tag = 'text', index = 'all
   return matches;
 }
 
-export const getFilterUrl = (html: string) => {
+export const getFilterUrls = (html: string) => {
   const regix = new RegExp(`filter="([^"]+)"`, 'g');
   let bodyHtml: string | string[] = html.replace(/\n/g, '');
   bodyHtml = bodyHtml.match(regix) ?? [];
@@ -237,15 +237,14 @@ export const getTextTags = (html: string) => {
   return getContentByTag(html, 'text');
 }
 
-export const getTypeFiltersFormFilterTag = (filterTag: string) => {
-  console.log(filterTag, '==> filterTag...');
+export const getTypeFiltersFromFilterTag = (filterTag: string) => {
   if (filterTag.includes('outer_glow')) {
     return 'outer_glow';
   }
   if (filterTag.includes('drop_shadow')) {
     return 'drop_shadow';
   }
-  return ;;
+  return '';
 }
 
 export const getShapeRectanglesTag = (html: string) => {
@@ -260,6 +259,13 @@ export const getShapeClipPathByRectanglesTag = (html: string) => {
   let bodyHtml: string | string[] = html.replace(/\n/g, '');
   bodyHtml = bodyHtml.match(regix) ?? [];
   return bodyHtml || [];
+};
+
+export const getTextRectanglesTag = (html: string) => {
+  const regix = new RegExp("<rect id=\"[^\"]*_canvas_rect_([^\"]+)\"[^>]*>(.*?)<\\/rect>", 'g');
+  let bodyHtml: string | string[] = html.replace(/\n/g, '');
+  bodyHtml = bodyHtml.match(regix) ?? [];
+  return bodyHtml;
 }
 
 // export const getGradientFilterId = () => {
