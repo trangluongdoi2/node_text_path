@@ -83,20 +83,10 @@ export class ChromiumHandler {
   public static async newPage(input?: any, viewport?: Viewport): Promise<any> {
     const browser = await this.launchBrowser();
     const page: Page = await browser.newPage();
+    page.on('console', msg => console.log(msg.text()));
     if (viewport) {
       await page.setViewport(viewport);
     }
-  //   const url = 'https://www.corjl.com/output/org/GD01HHP605E91ESTTSY8BAT6DPV4/downloads/DC01JCEEZQZEVTTJHYBCXV6G575A/U01JPMA69YJT09P7D1AQMM3HZ5G/html/2.html';
-  //   await page.goto(url);
-  //   const options = {
-  //     exportWidth: 5100,
-  //     exportHeight: 3300,
-  //     scale: 1,
-  //     bleedSize: 0
-  // }
-
-  //   const res = await page.evaluate((opt) => (window as any).exportNew('SVG', opt), options);
-  //   console.log(res, '===> res.../');
     return page;
   }
 
