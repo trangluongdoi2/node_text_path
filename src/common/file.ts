@@ -26,13 +26,9 @@ export function deleteFolderContents(path: string, recursive = false) {
 }
 
 export function prepareWorkingDir(workingDir: string, clear = false) {
-  console.log('prepareWorkingDir() ==> ...');
-  const flag = fs.existsSync(workingDir);
-  console.log(flag, 'flag ==>')
   if (clear && fs.existsSync(workingDir)) {
     deleteFolderContents(workingDir);
   } else if (!fs.existsSync(workingDir)) {
-    console.log('fs.mkdirSync...');
     fs.mkdirSync(workingDir, { recursive: true });
   }
 }

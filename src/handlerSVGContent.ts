@@ -41,6 +41,8 @@ class HandlerSVGContent {
   private textRectangles: string[];
 
   constructor(svgContent: string, data: any, page?: Page) {
+    // this.styles = styles;
+    this.potraceService = new PotraceService();
     this.configs = {
       pageColumns: 1,
       pageRows: 1,
@@ -51,12 +53,12 @@ class HandlerSVGContent {
     this.shapeRectangles = getShapeRectanglesTag(svgContent);
     this.filterGradientTags = getFilterGradientTags(svgContent) as string[];
     this.shapeClipPaths = getShapeClipPathTags(getContentByTag(svgContent, 'defs')?.[0] || '') as string[];
+    console.log(this.shapeClipPaths, 'this.shapeClipPaths')
     this.shapeClipPathsExluceText = this.shapeClipPaths.filter((shapeClipPath) => !shapeClipPath.includes('text'));
     this.shapeClipPathsByText = this.shapeClipPaths.filter((shapeClipPath) => shapeClipPath.includes('text'));
+    console.log(this.shapeClipPathsByText, 'this.shapeClipPathsByText...')
     this.textRectangles = getTextRectanglesTag(svgContent);
     this.data = Object.values(data);
-
-    // console.log(this.textRectangles, '==> this.textRectangles...');
 
     if (this.filterGradientTags?.length) {
       this.filterGradientTags.forEach((filterGradient, index) => {
@@ -74,12 +76,6 @@ class HandlerSVGContent {
         svgContent = svgContent.replace(shapeRectangle, `##shapeRectangles${index}##`);
       });
     }
-
-    // if (this.shapeClipPaths?.length) {
-    //   this.shapeClipPaths.forEach((shapeClipPath, index) => {
-    //     svgContent = svgContent.replace(shapeClipPath, `##shapeClipPaths${index}##`);
-    //   });
-    // }
 
     if (this.shapeClipPathsByText?.length) {
       this.shapeClipPathsByText.forEach((shapeClipPath, index) => {
@@ -139,20 +135,27 @@ class HandlerSVGContent {
     return elementHtml.indexOf('filter') !== -1;
   }
 
-  private isCurvedText(masterElement: any) {
-    if (!masterElement) {
-      return false;
-    }
-    const { backstage = {} } = masterElement;
-    if (!Object.keys(backstage)?.length) {
-      return false;
-    }
-    const { curved = {} } = backstage;
-    // eslint-disable-next-line no-extra-boolean-cast
-    if (!Object.keys(curved)?.length || !Boolean(curved?.enabled)) {
-      return false;
-    }
-    return true;
+  // private isCurvedText(masterElement: any) {
+  //   if (!masterElement) {
+  //     return false;
+  //   }
+  //   const { backstage = {} } = masterElement;
+  //   if (!Object.keys(backstage)?.length) {
+  //     return false;
+  //   }
+  //   const { curved = {} } = backstage;
+  //   // eslint-disable-next-line no-extra-boolean-cast
+  //   if (!Object.keys(curved)?.length || !Boolean(curved?.enabled)) {
+  //     return false;
+  //   }
+  //   return true;
+  // }
+
+  private isCurvedText(content: string) {
+    console.log(content, 'contetn...');
+    const flag = content.includes('<textPath');
+    console.log(flag, 'falg...')
+    return content.match('<textPath');
   }
 
   convertSvgToPng(file: string) {
@@ -180,7 +183,6 @@ class HandlerSVGContent {
         if (!imageContent) {
           continue;
         }
-        console.log(imageContent, '==> imageContent...')
         if (imageContent.startsWith('data:image/svg+xml')) {
           imageContent = decodeURIComponent(imageContent.split(',')[1]);
           if (imageContent.indexOf('svg_has_been_converted') !== -1) {
@@ -238,27 +240,53 @@ class HandlerSVGContent {
     });
   }
 
-  // private convertTextByPosterize(elementTag: string, outerHTML: string): Promise<SVGElement> {
-  //   return new Promise(async (resolve) => {
-  //     const groupElementContent = this.groupElement?.innerHTML || '';
-  //     const currentOnlyTextHtml: string = this.backupSvgContent.replace(groupElementContent, outerHTML);
-  //     const path = await this.potraceService.convertTextByPotrace(currentOnlyTextHtml, elementTag, this.styles);
-  //     resolve({
-  //       type: 'TEXT',
-  //       elementTag,
-  //       path,
-  //     });
-  //   });
-  // }
+  private convertTextClippingMaskByPosterize(index: number, elementTag: string, outerHTML: string): Promise<SVGElement> {
+    return new Promise(async (resolve) => {
+      const outerHtmlByClipPath: string = this.elements[index + 1].outerHTML || '';
+      const clippingMaskTag = this.isClipPath(outerHtmlByClipPath) ? outerHtmlByClipPath : '';
+
+      const imageClipPathTag = getContentByTag(clippingMaskTag, 'image')?.[0] || '';
+      const styleImageClipPathTag = getElemAttributesByImage(imageClipPathTag);
+      // const displayNone = [
+      //   'display: none',
+      //   'visibility: hidden',
+      //   'opacity: 0',
+      // ];
+
+      // if (displayNone.some((style: string) => (styleImageClipPathTag?.style || '').includes(style))) {
+      //   this.elements.splice(index + 1, 1);
+      //   return resolve(this.convertTextByPosterize(elementTag, outerHTML));
+      // }
+
+      const res = await this.convertTextByPosterize(elementTag, outerHTML);
+
+
+      const groupElementContent = this.groupElement?.innerHTML || '';
+      const currentOnlyTextHtml: string = this.backupSvgContent.replace(groupElementContent, `${outerHTML}${clippingMaskTag}`);
+      const path = await this.potraceService.convertTextClipPathByPotrace(currentOnlyTextHtml, elementTag);
+      resolve({
+        elementTag,
+        path,
+        clippingMaskTag,
+        type: 'TEXT_CLIP_PATH',
+      });
+    });
+  }
+
+  private convertTextByPosterize(elementTag: string, outerHTML: string): Promise<SVGElement> {
+    return new Promise(async (resolve) => {
+      const groupElementContent = this.groupElement?.innerHTML || '';
+      const currentOnlyTextHtml: string = this.backupSvgContent.replace(groupElementContent, outerHTML);
+      const path = await this.potraceService.convertTextByPotrace(currentOnlyTextHtml, elementTag);
+      resolve({
+        type: 'TEXT',
+        elementTag,
+        path,
+      });
+    });
+  }
 
   convertShape(svgContent: string) {
-    // if (!this.shapeClipPaths?.length) {
-    //   return svgContent;
-    // }
-    // this.shapeClipPaths.forEach((shapeClipPath, index) => {
-    //   svgContent = svgContent.replace(`##shapeClipPaths${index}##`, shapeClipPath);
-    // });
-
     this.shapeClipPathsByText.forEach((shapeClipPath, index) => {
       svgContent = svgContent.replace(`##shapeClipPathsByText${index}##`, shapeClipPath);
     });
@@ -267,9 +295,6 @@ class HandlerSVGContent {
       svgContent = svgContent.replace(`##shapeClipPathsExluceText${index}##`, shapeClipPath);
     });
 
-    // if (!this.shapeRectangles?.length) {
-    //   return svgContent;
-    // }
     this.shapeRectangles.forEach((shapeRectangle, index) => {
       svgContent = svgContent.replace(`##shapeRectangles${index}##`, shapeRectangle);
     });
@@ -369,20 +394,20 @@ class HandlerSVGContent {
 
   getNewClippingPathTagsContent(input: any) {
     const { elementKey } = input;
-    let { clipPath, path, transform } = input;
+    let { clipPath, path } = input;
     const idPath = `clipingText_path_${elementKey}`;
     const textTag = getContentByTag(clipPath, 'text')?.[0] || '';
     const contentClipPathTag = `
       <use
-        ${transform}
         width="100%"
         height="100%"
         xlink:href="#${idPath}"
       />
-    `
+    `;
     clipPath = clipPath.replace(textTag, contentClipPathTag);
-    clipPath = clipPath.replace(/transform="[^"]*"/, '')
-    path = path.replace('<path', `<path id="${idPath}" fill="none"`)
+    clipPath = clipPath.replace(/transform="[^"]*"/, '');
+    path = path.replace('<path', `<path id="${idPath}"`).replace(/fill="[^"]*"/g, 'fill="none"');;
+    path = path.replace(/fill="[^"]*"/g, 'fill="none"');
     const newClipPath = [clipPath, path];
     return newClipPath.join('');
   }
@@ -463,7 +488,6 @@ class HandlerSVGContent {
     let newTransform = '';
     let pureContentPath = '';
     const masterElement = this.getMasterElement(elementTag);
-    console.log(masterElement, '==> convertClippingPathText...');
     const textStyleTags = (getTextStylesContent(elementTag) || []) as string[];
     const filterTags = textStyleTags.map((textStyleTag) => {
       return {
@@ -480,7 +504,6 @@ class HandlerSVGContent {
       pureContentPath = res.path;
       newTransform = res.transform;
     });
-    console.log(res, '==> res...');
     if (displayNone.some((style: string) => (styleImageClipPathTag?.style || '').includes(style))) {
       this.elements.splice(index + 1, 1);
       return res;
@@ -496,11 +519,6 @@ class HandlerSVGContent {
         clipPath: selectClipPath,
         path: pureContentPath,
       });
-      // const textTag = getContentByTag(selectClipPath, 'text')?.[0] || '';
-      // selectClipPath = selectClipPath.replace(textTag, pureContentPath);
-
-      // // May be consider for bleed translate
-      // selectClipPath = selectClipPath.replace(/transform="[^"]*"/, newTransform);
       this.svgContent = this.svgContent.replace(`##shapeClipPathsByText${selectClipPathIndex}##`, selectClipPath);
     }
 
@@ -509,6 +527,44 @@ class HandlerSVGContent {
       clippingMaskTag,
       elementTag,
       type: 'TEXT_CLIP_PATH',
+    }
+  }
+
+  async convertClippingPathCurvedText(index: number, elementTag: string, outerHTML: string) {
+    const outerHtmlByClipPath: string = this.elements[index + 1]?.outerHTML || '';
+    const clippingMaskTag = this.isClipPath(outerHtmlByClipPath) ? outerHtmlByClipPath : '';
+    const imageClipPathTag = getContentByTag(clippingMaskTag, 'image')?.[0] || '';
+    const styleImageClipPathTag = getElemAttributesByImage(imageClipPathTag);
+    const displayNone = [
+      'display: none',
+      'visibility: hidden',
+      'opacity: 0',
+    ];
+    
+    let newTransform = '';
+    const masterElement = this.getMasterElement(elementTag);
+    const res = await this.convertTextByPosterize(elementTag, outerHTML);
+    if (displayNone.some((style: string) => (styleImageClipPathTag?.style || '').includes(style))) {
+      this.elements.splice(index + 1, 1);
+      return res;
+    }
+    const clipPathId = this.getClipPathId(outerHtmlByClipPath);
+    let selectClipPath = this.shapeClipPathsByText.find(shapeClipPath => shapeClipPath.match(clipPathId));
+    const selectClipPathIndex = this.shapeClipPathsByText.findIndex(shapeClipPath => shapeClipPath.match(clipPathId));
+    if (selectClipPath && selectClipPathIndex !== -1) {
+      selectClipPath = this.getNewClippingPathTagsContent({
+        elementKey: masterElement?.elementKey || '',
+        transform: newTransform,
+        clipPath: selectClipPath,
+        path: res.path,
+      });
+      this.svgContent = this.svgContent.replace(`##shapeClipPathsByText${selectClipPathIndex}##`, selectClipPath);
+    }
+    return {
+      ...res,
+      clippingMaskTag,
+      elementTag,
+      type: 'CURVED_TECT_CLIP_PATH',
     }
   }
 
@@ -522,7 +578,8 @@ class HandlerSVGContent {
     formatSVGContent = window.document.body.innerHTML;
     this.svgContent = formatSVGContent;
 
-    const elementsResult: any[] = [];
+    let elementsResult: any[] = [];
+    const removeIndexes: number[] = [];
     // Batch processing
     const batchSize = 3;
     for (let i = 0; i < this.elements.length; i += batchSize) {
@@ -533,6 +590,17 @@ class HandlerSVGContent {
           if (this.isTextElement(innerHTML)) {
             const masterElement = this.getMasterElement(innerHTML);
             const rectData = this.getTextRectByElementKey(masterElement?.elementKey || '') as string;
+
+            if (this.isCurvedText(innerHTML)) {
+              if (this.hasClipPath(i + index)) {
+                console.log('Case clipath curved text..');
+                removeIndexes.push(i + index);
+                return this.convertClippingPathCurvedText(i + index, innerHTML, outerHTML);
+              }
+              console.log('case curved text...');
+              return this.convertTextByPosterize(innerHTML, outerHTML);
+            }
+
             if (this.hasClipPath(i + index)) {
               return this.convertClippingPathText(i + index, innerHTML, outerHTML);
             }
@@ -566,26 +634,30 @@ class HandlerSVGContent {
       )
       elementsResult.push(...batchResult);
     }
+
+    // console.log(removeIndexes, 'removeIndexes...');
+    // for (let i = 0; i < removeIndexes.length; i++) {
+    //   elementsResult.splice(i, 1)
+    // }
+    // console.log(elementsResult.length, 'elementsResult.length...')
     
     for (const [elementIndex, element] of elementsResult.entries()) {
       if (!element) {
         continue;
       }
 
-      let { elementTag, path, clippingMaskTag } = element as any;
+      let { elementTag, path } = element as any;
+      console.log(element.type, 'element.type..')
       switch (element.type) {
         case 'TEXT': 
           this.svgContent = this.svgContent.replace(elementTag, path);
           break;
         case 'TEXT_CLIP_PATH': {
-          console.log(elementTag, '==> elementTag...');
-          const masterElement = this.getMasterElement(elementTag);
-          this.svgContent = this.isCurvedText(masterElement)
-            ? this.svgContent = this.svgContent.replace(elementTag, path).replace(clippingMaskTag || '', '')
-            : this.svgContent = this.svgContent.replace(elementTag, path)
-          
+          this.svgContent = this.svgContent.replace(elementTag, path)
           break;
         }
+        case 'CURVED_TECT_CLIP_PATH':
+          this.svgContent = this.svgContent.replace(elementTag, '')
         case 'IMAGE':
           for (const item of element.svgImages || []) {
             this.svgContent = this.svgContent.replace(item.imageElement, item.imageContent);

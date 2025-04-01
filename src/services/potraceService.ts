@@ -1,10 +1,13 @@
 import * as fs from 'fs';
-import path from 'path';
 import { Channels, Metadata } from 'sharp';
 import { Browser, Page, ScreenshotClip, Viewport } from 'puppeteer-core';
 import { PosterizerOptions, PotraceOptions } from 'potrace';
 import { getContentByTag, getElemAttributesByText, getSvgDimensions, insertStringAt, replacePathToGroup } from '@/utils-svg';
 import { SVGTextStyles } from '@/types';
+import { prepareWorkingDir } from '@/common/file';
+import { randomString } from '@/shared/helpers/string';
+import { ChromiumHandler } from '@/chromium/chromiumHandler';
+import * as potrace from 'potrace';
 export default class PotraceService {
   private WORKING_DIR = '/tmp/working';
 
@@ -12,14 +15,12 @@ export default class PotraceService {
   private browserPool: any;
 
   constructor() {
-    // console.log('===> constructor');
-    // this.browserPool = new BrowserPool();
-    // this.workingDirTmp = `/tmp/${randomString(false, 5)}`;
-    // prepareWorkingDir(this.workingDirTmp);
+    this.workingDirTmp = `/tmp/${randomString(false, 5)}`;
+    prepareWorkingDir(this.workingDirTmp);
   }
 
   private async potraceTrace(path: string, options: PotraceOptions): Promise<string> {
-    const potrace = require('potrace');
+    // const potrace = require('potrace');
     return await new Promise((resolve, reject) => {
       try {
         potrace.trace(path, options, function (error: Error | null, svg: string) {
@@ -56,16 +57,21 @@ export default class PotraceService {
 
   private async createPageContent(content: string, viewport?: Viewport): Promise<Page> {
     const TIMEOUT: number = 10 * 60 * 1000;
-    const browser: Browser = await this.browserPool.getBrowser();
-    const page: Page = await browser.newPage();
+    let page: Page | undefined = undefined;
+    try {
+      page = await ChromiumHandler.newPage();
+      console.log('Chromium DONE!');
+    } catch (error) {
+      console.log(error, '==> error');
+  }
     if (viewport) {
-      await page.setViewport(viewport);
+      await page?.setViewport(viewport);
     }
-    await page.setContent(content, {
+    await page?.setContent(content, {
       waitUntil: 'networkidle2',
       timeout: TIMEOUT,
     });
-    return page;
+    return page as any;
   }
 
   private async getImagePng(file: string): Promise<Buffer> {
@@ -93,14 +99,17 @@ export default class PotraceService {
   }
 
   private async convertTextByTrace(content: string, style: SVGTextStyles): Promise<string> {
+    console.log(content, 'content...')
     const path = this.prepareWorkingDir(style.id);
     const page = await this.createPageContent(content);
     await page.screenshot({ path, fullPage: true });
     await page.close();
     const svgContent = await this.potraceTrace(path, {
       threshold: 254,
-      color: style.fill,
+      color: '#ff0011',
+      background: 'transparent',
     });
+    console.log(svgContent, 'svgContent..')
     this.prepareWorkingDir(style.id, true);
     return svgContent;
   }
@@ -311,10 +320,10 @@ export default class PotraceService {
     return svgo.optimize(svg).data;
   }
 
-  public async convertTextByPotrace(textHtml: string, innerHTML: string, styles: string[]): Promise<string> {
+  public async convertTextByPotrace(textHtml: string, innerHTML: string, styles?: string[]): Promise<string> {
     const index: number = [...(textHtml.match(/<svg(.*?)>/g) ?? [])][0].length;
 
-    textHtml = insertStringAt(textHtml, styles.join('') || '', index);
+    textHtml = insertStringAt(textHtml, styles?.join('') || '', index);
     const texts = getContentByTag(innerHTML, 'text') as string[];
     let pathGroup = '<g>';
     for (const text of texts) {
@@ -344,9 +353,9 @@ export default class PotraceService {
     return replacePathToGroup(innerHTML, pathGroup);
   }
 
-  public async convertTextClipPathByPotrace(textHtml: string, innerHTML: string, styles: string[]): Promise<string> {
+  public async convertTextClipPathByPotrace(textHtml: string, innerHTML: string, styles?: string[]): Promise<string> {
     const index: number = [...(textHtml.match(/<svg(.*?)>/g) ?? [])][0].length;
-    textHtml = insertStringAt(textHtml, styles.join(''), index);
+    textHtml = insertStringAt(textHtml, (styles || [''])?.join(''), index);
 
     const element = innerHTML.match(/<g(.*?)>/g) || [];
     const style = getElemAttributesByText(String(element[0]));

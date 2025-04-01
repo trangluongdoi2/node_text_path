@@ -1,35 +1,27 @@
 {
-	"d8ea13": {
-        "elementKey": "d8ea13",
+    "bg-1": {
+        "name": "Background",
+        "type": "background",
+        "elementKey": "bg-1",
         "sectionIndex": 1,
-        "originalText": "Nguyen\nTanVinh",
-        "left": 256.79237715076044,
-        "fontSize": 160.53473751868012,
-        "width": 1085.146691010979,
-        "height": 318.85650634765625,
-        "top": 903.3068427876763,
-        "type": "textbox",
-        "fill": "#FFC0C0",
-        "asset": {
-            "selected": "AF01J3PFV429770TKBA751TP04AC",
-            "available": [
-                "AF01J3PFV429770TKBA751TP04AC"
-            ]
-        },
-        "transformMatrix": [
-            0.7071067811865476,
-            0.7071067811865476,
-            -0.7071067811865476,
-            0.7071067811865476,
-            931.4111585100236,
-            -261.8851409348024
-        ],
-        "fontFamily": "font-ptlxvvrkph",
-        "styles": {},
+        "left": 0,
+        "top": 0,
+        "fill": "#D4C6C6",
         "backstage": {
-            "corjl1Styles": {}
+            "fill": {
+                "value": "#D4C6C6",
+                "enabled": true
+            }
         },
-        "angle": 45,
+        "transparentFill": {
+            "enabled": true,
+            "value": "#FFFFFF"
+        },
+        "assetConfigs": [],
+        "behavior": "fill-canvas",
+        "width": 1200,
+        "height": 1800,
+        "typeBackground": "color",
         "scaleX": 1,
         "scaleY": 1,
         "cropX": 0,
@@ -39,8 +31,84 @@
         "flipX": false,
         "flipY": false,
         "opacity": 1,
+        "angle": 0,
         "skewX": 0,
         "skewY": 0,
+        "selectable": true,
+        "visible": true,
+        "isMakeClippingMask": false,
+        "crossOrigin": "anonymous",
+        "outsideArtboard": false,
+        "crop": null,
+        "src": "",
+        "canReplaceImage": false,
+        "lockSize": false,
+        "lockStyle": false
+    },
+    "64c310": {
+        "elementKey": "64c310",
+        "sectionIndex": 1,
+        "originalText": "curved text",
+        "left": 63.64922332763672,
+        "fontSize": 146.868195099405,
+        "width": 796.3507766723633,
+        "height": 405.59521484375,
+        "top": 623.6245318335893,
+        "type": "textbox",
+        "asset": {
+            "selected": "AF01J3PFV429770TKBA751TP04AC",
+            "available": [
+                "AF01J3PFV429770TKBA751TP04AC"
+            ]
+        },
+        "transformMatrix": [
+            1,
+            0,
+            0,
+            1,
+            265.2050919377652,
+            -331.50636492220656
+        ],
+        "fontFamily": "font-ptlxvvrkph",
+        "fontloadMap": {
+            "font-ptlxvvrkph": {
+                "assetId": "AF01J3PFV429770TKBA751TP04AC"
+            }
+        },
+        "backstage": {
+            "corjl1Styles": {},
+            "curved": {
+                "enabled": true,
+                "position": "DOWN",
+                "type": "arc",
+                "degrees": 75,
+                "multiline": false
+            }
+        },
+        "styles": {},
+        "curved": {
+            "enabled": true,
+            "position": "DOWN",
+            "type": "arc",
+            "degrees": 75,
+            "multiline": false
+        },
+        "highlightPlugins": {
+            "transform": false
+        },
+        "scaleX": 1,
+        "scaleY": 1,
+        "cropX": 0,
+        "cropY": 0,
+        "originX": "left",
+        "originY": "top",
+        "flipX": false,
+        "flipY": false,
+        "opacity": 1,
+        "angle": 0,
+        "skewX": 0,
+        "skewY": 0,
+        "fill": "#000000",
         "selectable": true,
         "visible": true,
         "isMakeClippingMask": false,
@@ -52,7 +120,147 @@
         "placeholder": "Enter Text Here",
         "charSpacing": 0,
         "wrapText": false,
-        "text": "Nguyen\nTanVinh",
+        "text": "curved text",
+        "strokeWidth": 0,
+        "canReplaceImage": false,
+        "lockSize": false,
+        "lockStyle": false
+    },
+    "238d86": {
+        "elementKey": "238d86",
+        "sectionIndex": 1,
+        "originalText": "curved text",
+        "left": 103.64922332763672,
+        "fontSize": 132.61011907021205,
+        "width": 719.0404378885552,
+        "height": 366.4365234375,
+        "top": 703,
+        "type": "textbox",
+        "asset": {
+            "selected": "AF01J3PFV429770TKBA751TP04AC",
+            "available": [
+                "AF01J3PFV429770TKBA751TP04AC"
+            ]
+        },
+        "transformMatrix": [
+            1,
+            0,
+            0,
+            1,
+            140.55869872701552,
+            172.38330975954733
+        ],
+        "fontFamily": "font-ptlxvvrkph",
+        "fontloadMap": {
+            "font-ptlxvvrkph": {
+                "assetId": "AF01J3PFV429770TKBA751TP04AC"
+            }
+        },
+        "backstage": {
+            "corjl1Styles": {},
+            "curved": {
+                "enabled": true,
+                "position": "DOWN",
+                "type": "arc",
+                "degrees": 75,
+                "multiline": false
+            }
+        },
+        "styles": {},
+        "curved": {
+            "enabled": true,
+            "position": "DOWN",
+            "type": "arc",
+            "degrees": 75,
+            "multiline": false
+        },
+        "highlightPlugins": {
+            "transform": false
+        },
+        "scaleX": 1,
+        "scaleY": 1,
+        "cropX": 0,
+        "cropY": 0,
+        "originX": "left",
+        "originY": "top",
+        "flipX": false,
+        "flipY": false,
+        "opacity": 1,
+        "angle": 0,
+        "skewX": 0,
+        "skewY": 0,
+        "fill": "#000000",
+        "selectable": true,
+        "visible": true,
+        "isMakeClippingMask": false,
+        "crossOrigin": "anonymous",
+        "outsideArtboard": false,
+        "textAlign": "center",
+        "resizeAsImage": false,
+        "lineHeight": 1,
+        "placeholder": "Enter Text Here",
+        "charSpacing": 0,
+        "wrapText": false,
+        "text": "curved text",
+        "strokeWidth": 0,
+        "canReplaceImage": false,
+        "lockSize": false,
+        "lockStyle": false
+    },
+    "959b58": {
+        "elementKey": "959b58",
+        "sectionIndex": 1,
+        "left": 620.0797271728516,
+        "top": 1169,
+        "type": "image",
+        "width": 833.39501953125,
+        "height": 555.5966796875,
+        "asset": {
+            "selected": "AG01JNFZ5M8G4E8JGXVBH1YJP7FZ",
+            "available": [
+                "AG01JNFZ5M8G4E8JGXVBH1YJP7FZ"
+            ]
+        },
+        "transformMatrix": [
+            1,
+            0,
+            0,
+            1,
+            -440.2404526166902,
+            -379.24328147100425
+        ],
+        "corjlFilters": [],
+        "highlightPlugins": {
+            "transform": false
+        },
+        "backstage": {
+            "clipPath": {
+                "elementKey": "238d86"
+            }
+        },
+        "scaleX": 1,
+        "scaleY": 1,
+        "cropX": 0,
+        "cropY": 0,
+        "originX": "left",
+        "originY": "top",
+        "flipX": false,
+        "flipY": false,
+        "opacity": 1,
+        "angle": 0,
+        "skewX": 0,
+        "skewY": 0,
+        "selectable": true,
+        "visible": true,
+        "isMakeClippingMask": false,
+        "crossOrigin": "anonymous",
+        "outsideArtboard": false,
+        "src": "https://dev.korjl.com/assets/org/GD01HHDZSMZQ57K00R3XXZ50CCT6/image/optimized/88/887578db3dc85f50",
+        "thumbnail": "https://dev.korjl.com/assets/org/GD01HHDZSMZQ57K00R3XXZ50CCT6/image/thumb/03/0366e50366e6c25f",
+        "clipPath": {
+            "elementKey": "238d86"
+        },
+        "isError": false,
         "strokeWidth": 0,
         "canReplaceImage": false,
         "lockSize": false,

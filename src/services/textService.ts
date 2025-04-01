@@ -272,11 +272,7 @@ export class TextService {
 
     const position = reCaculateTransform(this.object);
     const center1 = this.caculateCenterOfElementText({ x: position.x, y: position.y, angle: originalAngle });
-    // const center = this.caculateCenterOfElementText3();
-    
-    const center = this.caculateCenter4();
-    // console.log(center1, '==> center1...');
-    // console.log(center, '==> center...');
+
     this.object.angle = originalAngle;
     this.object.flipX = originalFlipX;
     this.object.flipY = originalFlipY;
@@ -296,17 +292,16 @@ export class TextService {
     };
 
     if (this.object.resizeAsImage) {
-      // this.boundingElement.cy += 113.7268055103442;
       console.log(this.boundingElement, '==> RESIZE AS IMAGE this.boundingElement...');
     }
 
     if (!this.object.resizeAsImage) {
-      // this.boundingElement.cy += 113.7268055103442;
       console.log(this.boundingElement, '==> NOT RESIZE AS IMAGE this.boundingElement...');
     }
   }
 
   async loadFont() {
+    console.log(this.object, 'this.object...')
     // @ts-ignore
     for (const [fontFamily, { fontPath = '' }] of Object.entries(this.object.fontloadMap)) {
       const fontLoad = await loadFontFromOpenTypeByUrl(fontPath) as unknown as Font;

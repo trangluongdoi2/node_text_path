@@ -15,7 +15,6 @@ export class ChromiumHandler {
 
   public static async launchBrowser() {
     if (!this.browser) {
-      console.log('Case none browser...')
       const puppeteer = require('puppeteer-core');
       const executablePath = '/opt/homebrew/bin/chromium';
       this.browser = <Browser>await puppeteer.launch({
