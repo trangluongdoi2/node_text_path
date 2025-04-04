@@ -438,7 +438,7 @@ class HandlerSVGContent {
   //   const textPathService = new TextService({
   //     html: { outerHTML, innerHTML: elementTag },
   //     // @ts-ignore
-  //     data: { masterElement, filterTags }
+  //     data: { masterElemen t, filterTags }
   //   });
   //   let newTransform = '';
   //   let pureContentPath = '';
