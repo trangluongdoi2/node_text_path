@@ -1,6 +1,6 @@
 import { Font, load, parse } from 'opentype.js';
 import fs from 'fs';
-import { toArrayBuffer } from '@/common/file';
+import { toArrayBuffer } from '@/helper/file';
 
 let fontsTracks: { [key: string]: Font | undefined } = {};
 

@@ -1,21 +1,10 @@
-import { Page, Browser, Viewport } from 'puppeteer-core';
+import puppeteer, { Page, Browser, Viewport}  from "puppeteer-core";
 
 export class ChromiumHandler {
   private static browser: Browser | undefined = undefined;
 
-  public static async asyncFunction() {
-    // console.log('asyncFunction');
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const a = 1 + 2;
-        resolve(a);
-      }, 1000);
-    });
-  }
-
   public static async launchBrowser() {
     if (!this.browser) {
-      const puppeteer = require('puppeteer-core');
       const executablePath = '/opt/homebrew/bin/chromium';
       this.browser = <Browser>await puppeteer.launch({
         args: [
@@ -71,7 +60,7 @@ export class ChromiumHandler {
         ],
         executablePath,
         headless: false,
-        protocolTimeout: 15 * 60 * 1000
+        // protocolTimeout: 15 * 60 * 1000
       });
 
       console.log('Chromium version: ' + (await this.browser.version()));

@@ -11,7 +11,7 @@ import { ChromiumHandler } from './chromium/chromiumHandler';
 import { Page } from 'puppeteer-core';
 import ExportSVGFilterService from './services/svgFilter';
 import measureCharsRouter from './routes/measure-chars';
-import { prepareWorkingDir } from './common/file';
+import { prepareWorkingDir } from './helper/file';
 import { im } from 'mathjs';
 import * as WebSocketServer  from 'ws';
 

@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import { Browser, Page } from "puppeteer-core";
-import { randomString } from "@/shared/helpers/string";
+import { randomString } from "@/helper/string";
 
 export class BrowserPool {
   private readonly MAX_BROWSERS = 5;

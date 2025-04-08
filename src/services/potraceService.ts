@@ -4,8 +4,8 @@ import { Browser, Page, ScreenshotClip, Viewport } from 'puppeteer-core';
 import { PosterizerOptions, PotraceOptions } from 'potrace';
 import { getContentByTag, getElemAttributesByText, getSvgDimensions, insertStringAt, replacePathToGroup } from '@/utils-svg';
 import { SVGTextStyles } from '@/types';
-import { prepareWorkingDir } from '@/common/file';
-import { randomString } from '@/shared/helpers/string';
+import { prepareWorkingDir } from '@/helper/file';
+import { randomString } from '@/helper/string';
 import { ChromiumHandler } from '@/chromium/chromiumHandler';
 import * as potrace from 'potrace';
 export default class PotraceService {
@@ -55,7 +55,7 @@ export default class PotraceService {
     });
   }
 
-  private async createPageContent(content: string, viewport?: Viewport): Promise<Page> {
+  async createPageContent(content: string, viewport?: Viewport): Promise<Page> {
     const TIMEOUT: number = 10 * 60 * 1000;
     let page: Page | undefined = undefined;
     try {
@@ -99,7 +99,6 @@ export default class PotraceService {
   }
 
   private async convertTextByTrace(content: string, style: SVGTextStyles): Promise<string> {
-    console.log(content, 'content...')
     const path = this.prepareWorkingDir(style.id);
     const page = await this.createPageContent(content);
     await page.screenshot({ path, fullPage: true });
@@ -109,7 +108,6 @@ export default class PotraceService {
       color: '#ff0011',
       background: 'transparent',
     });
-    console.log(svgContent, 'svgContent..')
     this.prepareWorkingDir(style.id, true);
     return svgContent;
   }

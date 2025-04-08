@@ -27,7 +27,7 @@ export const replacePathToGroup = (innerHTML: string, path: string) => {
   return `${pathByGroup} ${path} </g>`;
 };
 
-export const getContentByTag = (html: string, tag: SVGTagHtml, index = 'all') => {
+export const getContentByTag = (html: string, tag: SVGTagHtml, index: number | string = 'all') => {
   const regix = new RegExp(`<${tag}(.*?)<\\/${tag}>`, 'g');
   let bodyHtml: string | string[] = html.replace(/\n/g, '');
   bodyHtml = bodyHtml.match(regix) || [];
