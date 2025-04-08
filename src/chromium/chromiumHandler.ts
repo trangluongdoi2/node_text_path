@@ -60,7 +60,7 @@ export class ChromiumHandler {
         ],
         executablePath,
         headless: false,
-        // protocolTimeout: 15 * 60 * 1000
+        // protocolTimeout: 5 * 60 * 1000 // 5 minutes
       });
 
       console.log('Chromium version: ' + (await this.browser.version()));

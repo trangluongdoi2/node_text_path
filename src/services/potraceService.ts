@@ -105,8 +105,7 @@ export default class PotraceService {
     await page.close();
     const svgContent = await this.potraceTrace(path, {
       threshold: 254,
-      color: '#ff0011',
-      background: 'transparent',
+      color: style.fill,
     });
     this.prepareWorkingDir(style.id, true);
     return svgContent;

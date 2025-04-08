@@ -1,4 +1,5 @@
 import { JSDOM } from 'jsdom';
+import * as fs from 'fs';
 import sharp from 'sharp';
 import { TextService } from './services/textService';
 import { SVGElement } from './types/index'
@@ -97,13 +98,16 @@ class HandlerSVGContent {
     const { window } = new JSDOM(this.svgContent);
     this.elements = [...window.document.getElementsByClassName('not-select')];
     this.groupElement = window.document.getElementsByClassName('group_elements')[0];
+
+    fs.writeFileSync('test.svg', this.svgContent);
+    console.log('write pre svg content');
   }
 
-  replaceUnnesscaryRectIds(content: string) {
-    // const regex = /<rect\s+[^>]*id="(?!canvas_rect)\w+"[^>]*>/g;
-    const regex = /<rect\s+[^>]*id="(?!\w+_canvas_rect_\w+)\w+"[^>]*>.*?<\/rect>/gs;
-    return content.replace(regex, '');
-  }
+  // replaceUnnesscaryRectIds(content: string) {
+  //   // const regex = /<rect\s+[^>]*id="(?!canvas_rect)\w+"[^>]*>/g;
+  //   const regex = /<rect\s+[^>]*id="(?!\w+_canvas_rect_\w+)\w+"[^>]*>.*?<\/rect>/gs;
+  //   return content.replace(regex, '');
+  // }
 
   isTextElement(elementHtml: string) {
     return getContentByTag(elementHtml, 'text').length > 0
@@ -574,6 +578,10 @@ class HandlerSVGContent {
     }
   }
 
+  yeildFunction(func: Function) {
+    return new Promise(resolve => setTimeout(() => resolve(func()), 0));
+  }
+
   async export() {
     const bleedSize = this.getBleedSize();
     const col = 1;
@@ -581,8 +589,6 @@ class HandlerSVGContent {
 
     let elementsResult: any[] = [];
     const batchSize = 3;
-    const result = await  this.potraceService.createPageContent(this.svgContent);
-    console.log(result, 'resutl..')
     for (let i = 0; i < this.elements.length; i += batchSize) {
       const batch = this.elements.slice(i, i + batchSize);
       const batchResult = await Promise.all(
@@ -636,90 +642,117 @@ class HandlerSVGContent {
     }
 
     // heavy task
+    for (const element of elementsResult) {
+      if (!element) {
+        continue;
+      }
+
+      let { elementTag, path } = element as any;
+      switch (element.type) {
+        case 'TEXT':
+          this.svgContent = this.svgContent.replace(elementTag, path);
+          break;
+        case 'TEXT_CLIP_PATH': {
+          this.svgContent = this.svgContent.replace(elementTag, path)
+          break;
+        }
+        case 'IMAGE': {
+          for (const item of element.svgImages || []) {
+            this.svgContent = this.svgContent.replace(item.imageElement, item.imageContent);
+          }
+          break;
+        }
+
+        default:
+          break;
+      }
+    }
+
+    // const res = await Promise.all(elementsResult.map(element => {
+    //   return new Promise(async (resolve) => {
+    //     let { elementTag, path } = element as any;
+    //     switch (element.type) {
+    //       case 'TEXT':
+    //         // const page = await ChromiumHandler.newPage();
+    //         const params = {
+    //           source: elementTag,
+    //           replacer: path,
+    //           content: this.svgContent,
+    //         }
+    //         try {
+    //           const page = await ChromiumHandler.newPage();
+    //           const result = await page?.evaluate((prm: any) => {
+    //             // console.log('case TEXT')
+    //             return 1
+    //           }, params);
+    //           console.log(result, 'result case TEXT')
+    //           // const result = await page.evaluate((prm) => {
+    //           //   console.log(prm);
+    //           // }, params);
+    //           // resolve(this.potraceService.createPageContent(this.svgContent))
+    //           resolve(null);
+    //         } catch (error) {
+    //           console.log(error, 'error 100');
+    //         }
+    //         break;
+    //       case 'TEXT_CLIP_PATH': {
+    //         const params = {
+    //           source: elementTag,
+    //           replacer: path,
+    //           // content: this.svgContent,
+    //         }
+    //         const page = await ChromiumHandler.newPage();
+    //         const result = await page?.evaluate((prm: any) => {
+    //           // console.log('case TEXT');
+    //           return 2
+    //         }, params);
+    //         console.log(result, 'result case TEXT_CLIP_PATH')
+    //         resolve(null)
+    //         break;
+    //       }
+    //       case 'IMAGE':
+    //         const promise: any[] = [];
+    //         for (const item of element.svgImages || []) {
+    //           promise.push(null)
+    //           // this.svgContent = this.svgContent.replace(item.imageElement, item.imageContent);
+    //         }
+    //         // return null;
+    //         resolve(promise)
+    //       default:
+    //         break;
+    //     }
+    //   })
+    // }));
+
+    // const replacements = new Map();
     // for (const element of elementsResult) {
     //   if (!element) {
     //     continue;
     //   }
 
-    //   let { elementTag, path } = element as any;
-    //   switch (element.type) {
-    //     case 'TEXT':
-    //       // const page = await ChromiumHandler.newPage();
-    //       const params = {
-    //         source: elementTag,
-    //         replacer: path,
-    //         content: this.svgContent,
-    //       }
-    //       try {
-    //         const content11 = '<svg width="100" height="100"></svg>'
-    //         // const page = await this.potraceService.createPageContent(this.svgContent);
-    //         const page = await this.potraceService.createPageContent(content11);
-    //         const result = await page.evaluate((prm) => {
-    //           console.log(prm);
-    //         }, params);
-
-
-    //       } catch (error) {
-    //         console.log(error, 'error 100');
-    //       }
-    //       // this.svgContent = this.svgContent.replace(elementTag, path);
-    //       break;
-    //     case 'TEXT_CLIP_PATH': {
-    //       // this.svgContent = this.svgContent.replace(elementTag, path)
+    //   const { elementTag, clippingMaskTag, path, type } = element;
+        
+    //   switch (type) {
+    //     case 'TEXT': {
+    //       replacements.set(elementTag, path)
     //       break;
     //     }
-    //     case 'IMAGE':
+    //     case 'TEXT_CLIP_PATH': {
+    //       replacements.set(elementTag, path);
+    //       replacements.set(clippingMaskTag, '');
+    //       break;
+    //     }
+    //     case 'IMAGE': {
     //       for (const item of element.svgImages || []) {
-    //         // this.svgContent = this.svgContent.replace(item.imageElement, item.imageContent);
+    //         replacements.set(item.imageElement, item.imageContent);
     //       }
     //       break;
-    //     default:
-    //       break;
+    //     }
     //   }
     // }
-
-    const res = await Promise.all(elementsResult.map(element => {
-      return new Promise(resolve => {
-        let { elementTag, path } = element as any;
-        switch (element.type) {
-          case 'TEXT':
-            // const page = await ChromiumHandler.newPage();
-            const params = {
-              source: elementTag,
-              replacer: path,
-              content: this.svgContent,
-            }
-            try {
-              // const content11 = '<svg width="100" height="100"></svg>'
-              // const page = await this.potraceService.createPageContent(this.svgContent);
-              // const page = await this.potraceService.createPageContent(content11);
-              // const result = await page.evaluate((prm) => {
-              //   console.log(prm);
-              // }, params);
-              // resolve(this.potraceService.createPageContent(this.svgContent))
-              resolve(null);
-            } catch (error) {
-              console.log(error, 'error 100');
-            }
-            break;
-          case 'TEXT_CLIP_PATH': {
-            resolve(null)
-            break;
-          }
-          case 'IMAGE':
-            const promise: any[] = [];
-            for (const item of element.svgImages || []) {
-              promise.push(null)
-              // this.svgContent = this.svgContent.replace(item.imageElement, item.imageContent);
-            }
-            // return null;
-            resolve(promise)
-          default:
-            break;
-        }
-      })
-    }));
-    console.log(res, 'res...')
+    // for (const [pattern, replacement] of replacements.entries()) {
+    //   this.svgContent = await this.yeildFunction(() => this.svgContent.replace(pattern, replacement)) as string;
+    // }
 
     // const imageParentTags = getImageParentTags(this.svgContent);
     // imageParentTags.forEach((imageParentTag) => {
@@ -734,19 +767,19 @@ class HandlerSVGContent {
     //   this.svgContent = this.svgContent.replace(imageParentTag, newImageParentTag);
     // });
 
-    // this.svgContent = this.svgContent.replace(/&nbsp;/g, ' ');
-    // this.svgContent = this.convertBackground(this.svgContent);
-    // this.svgContent = this.convertShape(this.svgContent);
-    // this.svgContent = this.convertFillTransparent(this.svgContent);
-    // this.svgContent = this.fixAdobeTag(this.svgContent);
+    this.svgContent = this.svgContent.replace(/&nbsp;/g, ' ');
+    this.svgContent = this.convertBackground(this.svgContent);
+    this.svgContent = this.convertShape(this.svgContent);
+    this.svgContent = this.convertFillTransparent(this.svgContent);
+    this.svgContent = this.fixAdobeTag(this.svgContent);
 
-    this.svgContent = pipe(
-      (content: string) => content.replace(/&nbsp;/g, ' '),
-      (content: string) => this.convertBackground(content),
-      (content: string) => this.convertShape(content),
-      (content: string) => this.convertFillTransparent(content),
-      (content: string) => this.fixAdobeTag(content),
-    )(this.svgContent)
+    // this.svgContent = pipe(
+    //   (content: string) => content.replace(/&nbsp;/g, ' '),
+    //   (content: string) => this.convertBackground(content),
+    //   (content: string) => this.convertShape(content),
+    //   (content: string) => this.convertFillTransparent(content),
+    //   (content: string) => this.fixAdobeTag(content),
+    // )(this.svgContent);
 
     // Draw bounding rect for text element
     // const { window: newWindow } = new JSDOM(this.svgContent);
