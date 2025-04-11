@@ -8,6 +8,9 @@ import { prepareWorkingDir } from '@/helper/file';
 import { randomString } from '@/helper/string';
 import { ChromiumHandler } from '@/chromium/chromiumHandler';
 import * as potrace from 'potrace';
+import { Readable } from 'stream';
+import { pipeline } from 'stream/promises';
+import { MultiStyleTextService } from './multiStyleTextService';
 export default class PotraceService {
   private WORKING_DIR = '/tmp/working';
 
@@ -20,7 +23,6 @@ export default class PotraceService {
   }
 
   private async potraceTrace(path: string, options: PotraceOptions): Promise<string> {
-    // const potrace = require('potrace');
     return await new Promise((resolve, reject) => {
       try {
         potrace.trace(path, options, function (error: Error | null, svg: string) {
@@ -98,10 +100,44 @@ export default class PotraceService {
     return path;
   }
 
+  async writeBufferWithProgress(buffer: any, filePath: string) {
+    const totalSize = buffer.length;
+    let bytesWritten = 0;
+    
+    // Create readable stream from buffer
+    const readable = new Readable({
+      read(size) {
+        const chunk = buffer.slice(bytesWritten, bytesWritten + size);
+        bytesWritten += chunk.length;
+        
+        // Log progress
+        const progress = Math.round((bytesWritten / totalSize) * 100);
+        process.stdout.write(`\rProgress: ${progress}%`);
+        
+        this.push(chunk.length > 0 ? chunk : null);
+      }
+    });
+    
+    // Create writable stream
+    const writable = fs.createWriteStream(filePath);
+    
+    try {
+      await pipeline(readable, writable);
+      console.log('\nBuffer written successfully with progress tracking');
+    } catch (err) {
+      console.error('\nError writing buffer:', err);
+      throw err;
+    }
+  }
+
   private async convertTextByTrace(content: string, style: SVGTextStyles): Promise<string> {
     const path = this.prepareWorkingDir(style.id);
     const page = await this.createPageContent(content);
-    await page.screenshot({ path, fullPage: true });
+    const buffer = await page.screenshot({ path, fullPage: true });
+
+    // const random = Math.floor(Math.random() * 100);
+    // const path2 = `${random}.png`;
+    // this.writeBufferWithProgress(buffer, path2);
     await page.close();
     const svgContent = await this.potraceTrace(path, {
       threshold: 254,
@@ -334,7 +370,11 @@ export default class PotraceService {
       }
 
       const content = this.replaceOnlyText(textHtml, text).replace(/#ffffff/g, '#fdfdfd');
+      console.log('Size of content: ', content.length / 1024 / 1024);
       const svg = await this.convertTextByTrace(content, style);
+
+      const multiStylesTextService = new MultiStyleTextService(content, text, style);
+      multiStylesTextService.splitTspan();
       const textPath = svg.match(/<path(.*?)\/>/g) || [];
       pathGroup = `${pathGroup}<g>${textPath.join('')}</g>`;
     }

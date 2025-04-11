@@ -5,3 +5,5 @@ export function pipe<T>(...func: any) {
     }, x);
   }
 }
+
+export const curryingGetByField = (field: string) => (objects: any[]) => objects.map(object => object[field] || undefined)
