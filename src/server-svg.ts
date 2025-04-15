@@ -57,8 +57,13 @@ app.listen(PORT, async () => {
 
   // const url = 'https://www.corjl.com/output/org/GE01JKETWV649R53Q9Y2H89KC3BE/downloads/DO01JKET8BE3MJKGGCFG9XK1Z47S/U01JR503X0PPJM1FP4YDRAWXDT6/html/1.html';
   // const url = 'https://www.corjl.com/output/org/GD01HHP5CRND058V7TNCH9WG0NS5/downloads/DC01HMEY5WSE4C1YXKFPSYQ108R7/U01JRJ40F984XDWEYX1PPQAW6R6/html/1.html';
-  // const url = 'https://dev.korjl.com/output/org/GD01HHDZSMZQ57K00R3XXZ50CCT6/downloads/DC01J9R67RC6MVJ0R5VNHJRNZGAN/U01JRJQPC0674G69P4JZK6E1KJV/html/1.html';
-  const url = 'https://dev.korjl.com/output/org/GD01HHDZSMZQ57K00R3XXZ50CCT6/downloads/DC01J9R67RC6MVJ0R5VNHJRNZGAN/U01JRMCJXE4WYPPG8TPRVGQWPNF/html/1.html';
+  // const url = 'https://dev.korjl.com/output/org/GD01HHE0HGV05VPEJ5TGT5BF14CT/downloads/DC01JRS0BP87ZPSPDN8BKG6RR02F/U01JRVVY52R3J9EP38KMGNQF2HJ/html/12.html';
+  // const url = 'https://dev.korjl.com/output/org/GD01HHE0HGV05VPEJ5TGT5BF14CT/downloads/DC01JRS0BP87ZPSPDN8BKG6RR02F/U01JRWAS0JC7DVE5VYHRWED4QAB/html/9.html';
+  // const url = 'https://dev.korjl.com/output/org/GD01HHE0HGV05VPEJ5TGT5BF14CT/downloads/DC01JRS0BP87ZPSPDN8BKG6RR02F/U01JRWBVT4HXHYBV0K7F3KHR3KV/html/13.html';
+  // const url = 'https://dev.korjl.com/output/org/GD01HHE0HGV05VPEJ5TGT5BF14CT/downloads/DC01JRS0BP87ZPSPDN8BKG6RR02F/U01JRWD37BAQR5QMSW99CBE7HHS/html/14.html';
+  // const url = 'https://dev.korjl.com/output/org/GD01HHE0HGV05VPEJ5TGT5BF14CT/downloads/DC01JRS0BP87ZPSPDN8BKG6RR02F/U01JRWGE0TP41B6R20ZPFQ8F4HG/html/14.html ';
+  // const url = 'https://dev.korjl.com/output/org/GD01HHE0HGV05VPEJ5TGT5BF14CT/downloads/DC01JRS0BP87ZPSPDN8BKG6RR02F/U01JRWHACW31N4C2ETATFNJF5CZ/html/14.html';
+  const url = 'https://dev.korjl.com/output/org/GD01HHE0HGV05VPEJ5TGT5BF14CT/downloads/DC01JRS0BP87ZPSPDN8BKG6RR02F/U01JRWHTA4XF18BR7XZA3HNDM2H/html/14.html';
   await page?.goto(url);
   await waitForSelector(page as any, '.canvas-loaded');
 

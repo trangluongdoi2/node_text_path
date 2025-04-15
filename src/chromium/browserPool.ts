@@ -38,7 +38,6 @@ export class BrowserPool {
     const puppeteer = require('puppeteer-core');
     const chromium = require('@sparticuz/chromium');
     const profilePath = `/tmp/puppeteer_dev_chrome_profile-${randomString(false, 5)}-${Date.now()}`;
-    // const profilePath =
 
     const executablePath = await chromium.executablePath();
     console.log('launchNewBrowser(): executablePath: ', executablePath, profilePath);
@@ -94,6 +93,7 @@ export class BrowserPool {
       '--no-sandbox',
       '--no-zygote',
       '--disable-gpu',
+      '--enable-low-end-device-mode',
     ];
 
     const browser = await puppeteer.launch({

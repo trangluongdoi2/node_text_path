@@ -1,6 +1,8 @@
 import { JSDOM } from 'jsdom';
 import PotraceService from './potraceService';
 import { SVGTextStyles } from '@/types';
+import { curryingGetByField } from '@/helper/function';
+import { randomString } from '@/helper/string';
 
 type TagData = {
   text: string,
@@ -16,11 +18,13 @@ export class MultiStyleTextService {
   private textElement: SVGTextElement;
   private tspanWrapperContents: string[];
   private potraceService = new PotraceService();
+  private uniqueKey: string;
   constructor(svgContent: string, textContent: string, styles: SVGTextStyles) {
     this.svgContent = svgContent;
     this.textContent = textContent;
     this.styles = styles;
     this.tspanWrapperContents = [];
+    this.uniqueKey = randomString(false, 5);
     this.initText();
   }
   
@@ -29,7 +33,7 @@ export class MultiStyleTextService {
     const textElement = window.document.getElementsByTagName('text')[0] as any;
     this.textElement = textElement;
     window.close();
-    this.svgContent = this.svgContent.replace(this.textContent, '#text_replace');
+    this.svgContent = this.svgContent.replace(this.textContent, `#text_replace_${this.uniqueKey}`);
   }
 
   getTagElements(element: SVGTextElement, recursion = false) {
@@ -51,10 +55,6 @@ export class MultiStyleTextService {
     }
     return results;
   }
-
-  // isMultiStyles() {
-  //   return Boolean(this.tspanElement?.children.length)
-  // }
 
   splitTextIntoTspans(tspanContent: string) {
     const dom = new JSDOM(tspanContent);
@@ -136,34 +136,80 @@ export class MultiStyleTextService {
       tspanForEachChars.push(tags);
       window.close();
     }
+    const res = [];
     const tspanForEachCharsFlat = tspanForEachChars.flat();
+    const batchSize = 5;
+    for (let i = 0; i < tspanForEachCharsFlat.length; i += batchSize) {
+      const batch = tspanForEachCharsFlat.slice(i, i + batchSize);
+      // const batchResults2 = batch.map((b: TagData, index: number) => {
+      //   let cloneEntireContent = this.svgContent;
+      //   let cloneTextContent = this.textContent;
+      //   const cloneTspanChildElement = [...tspanForEachCharsFlat].map((tspanData: TagData, tspanIndex: number) => ({
+      //     content: tspanData.content,
+      //     index: tspanIndex
+      //   }));
+      //   for (const [tspanIndex, tspanChildContent] of cloneTspanChildElement.entries()) {
+      //     cloneTextContent = cloneTextContent.replace(tspanChildContent.content, `tspan_${tspanIndex}_${this.uniqueKey}`);
+      //   }
+      //   const tspanTempRemove = cloneTspanChildElement.splice(i + index, 1);
+      //   const keyTempRemove = `tspan_${i + index}_${this.uniqueKey}`;
+      //   for (const tspanChildContent of cloneTspanChildElement) {
+      //     const newTspanContent = this.addStyleToTspan(tspanChildContent.content);
+      //     const key = `tspan_${tspanChildContent.index}_${this.uniqueKey}`;
+      //     cloneTextContent = cloneTextContent.replace(key, newTspanContent);
+      //   }
+      //   cloneTextContent = cloneTextContent.replace(keyTempRemove, tspanTempRemove[0].content);
+      //   const result = cloneEntireContent.replace(`#text_replace_${this.uniqueKey}`, cloneTextContent);
+      //   return {
+      //     content: result,
+      //     styles: {
+      //       ...this.styles,
+      //       fill: b.fill,
+      //     }
+      //   };
+      // });
 
-    const promises: Array<Promise<any> | null> = []
-    for (const [index, tspan] of tspanForEachCharsFlat.entries()) {
-      let cloneEntireContent = this.svgContent;
-      let cloneTextContent = this.textContent;
-      const cloneTspanChildElement = [...tspanForEachCharsFlat].map((tspanData: TagData) => tspanData.content);
-        cloneTspanChildElement.splice(index, 1);
-        for (const tspanChildContent of cloneTspanChildElement) {
-          const newTspanContent = this.addStyleToTspan(tspanChildContent);
-          cloneTextContent = cloneTextContent.replace(tspanChildContent, newTspanContent);
+      // const batchResultsFinals = await this.potraceService.converTextByTraceNew(batchResults2);
+      // console.log(batchResults2, 'batchResults2...');
+
+
+      const batchResults = await Promise.all(batch.map((b: any, index: number) => {
+        let cloneEntireContent = this.svgContent;
+        let cloneTextContent = this.textContent;
+        const cloneTspanChildElement = [...tspanForEachCharsFlat].map((tspanData: TagData, tspanIndex: number) => ({
+          content: tspanData.content,
+          index: tspanIndex
+        }));
+        for (const [tspanIndex, tspanChildContent] of cloneTspanChildElement.entries()) {
+          cloneTextContent = cloneTextContent.replace(tspanChildContent.content, `tspan_${tspanIndex}`);
         }
+        const tspanTempRemove = cloneTspanChildElement.splice(i + index, 1);
+        const keyTempRemove = `tspan_${i + index}`;
+        for (const tspanChildContent of cloneTspanChildElement) {
+          const newTspanContent = this.addStyleToTspan(tspanChildContent.content);
+          const key = `tspan_${tspanChildContent.index}`;
+          cloneTextContent = cloneTextContent.replace(key, newTspanContent);
+        }
+        cloneTextContent = cloneTextContent.replace(keyTempRemove, tspanTempRemove[0].content);
         const result = cloneEntireContent.replace('#text_replace', cloneTextContent);
         try {
-          promises.push(this.potraceService.convertTextByTrace(result, {
+          return this.potraceService.convertTextByTrace(result, {
             ...this.styles,
-            fill: tspan.fill,
-          }));
+            fill: b.fill,
+          });
         } catch (error) {
           console.log(error, 'error..')
-          promises.push(null);
+          return null;
         }
+      }));
+      // res.push(...batchResultsFinals.filter(Boolean));
+      res.push(...batchResults.filter(Boolean));
     }
-    const res = await Promise.all(promises.filter(Boolean));
     const finalResult = [];
     for (const subRes of res) {
-      finalResult.push(subRes.match(/<path(.*?)\/>/g) || [])
+      finalResult.push(subRes?.match(/<path(.*?)\/>/g) || [])
     }
     return finalResult.flat();
+    // return [''];
   }
 }

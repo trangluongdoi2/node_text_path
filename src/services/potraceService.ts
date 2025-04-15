@@ -7,7 +7,7 @@ import { SVGTextStyles } from '@/types';
 import { prepareWorkingDir } from '@/helper/file';
 import { randomString } from '@/helper/string';
 import { ChromiumHandler } from '@/chromium/chromiumHandler';
-import * as potrace from 'potrace';
+// import * as potrace from 'potrace';
 import { Readable } from 'stream';
 import { pipeline } from 'stream/promises';
 import { MultiStyleTextService } from './multiStyleTextService';
@@ -26,6 +26,7 @@ export default class PotraceService {
   }
 
   private async potraceTrace(path: string, options: PotraceOptions): Promise<string> {
+    const potrace = require('potrace');
     return await new Promise((resolve, reject) => {
       try {
         potrace.trace(path, options, function (error: Error | null, svg: string) {
@@ -135,7 +136,6 @@ export default class PotraceService {
 
   async convertTextByTrace(content: string, style: SVGTextStyles): Promise<string> {
     const fileName = `${style.id}_${randomString()}`;
-    console.log(fileName, 'fileName...');
     const path = this.prepareWorkingDir(fileName);
     const browserPool = new BrowserPool();
     const page = await this.createPageContent(content);
@@ -149,6 +149,30 @@ export default class PotraceService {
     this.prepareWorkingDir(fileName, true);
     await browserPool.cleanup();
     return svgContent;
+  }
+
+  async converTextByTraceNew(contentsData: Array<{ content: string, styles: SVGTextStyles }>) {
+    const browserPool = new BrowserPool();
+    const results: any[] = [];
+    const TIMEOUT: number = 10 * 60 * 1000;
+    const page = await ChromiumHandler.newPage();
+    for (const contentData of contentsData) {
+      const fileName = `${contentData.styles.id}_${randomString()}`;
+      const path = this.prepareWorkingDir(fileName);
+      await page?.setContent(contentData.content, {
+        waitUntil: 'networkidle2',
+        timeout: TIMEOUT,
+      });
+      await page.screenshot({ path, fullPage: true });
+      const svgContent = await this.potraceTrace(path, {
+        threshold: 254,
+        color: contentData.styles.fill,
+      });
+      results.push(svgContent);
+      this.prepareWorkingDir(fileName, true);
+    }
+    await browserPool.cleanup();
+    return results;
   }
 
   private async convertTextByPosterize(
