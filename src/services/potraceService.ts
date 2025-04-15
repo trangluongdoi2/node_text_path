@@ -11,6 +11,9 @@ import * as potrace from 'potrace';
 import { Readable } from 'stream';
 import { pipeline } from 'stream/promises';
 import { MultiStyleTextService } from './multiStyleTextService';
+import { BrowserPool } from '@/chromium/browserPool';
+// import path from 'path';
+
 export default class PotraceService {
   private WORKING_DIR = '/tmp/working';
 
@@ -103,7 +106,7 @@ export default class PotraceService {
   async writeBufferWithProgress(buffer: any, filePath: string) {
     const totalSize = buffer.length;
     let bytesWritten = 0;
-    
+
     // Create readable stream from buffer
     const readable = new Readable({
       read(size) {
@@ -120,7 +123,7 @@ export default class PotraceService {
     
     // Create writable stream
     const writable = fs.createWriteStream(filePath);
-    
+
     try {
       await pipeline(readable, writable);
       console.log('\nBuffer written successfully with progress tracking');
@@ -130,20 +133,21 @@ export default class PotraceService {
     }
   }
 
-  private async convertTextByTrace(content: string, style: SVGTextStyles): Promise<string> {
-    const path = this.prepareWorkingDir(style.id);
+  async convertTextByTrace(content: string, style: SVGTextStyles): Promise<string> {
+    const fileName = `${style.id}_${randomString()}`;
+    console.log(fileName, 'fileName...');
+    const path = this.prepareWorkingDir(fileName);
+    const browserPool = new BrowserPool();
     const page = await this.createPageContent(content);
-    const buffer = await page.screenshot({ path, fullPage: true });
-
-    // const random = Math.floor(Math.random() * 100);
-    // const path2 = `${random}.png`;
-    // this.writeBufferWithProgress(buffer, path2);
+    await page.screenshot({ path, fullPage: true });
+    await new Promise(resolve => setTimeout(resolve, 10));
     await page.close();
     const svgContent = await this.potraceTrace(path, {
       threshold: 254,
       color: style.fill,
     });
-    this.prepareWorkingDir(style.id, true);
+    this.prepareWorkingDir(fileName, true);
+    await browserPool.cleanup();
     return svgContent;
   }
 
@@ -266,7 +270,7 @@ export default class PotraceService {
   }
 
   private hexToRgb(hex: string) {
-    return hex // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    return hex
       ? // @ts-ignore
         hex
           .replace(/^#?([a-f\d])([a-f\d])([a-f\d])$/i, (m, r, g, b) => '#' + r + r + g + g + b + b)
@@ -368,14 +372,9 @@ export default class PotraceService {
         pathGroup = `${pathGroup}<g filter="${style.filter}">${textPath}</g>`;
         continue;
       }
-
       const content = this.replaceOnlyText(textHtml, text).replace(/#ffffff/g, '#fdfdfd');
-      console.log('Size of content: ', content.length / 1024 / 1024);
-      const svg = await this.convertTextByTrace(content, style);
-
       const multiStylesTextService = new MultiStyleTextService(content, text, style);
-      multiStylesTextService.splitTspan();
-      const textPath = svg.match(/<path(.*?)\/>/g) || [];
+      const textPath = await multiStylesTextService.getPathByPotrace();
       pathGroup = `${pathGroup}<g>${textPath.join('')}</g>`;
     }
 
@@ -407,20 +406,20 @@ export default class PotraceService {
     return replacePathToGroup(innerHTML, pathGroup);
   }
 
-  // public async cleanup() {
-  //   try {
-  //     await this.browserPool.cleanup();
-  //     if (this.workingDirTmp && fs.existsSync(this.workingDirTmp)) {
-  //       const files = fs.readdirSync(this.workingDirTmp);
-  //       for (const file of files) {
-  //         const filePath = path.join(this.workingDirTmp, file);
-  //         fs.unlinkSync(filePath);
-  //       }
-  //       fs.rmdirSync(this.workingDirTmp);
-  //       console.log(`Successfully cleaned up temporary directory: ${this.workingDirTmp}`);
-  //     }
-  //   } catch (error) {
-  //     console.error(`Error cleaning up temporary directory ${this.workingDirTmp}:`, error);
-  //   }
-  // }
+  public async cleanup() {
+    try {
+      await this.browserPool.cleanup();
+      // if (this.workingDirTmp && fs.existsSync(this.workingDirTmp)) {
+      //   const files = fs.readdirSync(this.workingDirTmp);
+      //   for (const file of files) {
+      //     const filePath = path.join(this.workingDirTmp, file);
+      //     fs.unlinkSync(filePath);
+      //   }
+      //   fs.rmdirSync(this.workingDirTmp);
+      //   console.log(`Successfully cleaned up temporary directory: ${this.workingDirTmp}`);
+      // }
+    } catch (error) {
+      console.error(`Error cleaning up temporary directory ${this.workingDirTmp}:`, error);
+    }
+  }
 }

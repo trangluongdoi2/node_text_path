@@ -383,157 +383,248 @@ class HandlerSVGContent {
     return [clipPath, path].join('');
   }
 
-  async convertClippingPathText(index: number, elementTag: string, outerHTML: string) {
-    console.log('convertClippingPathText() ====> NEW');
-    const outerHtmlByClipPath: string = this.elements[index + 1]?.outerHTML || '';
-    const clippingMaskTag = this.isClipPath(outerHtmlByClipPath) ? outerHtmlByClipPath : '';
-    const imageClipPathTag = getContentByTag(clippingMaskTag, 'image')?.[0] || '';
-    const styleImageClipPathTag = getElemAttributesByImage(imageClipPathTag);
-    const displayNone = [
-      'display: none',
-      'visibility: hidden',
-      'opacity: 0',
-    ];
+  // async convertClippingPathText(index: number, elementTag: string, outerHTML: string) {
+  //   console.log('convertClippingPathText() ====> NEW');
+  //   const outerHtmlByClipPath: string = this.elements[index + 1]?.outerHTML || '';
+  //   const clippingMaskTag = this.isClipPath(outerHtmlByClipPath) ? outerHtmlByClipPath : '';
+  //   const imageClipPathTag = getContentByTag(clippingMaskTag, 'image')?.[0] || '';
+  //   const styleImageClipPathTag = getElemAttributesByImage(imageClipPathTag);
+  //   const displayNone = [
+  //     'display: none',
+  //     'visibility: hidden',
+  //     'opacity: 0',
+  //   ];
     
-    let newTransform = '';
-    let pureContentPath = '';
-    const masterElement = this.getMasterElement(elementTag);
-    const textStyleTags = (getTextStylesContent(elementTag) || []) as string[];
-    const filterTags = textStyleTags.map((textStyleTag) => {
-      return {
-        type: getTypeFiltersFromFilterTag(textStyleTag) as string,
-        tagUrl: getFilterUrls(textStyleTag),
-      }
-    });
+  //   let newTransform = '';
+  //   let pureContentPath = '';
+  //   const masterElement = this.getMasterElement(elementTag);
+  //   const textStyleTags = (getTextStylesContent(elementTag) || []) as string[];
+  //   const filterTags = textStyleTags.map((textStyleTag) => {
+  //     return {
+  //       type: getTypeFiltersFromFilterTag(textStyleTag) as string,
+  //       tagUrl: getFilterUrls(textStyleTag),
+  //     }
+  //   });
     
-    const textPathService = new TextService({
-      html: { innerHTML: elementTag, outerHTML },
-      // @ts-ignore
-      data: { masterElement: masterElement as MasterElement, settings: this.textPathSettings, filterTags }
-    });
+  //   const textPathService = new TextService({
+  //     html: { innerHTML: elementTag, outerHTML },
+  //     // @ts-ignore
+  //     data: { masterElement: masterElement as MasterElement, settings: this.textPathSettings, filterTags }
+  //   });
     
-    const res = await textPathService.exportPath((res: ClippathTagsOutput) => {
-      pureContentPath = res.path;
-      newTransform = res.transform;
-    });
+  //   const res = await textPathService.exportPath((res: ClippathTagsOutput) => {
+  //     pureContentPath = res.path;
+  //     newTransform = res.transform;
+  //   });
     
-    if (displayNone.some((style: string) => (styleImageClipPathTag?.style || '').includes(style))) {
-      this.elements.splice(index + 1, 1);
-      return res;
-    }
+  //   if (displayNone.some((style: string) => (styleImageClipPathTag?.style || '').includes(style))) {
+  //     this.elements.splice(index + 1, 1);
+  //     return res;
+  //   }
 
-    const clipPathId = this.getClipPathId(outerHtmlByClipPath);
-    let selectClipPath = this.shapeClipPathsByText.find(shapeClipPath => shapeClipPath.match(clipPathId));
-    const selectClipPathIndex = this.shapeClipPathsByText.findIndex(shapeClipPath => shapeClipPath.match(clipPathId));
+  //   const clipPathId = this.getClipPathId(outerHtmlByClipPath);
+  //   let selectClipPath = this.shapeClipPathsByText.find(shapeClipPath => shapeClipPath.match(clipPathId));
+  //   const selectClipPathIndex = this.shapeClipPathsByText.findIndex(shapeClipPath => shapeClipPath.match(clipPathId));
     
-    if (selectClipPath && selectClipPathIndex !== -1) {
-      selectClipPath = this.getNewClippingPathTagsContent({
-        elementKey: masterElement?.elementKey || '',
-        transform: newTransform,
-        clipPath: selectClipPath,
-        path: pureContentPath,
-      });
-      // Store the replacement instead of modifying svgContent directly
-      this.replacementMap.set(`##shapeClipPathsByText${selectClipPathIndex}##`, selectClipPath);
-    }
+  //   if (selectClipPath && selectClipPathIndex !== -1) {
+  //     selectClipPath = this.getNewClippingPathTagsContent({
+  //       elementKey: masterElement?.elementKey || '',
+  //       transform: newTransform,
+  //       clipPath: selectClipPath,
+  //       path: pureContentPath,
+  //     });
+  //     // Store the replacement instead of modifying svgContent directly
+  //     this.replacementMap.set(`##shapeClipPathsByText${selectClipPathIndex}##`, selectClipPath);
+  //   }
 
-    return {
-      ...res,
-      clippingMaskTag,
-      elementTag,
-      type: 'TEXT_CLIP_PATH',
-    }
-  }
+  //   return {
+  //     ...res,
+  //     clippingMaskTag,
+  //     elementTag,
+  //     type: 'TEXT_CLIP_PATH',
+  //   }
+  // }
 
-  async convertClippingPathCurvedText(index: number, elementTag: string, outerHTML: string) {
-    const outerHtmlByClipPath: string = this.elements[index + 1]?.outerHTML || '';
-    const clippingMaskTag = this.isClipPath(outerHtmlByClipPath) ? outerHtmlByClipPath : '';
-    const imageClipPathTag = getContentByTag(clippingMaskTag, 'image')?.[0] || '';
-    const styleImageClipPathTag = getElemAttributesByImage(imageClipPathTag);
-    const displayNone = [
-      'display: none',
-      'visibility: hidden',
-      'opacity: 0',
-    ];
+  // async convertClippingPathCurvedText(index: number, elementTag: string, outerHTML: string) {
+  //   const outerHtmlByClipPath: string = this.elements[index + 1]?.outerHTML || '';
+  //   const clippingMaskTag = this.isClipPath(outerHtmlByClipPath) ? outerHtmlByClipPath : '';
+  //   const imageClipPathTag = getContentByTag(clippingMaskTag, 'image')?.[0] || '';
+  //   const styleImageClipPathTag = getElemAttributesByImage(imageClipPathTag);
+  //   const displayNone = [
+  //     'display: none',
+  //     'visibility: hidden',
+  //     'opacity: 0',
+  //   ];
     
-    let newTransform = '';
-    const masterElement = this.getMasterElement(elementTag);
-    const res = await this.convertTextByPosterize(elementTag, outerHTML);
+  //   let newTransform = '';
+  //   const masterElement = this.getMasterElement(elementTag);
+  //   const res = await this.convertTextByPosterize(elementTag, outerHTML);
     
-    if (displayNone.some((style: string) => (styleImageClipPathTag?.style || '').includes(style))) {
-      this.elements.splice(index + 1, 1);
-      return res;
-    }
+  //   if (displayNone.some((style: string) => (styleImageClipPathTag?.style || '').includes(style))) {
+  //     this.elements.splice(index + 1, 1);
+  //     return res;
+  //   }
     
-    const clipPathId = this.getClipPathId(outerHtmlByClipPath);
-    let selectClipPath = this.shapeClipPathsByText.find(shapeClipPath => shapeClipPath.match(clipPathId));
-    const selectClipPathIndex = this.shapeClipPathsByText.findIndex(shapeClipPath => shapeClipPath.match(clipPathId));
+  //   const clipPathId = this.getClipPathId(outerHtmlByClipPath);
+  //   let selectClipPath = this.shapeClipPathsByText.find(shapeClipPath => shapeClipPath.match(clipPathId));
+  //   const selectClipPathIndex = this.shapeClipPathsByText.findIndex(shapeClipPath => shapeClipPath.match(clipPathId));
     
-    if (selectClipPath && selectClipPathIndex !== -1) {
-      selectClipPath = this.getNewClippingPathTagsContent({
-        elementKey: masterElement?.elementKey || '',
-        transform: newTransform,
-        clipPath: selectClipPath,
-        path: res.path,
-      });
-      // Store the replacement instead of modifying svgContent directly
-      this.replacementMap.set(`##shapeClipPathsByText${selectClipPathIndex}##`, selectClipPath);
-    }
+  //   if (selectClipPath && selectClipPathIndex !== -1) {
+  //     selectClipPath = this.getNewClippingPathTagsContent({
+  //       elementKey: masterElement?.elementKey || '',
+  //       transform: newTransform,
+  //       clipPath: selectClipPath,
+  //       path: res.path,
+  //     });
+  //     // Store the replacement instead of modifying svgContent directly
+  //     this.replacementMap.set(`##shapeClipPathsByText${selectClipPathIndex}##`, selectClipPath);
+  //   }
     
-    return {
-      ...res,
-      clippingMaskTag,
-      elementTag,
-      type: 'CURVED_TEXT_CLIP_PATH',
-    }
-  }
+  //   return {
+  //     ...res,
+  //     clippingMaskTag,
+  //     elementTag,
+  //     type: 'CURVED_TEXT_CLIP_PATH',
+  //   }
+  // }
 
   // Process elements in smaller chunks to reduce memory pressure
-  private async processBatch(batch: Element[], startIndex: number) {
-    const results = [];
+  // private async processBatch(batch: Element[], startIndex: number) {
+  //   const results = [];
     
-    for (let i = 0; i < batch.length; i++) {
-      const element = batch[i];
-      const { outerHTML, innerHTML } = element;
-      const index = startIndex + i;
+  //   for (let i = 0; i < batch.length; i++) {
+  //     const element = batch[i];
+  //     const { outerHTML, innerHTML } = element;
+  //     const index = startIndex + i;
       
-      if (this.isTextElement(innerHTML)) {
-        if (this.hasClipPath(index)) {
-          results.push(this.convertClippingPathText(index, innerHTML, outerHTML));
-        } else {
-          results.push(this.convertTextByPosterize(innerHTML, outerHTML));
-        }
-      } else if (this.isImageElement(innerHTML)) {
-        this.updateTransformClippingPathWithBleedSize(outerHTML, { col: 1, row: 1, bleedSize: this.getBleedSize() });
-        results.push(this.convertImage(innerHTML));
-      }
-    }
+  //     if (this.isTextElement(innerHTML)) {
+  //       if (this.hasClipPath(index)) {
+  //         results.push(this.convertClippingPathText(index, innerHTML, outerHTML));
+  //       } else {
+  //         results.push(this.convertTextByPosterize(innerHTML, outerHTML));
+  //       }
+  //     } else if (this.isImageElement(innerHTML)) {
+  //       this.updateTransformClippingPathWithBleedSize(outerHTML, { col: 1, row: 1, bleedSize: this.getBleedSize() });
+  //       results.push(this.convertImage(innerHTML));
+  //     }
+  //   }
     
-    return await Promise.all(results);
+  //   return await Promise.all(results);
+  // }
+
+  // clearAllData() {
+  //   this.shapeRectangles = [];
+  //   this.filterGradientTags = [];
+  //   this.shapeClipPaths = [];
+  //   this.shapeClipPathsByText = [];
+  //   this.shapeClipPathsExluceText = [];
+  //   this.textRectangles = [];
+  //   this.elements = [];
+  //   this.replacementMap.clear();
+  // }
+
+  public async cleanup() {
+    await this.potraceService.cleanup();
   }
 
-  clearAllData() {
-    this.shapeRectangles = [];
-    this.filterGradientTags = [];
-    this.shapeClipPaths = [];
-    this.shapeClipPathsByText = [];
-    this.shapeClipPathsExluceText = [];
-    this.textRectangles = [];
-    this.elements = [];
-    this.replacementMap.clear();
-  }
+  // async export() {
+  //   const batchSize = 3;
+  //   const elementsResult = [];
+  //   let batchResult = [];
+  //   for (let i = 0; i < this.elements.length; i += batchSize) {
+  //     const batch = this.elements.slice(i, i + batchSize);
+  //     batchResult = await this.processBatch(batch, i);
+  //     elementsResult.push(...batchResult);
+  //   }
+  //   batchResult.length = 0;
+
+  //   for (const element of elementsResult) {
+  //     if (!element) {
+  //       continue;
+  //     }
+  
+  //     const { elementTag, clippingMaskTag, path } = element as any;
+     
+  //     switch (element.type) {
+  //       case 'TEXT': {
+  //         this.replacementMap.set(elementTag, path);
+  //         break;
+  //       }
+  //       case 'TEXT_CLIP_PATH': {
+  //         this.replacementMap.set(elementTag, path);
+  //         this.replacementMap.set(clippingMaskTag || '', '');
+  //         break;
+  //       }
+  //       case 'IMAGE': {
+  //         // @ts-ignore
+  //         for (const item of element.svgImages || []) {
+  //           this.replacementMap.set(item.imageElement, item.imageContent);
+  //         }
+  //         break;
+  //       }
+  //     }
+  //   }
+    
+  //   // for (const [key, value] of this.replacementMap.entries()) {
+  //   //   this.svgContent = this.svgContent.replace(key, value);
+  //   // }
+
+  //   // this.replacementMap.clear();
+  //   // this.svgContent = this.svgContent.replace(/&nbsp;/g, ' ');
+  //   // this.svgContent = pipe(
+  //   //   (content: string) => this.convertBackground(content),
+  //   //   (content: string) => this.convertShape(content),
+  //   //   (content: string) => this.convertFillTransparent(content),
+  //   //   (content: string) => this.fixAdobeTag(content),
+  //   // )(this.svgContent);
+
+  //   this.svgContent = this.svgContent.replace(/&nbsp;/g, ' ');
+  //   this.svgContent = this.convertBackground(this.svgContent);
+  //   this.svgContent = this.convertShape(this.svgContent);
+  //   this.svgContent = this.convertFillTransparent(this.svgContent);
+  //   this.svgContent = this.fixAdobeTag(this.svgContent);
+
+  //   this.clearAllData();
+
+  //   const used = process.memoryUsage();
+  //   console.log('End of export service');
+  //   console.log('Memory usage:');
+  //   console.log(`  - heapTotal: ${Math.round(used.heapTotal / 1024 / 1024)} MB`);
+  //   console.log(`  - heapUsed: ${Math.round(used.heapUsed / 1024 / 1024)} MB`);
+  //   console.log(`  - external: ${Math.round(used.external / 1024 / 1024)} MB`);
+  //   console.log(`  - rss: ${Math.round(used.rss / 1024 / 1024)} MB`);
+
+  //   return this.svgContent;
+  // }
 
   async export() {
+    const col = 1;
+    const row = 1;
+    const bleedSize = 0;
     const batchSize = 3;
     const elementsResult = [];
-    let batchResult = [];
     for (let i = 0; i < this.elements.length; i += batchSize) {
       const batch = this.elements.slice(i, i + batchSize);
-      batchResult = await this.processBatch(batch, i);
+      const batchResult = await Promise.all(
+        batch.map((element: Element, index: number) => {
+          const { outerHTML, innerHTML } = element;
+          if (this.isTextElement(innerHTML)) {
+            // const masterElement = this.getMasterElement(innerHTML);
+            if (this.hasClipPath(i + index)) {
+              return this.convertTextClippingMaskByPosterize(i + index, innerHTML, outerHTML);
+            }
+            return this.convertTextByPosterize(innerHTML, outerHTML);
+          }
+
+          if (this.isImageElement(innerHTML)) {
+            this.updateTransformClippingPathWithBleedSize(outerHTML, { col, row, bleedSize });
+            return this.convertImage(innerHTML);
+          }
+        }).filter(el => Boolean(el))
+      );
       elementsResult.push(...batchResult);
     }
-    batchResult.length = 0;
-
+  
     for (const element of elementsResult) {
       if (!element) {
         continue;
@@ -543,53 +634,40 @@ class HandlerSVGContent {
      
       switch (element.type) {
         case 'TEXT': {
-          this.replacementMap.set(elementTag, path);
+          this.svgContent = this.svgContent.replace(elementTag, path);
           break;
         }
         case 'TEXT_CLIP_PATH': {
-          this.replacementMap.set(elementTag, path);
-          this.replacementMap.set(clippingMaskTag || '', '');
+          this.svgContent = this.svgContent.replace(elementTag, path).replace(clippingMaskTag || '', '');
           break;
         }
         case 'IMAGE': {
-          // @ts-ignore
           for (const item of element.svgImages || []) {
-            this.replacementMap.set(item.imageElement, item.imageContent);
+            this.svgContent = this.svgContent.replace(item.imageElement, item.imageContent);
           }
           break;
         }
       }
     }
-    
-    for (const [key, value] of this.replacementMap.entries()) {
-      this.svgContent = this.svgContent.replace(key, value);
-    }
 
-    // this.replacementMap.clear();
-    // this.svgContent = this.svgContent.replace(/&nbsp;/g, ' ');
-    // this.svgContent = pipe(
-    //   (content: string) => this.convertBackground(content),
-    //   (content: string) => this.convertShape(content),
-    //   (content: string) => this.convertFillTransparent(content),
-    //   (content: string) => this.fixAdobeTag(content),
-    // )(this.svgContent);
+    // const imageParentTags = getImageParentTags(this.svgContent);
+    // imageParentTags.forEach((imageParentTag: string) => {
+    //   let newImageParentTag = imageParentTag;
+    //   const styles = getElemAttributesByImageWithRegex(imageParentTag);
+    //   const transform = getMatrixFromTransform(styles?.transform || '');
+    //   const translateX = (col === 1) ? bleedSize : 0;
+    //   const translateY = (row === 1) ? bleedSize : 0;
+    //   transform[4] = transform[4] + translateX;
+    //   transform[5] = transform[5] + translateY;
+    //   newImageParentTag = imageParentTag.replace(/transform="[^"]*"/, `transform="matrix(${transform.join(',')})"`);
+    //   this.svgContent = this.svgContent.replace(imageParentTag, newImageParentTag);
+    // });
 
     this.svgContent = this.svgContent.replace(/&nbsp;/g, ' ');
     this.svgContent = this.convertBackground(this.svgContent);
     this.svgContent = this.convertShape(this.svgContent);
     this.svgContent = this.convertFillTransparent(this.svgContent);
     this.svgContent = this.fixAdobeTag(this.svgContent);
-
-    this.clearAllData();
-
-    const used = process.memoryUsage();
-    console.log('End of export service');
-    console.log('Memory usage:');
-    console.log(`  - heapTotal: ${Math.round(used.heapTotal / 1024 / 1024)} MB`);
-    console.log(`  - heapUsed: ${Math.round(used.heapUsed / 1024 / 1024)} MB`);
-    console.log(`  - external: ${Math.round(used.external / 1024 / 1024)} MB`);
-    console.log(`  - rss: ${Math.round(used.rss / 1024 / 1024)} MB`);
-
     return this.svgContent;
   }
 }

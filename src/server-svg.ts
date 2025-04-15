@@ -56,7 +56,9 @@ app.listen(PORT, async () => {
   }
 
   // const url = 'https://www.corjl.com/output/org/GE01JKETWV649R53Q9Y2H89KC3BE/downloads/DO01JKET8BE3MJKGGCFG9XK1Z47S/U01JR503X0PPJM1FP4YDRAWXDT6/html/1.html';
-  const url = 'https://www.corjl.com/output/org/GD01HHP5CRND058V7TNCH9WG0NS5/downloads/DC01HMEY5WSE4C1YXKFPSYQ108R7/U01JRJ40F984XDWEYX1PPQAW6R6/html/1.html';
+  // const url = 'https://www.corjl.com/output/org/GD01HHP5CRND058V7TNCH9WG0NS5/downloads/DC01HMEY5WSE4C1YXKFPSYQ108R7/U01JRJ40F984XDWEYX1PPQAW6R6/html/1.html';
+  // const url = 'https://dev.korjl.com/output/org/GD01HHDZSMZQ57K00R3XXZ50CCT6/downloads/DC01J9R67RC6MVJ0R5VNHJRNZGAN/U01JRJQPC0674G69P4JZK6E1KJV/html/1.html';
+  const url = 'https://dev.korjl.com/output/org/GD01HHDZSMZQ57K00R3XXZ50CCT6/downloads/DC01J9R67RC6MVJ0R5VNHJRNZGAN/U01JRMCJXE4WYPPG8TPRVGQWPNF/html/1.html';
   await page?.goto(url);
   await waitForSelector(page as any, '.canvas-loaded');
 
@@ -69,7 +71,6 @@ app.listen(PORT, async () => {
   const svgContents = await Promise.all(
     Array.from({ length: 1 }, async (_, index: number) => {
       const svgContent = getContentByTag(content as string, 'svg', index) as string;
-      // console.log(svgContent.slice(0, 100), 'slice 0 100...');
       const exportSvgService = new HandlerSVGContent(svgContent, styles, data);
       const contentSVG = await exportSvgService.export();
       // await exportSvgService.cleanup().catch((error) => {

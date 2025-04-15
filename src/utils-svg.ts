@@ -521,17 +521,31 @@ export const saturateToMatrix = (saturateValue: number) => {
 }
 
 export const getImagePng = async (file: any) => {
-  let image = sharp(file);
-  const metadata = await image.metadata();
-  return image
-    .flatten({ background: { r: 255, g: 255, b: 255 } })
-    .resize(metadata.width, metadata.height, {
-      withoutEnlargement: true,
-      fit: 'cover',
-    })
-    .png()
-    .toBuffer();
-}
+  try {
+    if (!file) {
+      throw new Error('Input file is undefined or null');
+    }
+    
+    let image = sharp(file);
+    const metadata = await image.metadata();
+    
+    if (!metadata || !metadata.width || !metadata.height) {
+      throw new Error('Invalid image metadata');
+    }
+
+    return await image
+      .flatten({ background: { r: 255, g: 255, b: 255 } })
+      .resize(metadata.width, metadata.height, {
+        withoutEnlargement: true,
+        fit: 'cover',
+      })
+      .png()
+      .toBuffer();
+  } catch (error) {
+    console.error('Error processing image:', error);
+    throw error;
+  }
+};
 
 export const getRotationMatrixRatios = (deg: number) => {
   const radians = ((deg || 0) * Math.PI) / 180;
