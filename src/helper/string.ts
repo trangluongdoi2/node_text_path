@@ -7,3 +7,11 @@ export function randomString(prefixDir = false, charCount = 8): string {
 	}
 	return randomString;
 }
+
+export function splitStringToChunk(content: string, chunkSize = 10000): string[] {
+	const result = [];
+	for (let i = 0; i < content.length; i += chunkSize) {
+		result.push(content.slice(i, i + chunkSize));
+	}
+	return result;
+}

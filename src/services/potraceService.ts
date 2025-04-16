@@ -4,7 +4,7 @@ import { Browser, Page, ScreenshotClip, Viewport } from 'puppeteer-core';
 import { PosterizerOptions, PotraceOptions } from 'potrace';
 import { getContentByTag, getElemAttributesByText, getSvgDimensions, insertStringAt, replacePathToGroup } from '@/utils-svg';
 import { SVGTextStyles } from '@/types';
-import { prepareWorkingDir } from '@/helper/file';
+import { prepareWorkingDir, writeBufferWithProgress } from '@/helper/file';
 import { randomString } from '@/helper/string';
 import { ChromiumHandler } from '@/chromium/chromiumHandler';
 // import * as potrace from 'potrace';
@@ -62,14 +62,14 @@ export default class PotraceService {
   }
 
   async createPageContent(content: string, viewport?: Viewport): Promise<Page> {
-    const TIMEOUT: number = 10 * 60 * 1000;
+    const TIMEOUT: number = 20 * 60 * 1000;
     let page: Page | undefined = undefined;
     try {
       page = await ChromiumHandler.newPage();
       console.log('Chromium DONE!');
     } catch (error) {
       console.log(error, '==> error');
-  }
+    }
     if (viewport) {
       await page?.setViewport(viewport);
     }
@@ -77,6 +77,7 @@ export default class PotraceService {
       waitUntil: 'networkidle2',
       timeout: TIMEOUT,
     });
+    await page?.waitForFunction(() => document.readyState === 'complete');
     return page as any;
   }
 
@@ -135,13 +136,15 @@ export default class PotraceService {
   }
 
   async convertTextByTrace(content: string, style: SVGTextStyles): Promise<string> {
-    const fileName = `${style.id}_${randomString()}`;
+    const fileName = `${style.id}_${randomString(false, 5)}`;
     const path = this.prepareWorkingDir(fileName);
     const browserPool = new BrowserPool();
     const page = await this.createPageContent(content);
-    await page.screenshot({ path, fullPage: true });
-    await new Promise(resolve => setTimeout(resolve, 10));
+    // await page.screenshot({ path, fullPage: true });
+    const buffer = await page.screenshot({ path, fullPage: true });
+    const filePNGName = `${fileName}.png`;
     await page.close();
+    await this.writeBufferWithProgress(buffer, filePNGName);
     const svgContent = await this.potraceTrace(path, {
       threshold: 254,
       color: style.fill,
