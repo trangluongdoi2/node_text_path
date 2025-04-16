@@ -74,10 +74,11 @@ export default class PotraceService {
       await page?.setViewport(viewport);
     }
     await page?.setContent(content, {
-      waitUntil: 'networkidle2',
+      waitUntil: ['networkidle2', 'domcontentloaded'],
       timeout: TIMEOUT,
     });
-    await page?.waitForFunction(() => document.readyState === 'complete');
+    await page?.waitForFunction('window.document.readyState === "complete"');
+    await new Promise(resolve => setTimeout(resolve, 1000));
     return page as any;
   }
 
@@ -135,8 +136,8 @@ export default class PotraceService {
     }
   }
 
-  async convertTextByTrace(content: string, style: SVGTextStyles): Promise<string> {
-    const fileName = `${style.id}_${randomString(false, 5)}`;
+  async convertTextByTrace(content: string, style: SVGTextStyles, key?: string): Promise<string> {
+    const fileName = key || `${style.id}_${randomString(false, 5)}`;
     const path = this.prepareWorkingDir(fileName);
     const browserPool = new BrowserPool();
     const page = await this.createPageContent(content);

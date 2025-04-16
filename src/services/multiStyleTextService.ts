@@ -191,12 +191,13 @@ export class MultiStyleTextService {
     //   res.push(...batchResults.filter(Boolean));
     // }
     for (const handledContent of handledContents) {
-      const fileName = `${randomString(false, 5)}.svg`;
+      const keyRandom = randomString(false, 5)
+      const fileName = `${keyRandom}.svg`;
       const hehe = splitStringToChunk(handledContent.content);
       await writeArrayToFileStream(hehe, fileName);
       // await writeBufferWithProgress(handledContent.content, fileName);
       // fs.writeFileSync(handledContent.content, fileName);
-      const pathContent = await this.potraceService.convertTextByTrace(handledContent.content, handledContent.styles);
+      const pathContent = await this.potraceService.convertTextByTrace(handledContent.content, handledContent.styles, keyRandom);
       res.push(pathContent);
     }
     const finalResult = [];
