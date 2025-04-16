@@ -178,28 +178,33 @@ export class MultiStyleTextService {
       }
     });
 
-    const BATCH_SIZE = 1;
-    // for (let i = 0; i < handledContents.length; i += BATCH_SIZE) {
-    //   const batch = handledContents.slice(i, i + BATCH_SIZE);
-    //   const batchResults = await Promise.all(batch.map((b: any) => {
-    //     try {
-    //       return this.potraceService.convertTextByTrace(b.content, b.styles)
-    //     } catch (error) {
-    //       return null;
-    //     }
-    //   }));
-    //   res.push(...batchResults.filter(Boolean));
-    // }
-    for (const handledContent of handledContents) {
-      const keyRandom = randomString(false, 5)
-      const fileName = `${keyRandom}.svg`;
-      const hehe = splitStringToChunk(handledContent.content);
-      await writeArrayToFileStream(hehe, fileName);
-      // await writeBufferWithProgress(handledContent.content, fileName);
-      // fs.writeFileSync(handledContent.content, fileName);
-      const pathContent = await this.potraceService.convertTextByTrace(handledContent.content, handledContent.styles, keyRandom);
-      res.push(pathContent);
+    const BATCH_SIZE = 3;
+    for (let i = 0; i < handledContents.length; i += BATCH_SIZE) {
+      const batch = handledContents.slice(i, i + BATCH_SIZE);
+      const batchResults = await this.potraceService.converTextByTraceNew(batch);
+      // const batchResults = await Promise.all(batch.map((b: any) => {
+      //   // const keyRandom = randomString(false, 5)
+      //   // const fileName = `${keyRandom}.svg`;
+      //   // const hehe = splitStringToChunk(b.content);
+      //   // writeArrayToFileStream(hehe, fileName);
+      //   try {
+      //     return this.potraceService.convertTextByTrace(b.content, b.styles)
+      //   } catch (error) {
+      //     return null;
+      //   }
+      // }));
+      res.push(...batchResults.filter(Boolean));
     }
+    // for (const handledContent of handledContents) {
+    //   const keyRandom = randomString(false, 5)
+    //   const fileName = `${keyRandom}.svg`;
+    //   const hehe = splitStringToChunk(handledContent.content);
+    //   await writeArrayToFileStream(hehe, fileName);
+    //   // await writeBufferWithProgress(handledContent.content, fileName);
+    //   // fs.writeFileSync(handledContent.content, fileName);
+    //   const pathContent = await this.potraceService.convertTextByTrace(handledContent.content, handledContent.styles, keyRandom);
+    //   res.push(pathContent);
+    // }
     const finalResult = [];
     for (const subRes of res) {
       finalResult.push(subRes?.match(/<path(.*?)\/>/g) || [])

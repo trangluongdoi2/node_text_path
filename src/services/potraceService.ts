@@ -62,7 +62,7 @@ export default class PotraceService {
   }
 
   async createPageContent(content: string, viewport?: Viewport): Promise<Page> {
-    const TIMEOUT: number = 20 * 60 * 1000;
+    const TIMEOUT: number = 10 * 60 * 1000;
     let page: Page | undefined = undefined;
     try {
       page = await ChromiumHandler.newPage();
@@ -74,11 +74,11 @@ export default class PotraceService {
       await page?.setViewport(viewport);
     }
     await page?.setContent(content, {
-      waitUntil: ['networkidle2', 'domcontentloaded'],
+      waitUntil: ['load', 'networkidle0'],
       timeout: TIMEOUT,
     });
-    await page?.waitForFunction('window.document.readyState === "complete"');
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // await page?.waitForFunction('window.document.readyState === "complete"');
+    await new Promise(resolve => setTimeout(resolve, 500));
     return page as any;
   }
 
@@ -164,7 +164,7 @@ export default class PotraceService {
       const fileName = `${contentData.styles.id}_${randomString()}`;
       const path = this.prepareWorkingDir(fileName);
       await page?.setContent(contentData.content, {
-        waitUntil: 'networkidle2',
+        waitUntil: ['load', 'networkidle0'],
         timeout: TIMEOUT,
       });
       await page.screenshot({ path, fullPage: true });
@@ -175,6 +175,7 @@ export default class PotraceService {
       results.push(svgContent);
       this.prepareWorkingDir(fileName, true);
     }
+    await page.close();
     await browserPool.cleanup();
     return results;
   }
