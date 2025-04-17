@@ -149,6 +149,7 @@ export default class PotraceService {
     const svgContent = await this.potraceTrace(path, {
       threshold: 254,
       color: style.fill,
+      // turdPolicy: 'right',
     });
     this.prepareWorkingDir(fileName, true);
     await browserPool.cleanup();
@@ -190,11 +191,30 @@ export default class PotraceService {
     for (const contentData of contentsData) {
       const fileName = `${contentData.styles.id}_${randomString()}`;
       const path = this.prepareWorkingDir(fileName);
+
+      // await page.setViewport({ width: 1920, height: 1080 });
+      // await page.setRequestInterception(true);
+      // page.on('request', (req) => {
+      //   if (req.resourceType() === 'image') {
+      //     req.abort();
+      //   } else {
+      //     req.continue();
+      //   }
+      // });
+
       await page?.setContent(contentData.content, {
-        waitUntil: ['load', 'networkidle0'],
+        waitUntil: ['networkidle0'],
+        // waitUntil: ['domcontentloaded'],
         timeout: TIMEOUT,
       });
-      await page.screenshot({ path, fullPage: true, optimizeForSpeed: true });
+      await page.screenshot({
+        path,
+        fullPage: true,
+        optimizeForSpeed: true,
+        type: 'png',
+        omitBackground: true,
+        encoding: 'binary'
+      });
       results.push(this.potraceTrace(path, {
         threshold: 254,
         color: contentData.styles.fill,

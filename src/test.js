@@ -1,18 +1,27 @@
-// function pipe(...func) {
-//   return function(x) {
-//     return func.reduce((v, f) => {
-//       return f(v)
-//     }, x);
-//   }
-// }
+function pipe(...func) {
+  return function(initValue) {
+    return func.reduce((v, f) => f(v), initValue)
+  }
+}
 
-// const test1 = s => s + '1';
-// const test2 = s => s + '2';
+function curry(func) {
+  return curried = function(...args) {
+    if (args.length >= func.length) {
+      return func(...args)
+    } else {
+      return function(...nextArgs) {
+        console.log(args, nextArgs, 'args, nextArgs...')
+        return curried(...nextArgs, ...args)
+      } 
+    }
+  }
+}
 
-// const result = pipe(test1, test2)('aaa');
-// console.log(result, 'result...')
+function sum(a, b, c) {
+  return a + b + c;
+}
 
+const currySum = curry(sum);
+const a = currySum(1)(2)(3)
 
-const str = 'aabbaa';
-const a = str.replace('aa', 'cc');
-console.log(a, 'a...')
+console.log(a, 'a currying...')

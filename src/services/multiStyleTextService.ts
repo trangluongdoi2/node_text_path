@@ -2,6 +2,8 @@ import { JSDOM } from 'jsdom';
 import PotraceService from './potraceService';
 import { SVGTextStyles } from '@/types';
 import { randomString } from '@/helper/string';
+import fs from 'fs';
+import { removeXMLContent } from '@/utils-svg';
 
 type TagData = {
   text: string,
@@ -18,7 +20,8 @@ export class MultiStyleTextService {
   private potraceService = new PotraceService();
   private uniqueKey: string;
   constructor(svgContent: string, textContent: string, styles: SVGTextStyles) {
-    this.svgContent = svgContent;
+    // fs.writeFileSync('original.svg', svgContent);
+    this.svgContent = removeXMLContent(svgContent);
     this.textContent = textContent;
     this.styles = styles;
     this.tspanWrapperContents = [];
@@ -124,6 +127,8 @@ export class MultiStyleTextService {
       return this.getTagElements(tspanElement);
     });
 
+    console.log(tspanForEachChars, 'tspanForEachChars....')
+
     const baseContent = this.svgContent;
     const baseTextContent = this.textContent;
     const tspanChildElements = tspanForEachChars.map((tspanData, idx) => ({
@@ -148,6 +153,9 @@ export class MultiStyleTextService {
 
       cloneTextContent = cloneTextContent.replace(currentTspan.key, currentTspan.content);
 
+      // const test = baseContent.replace(`##text_replace_${this.uniqueKey}##`, cloneTextContent);
+      // fs.writeFileSync(`${randomString(false, 5)}.svg`, test);
+
       return {
         content: baseContent.replace(`##text_replace_${this.uniqueKey}##`, cloneTextContent),
         styles: {
@@ -157,7 +165,9 @@ export class MultiStyleTextService {
       };
     });
 
-    const BATCH_SIZE = 5;
+    // console.log(handledContents.length, 'handledContents.length...')
+
+    const BATCH_SIZE = 10;
     const results = [];
     
     for (let i = 0; i < handledContents.length; i += BATCH_SIZE) {
