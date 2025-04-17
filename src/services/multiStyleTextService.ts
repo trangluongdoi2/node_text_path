@@ -1,10 +1,7 @@
 import { JSDOM } from 'jsdom';
 import PotraceService from './potraceService';
 import { SVGTextStyles } from '@/types';
-import { curryingGetByField } from '@/helper/function';
-import { randomString, splitStringToChunk } from '@/helper/string';
-import { writeArrayToFileStream, writeBufferWithProgress } from '@/helper/file';
-import fs from 'fs';
+import { randomString } from '@/helper/string';
 
 type TagData = {
   text: string,
@@ -17,7 +14,6 @@ export class MultiStyleTextService {
   private svgContent: string;
   private textContent: string;
   private styles: SVGTextStyles;
-  // private textElement: SVGTextElement;
   private tspanWrapperContents: string[];
   private potraceService = new PotraceService();
   private uniqueKey: string;
@@ -28,18 +24,9 @@ export class MultiStyleTextService {
     this.tspanWrapperContents = [];
     this.uniqueKey = randomString(false, 5);
     this.svgContent = this.svgContent.replace(this.textContent, `##text_replace_${this.uniqueKey}##`);
-    // this.initText();
   }
-  
-  // initText() {
-  //   // const { window } = new JSDOM(this.textContent);
-  //   // const textElement = window.document.getElementsByTagName('text')[0] as any;
-  //   // this.textElement = textElement;
-  //   // window.close();
-  //   this.svgContent = this.svgContent.replace(this.textContent, `##text_replace_${this.uniqueKey}##`);
-  // }
 
-  getTagElements(element: SVGTextElement, recursion = false) {
+  getTagElements(element: SVGTextElement) {
     const spanEls = element.childNodes;
     const results = [];
     for (const child of spanEls) {
@@ -51,7 +38,6 @@ export class MultiStyleTextService {
           text: child.textContent,
           fill: (child as SVGElement).style.fill || this.styles.fill || 'none',
           content: (child as Element).outerHTML || '',
-          // children: recursion ? this.getTagElements(child as SVGTextElement): [],
         };
         results.push(tagData);
       }
@@ -110,7 +96,7 @@ export class MultiStyleTextService {
     if (!textElement) {
       return;
     }
-    const tspansWrapElements = this.getTagElements(textElement, false);
+    const tspansWrapElements = this.getTagElements(textElement);
     for (const tspanWrapper of tspansWrapElements) {
       const newTspanWrapperContent = this.splitTextIntoTspans(tspanWrapper.content);
       this.textContent = this.textContent.replace(tspanWrapper.content, newTspanWrapperContent);
@@ -119,7 +105,7 @@ export class MultiStyleTextService {
     window.close();
   }
 
-  addStyleToTspan(tspanContent: string, style: string = 'fill: none') {
+  setStyleFillNoneToTspan(tspanContent: string) {
     if (tspanContent.match(/style="[^"]*fill:\s*[^;"]+/)) {
       return tspanContent.replace(/style="([^"]*?)fill:\s*[^;"]+([^"]*)"/, `style="$1fill: none$2"`);
     }
@@ -130,85 +116,56 @@ export class MultiStyleTextService {
   };
 
   async getPathByPotrace() {
+    console.time(this.uniqueKey);
     this.formatTextContent();
-    const tspanForEachChars: Array<TagData[]> = []
-    for (const tspanWrapper of this.tspanWrapperContents) {
-      const { window } = new JSDOM(tspanWrapper);
-      const tspanElement = window.document.getElementsByTagName('tspan')?.[0]; 
-      const tags = this.getTagElements(tspanElement, true);
-      tspanForEachChars.push(tags);
-      window.close();
-    }
-    const res = [];
-    const tspanForEachCharsFlat = tspanForEachChars.flat();
-    // console.log(tspanForEachCharsFlat, 'tspanForEachCharsFlat..')
-    // console.log(tspanForEachCharsFlat.length, 'tspanForEachCharsFlat.length...');
-    const handledContents: Array<{ content: string, styles: any }> = tspanForEachCharsFlat.map((tspanData: TagData, index: number) => {
-      let cloneEntireContent = this.svgContent;
-      let cloneTextContent = this.textContent;
-      const cloneTspanChildElement = [...tspanForEachCharsFlat].map((tspanData: TagData, tspanIndex: number) => ({
-        content: tspanData.content,
-        key: `##tspan_${tspanIndex}_${this.uniqueKey}##`,
-        text: tspanData.text
-      }));
-      for (const tspanChildContent of cloneTspanChildElement) {
-        // console.log(tspanChildContent.text, 'tspanChildContent.text')
-        cloneTextContent = cloneTextContent.replace(tspanChildContent.content, tspanChildContent.key);
-      }
-      // console.log(cloneTextContent, 'cloneTextContent')
-      const tspanTempRemove = cloneTspanChildElement.splice(index, 1)?.[0];
-      for (const tspanChildContent of [...cloneTspanChildElement]) {
-        const newTspanContent = this.addStyleToTspan(tspanChildContent.content);
-        cloneTextContent = cloneTextContent.replace(tspanChildContent.key, newTspanContent);
-      }
-      // console.log(tspanTempRemove.key, 'tspanTempRemove.key');
-      // console.log(cloneTextContent, 'cloneTextContent BEFORE');
-      // console.log('=======================================');
-      cloneTextContent = cloneTextContent.replace(tspanTempRemove.key, tspanTempRemove?.content);
-      // console.log(cloneTextContent, 'cloneTextContent AFTER');
-      // console.log('===========END============');
 
-      // console.log(cloneEntireContent, 'cloneEntireContent before')
-      return {
-        content: cloneEntireContent.replace(`##text_replace_${this.uniqueKey}##`, cloneTextContent),
-        styles: {
-          ...this.styles,
-          fill: tspanData.fill,
-        }
-      }
+    const tspanForEachChars = this.tspanWrapperContents.flatMap(wrapper => {
+      const tspanElement = new JSDOM(wrapper).window.document.getElementsByTagName('tspan')?.[0];
+      return this.getTagElements(tspanElement);
     });
 
-    const BATCH_SIZE = 3;
+    const baseContent = this.svgContent;
+    const baseTextContent = this.textContent;
+    const tspanChildElements = tspanForEachChars.map((tspanData, idx) => ({
+      content: tspanData.content,
+      key: `##tspan_${idx}_${this.uniqueKey}##`
+    }));
+
+    const handledContents = tspanForEachChars.map((tspanData, index) => {
+      let cloneTextContent = baseTextContent;
+
+      tspanChildElements.forEach(elem => {
+        cloneTextContent = cloneTextContent.replace(elem.content, elem.key);
+      });
+
+      const currentTspan = tspanChildElements[index];
+      const otherTspans = tspanChildElements.filter((_, i) => i !== index);
+
+      otherTspans.forEach(tspan => {
+        const styledContent = this.setStyleFillNoneToTspan(tspan.content);
+        cloneTextContent = cloneTextContent.replace(tspan.key, styledContent);
+      });
+
+      cloneTextContent = cloneTextContent.replace(currentTspan.key, currentTspan.content);
+
+      return {
+        content: baseContent.replace(`##text_replace_${this.uniqueKey}##`, cloneTextContent),
+        styles: {
+          ...this.styles,
+          fill: tspanData.fill
+        }
+      };
+    });
+
+    const BATCH_SIZE = 5;
+    const results = [];
+    
     for (let i = 0; i < handledContents.length; i += BATCH_SIZE) {
       const batch = handledContents.slice(i, i + BATCH_SIZE);
       const batchResults = await this.potraceService.converTextByTraceNew(batch);
-      // const batchResults = await Promise.all(batch.map((b: any) => {
-      //   // const keyRandom = randomString(false, 5)
-      //   // const fileName = `${keyRandom}.svg`;
-      //   // const hehe = splitStringToChunk(b.content);
-      //   // writeArrayToFileStream(hehe, fileName);
-      //   try {
-      //     return this.potraceService.convertTextByTrace(b.content, b.styles)
-      //   } catch (error) {
-      //     return null;
-      //   }
-      // }));
-      res.push(...batchResults.filter(Boolean));
+      results.push(...batchResults.filter(Boolean));
     }
-    // for (const handledContent of handledContents) {
-    //   const keyRandom = randomString(false, 5)
-    //   const fileName = `${keyRandom}.svg`;
-    //   const hehe = splitStringToChunk(handledContent.content);
-    //   await writeArrayToFileStream(hehe, fileName);
-    //   // await writeBufferWithProgress(handledContent.content, fileName);
-    //   // fs.writeFileSync(handledContent.content, fileName);
-    //   const pathContent = await this.potraceService.convertTextByTrace(handledContent.content, handledContent.styles, keyRandom);
-    //   res.push(pathContent);
-    // }
-    const finalResult = [];
-    for (const subRes of res) {
-      finalResult.push(subRes?.match(/<path(.*?)\/>/g) || [])
-    }
-    return finalResult.flat();
+    console.timeEnd(this.uniqueKey);
+    return results.flatMap(result => result?.match(/<path(.*?)\/>/g) || []);
   }
 }

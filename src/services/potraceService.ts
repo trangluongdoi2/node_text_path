@@ -155,11 +155,38 @@ export default class PotraceService {
     return svgContent;
   }
 
+  // async converTextByTraceNew(contentsData: Array<{ content: string, styles: SVGTextStyles }>) {
+  //   const browserPool = new BrowserPool();
+  //   const results: any[] = [];
+  //   const TIMEOUT: number = 10 * 60 * 1000;
+  //   const page = await ChromiumHandler.newPage();
+  //   for (const contentData of contentsData) {
+  //     const fileName = `${contentData.styles.id}_${randomString()}`;
+  //     const path = this.prepareWorkingDir(fileName);
+  //     await page?.setContent(contentData.content, {
+  //       waitUntil: ['load', 'networkidle0'],
+  //       timeout: TIMEOUT,
+  //     });
+  //     await page.screenshot({ path, fullPage: true, optimizeForSpeed: true });
+  //     const svgContent = await this.potraceTrace(path, {
+  //       threshold: 254,
+  //       color: contentData.styles.fill,
+  //     });
+  //     results.push(svgContent);
+  //     this.prepareWorkingDir(fileName, true);
+  //   }
+  //   await page.close();
+  //   await browserPool.cleanup();
+  //   return results;
+  // }
+
   async converTextByTraceNew(contentsData: Array<{ content: string, styles: SVGTextStyles }>) {
+    console.log('converTextByTraceNew()');
     const browserPool = new BrowserPool();
     const results: any[] = [];
     const TIMEOUT: number = 10 * 60 * 1000;
-    const page = await ChromiumHandler.newPage();
+    const browser: Browser = await browserPool.getBrowser();
+    const page: Page = await browser.newPage();
     for (const contentData of contentsData) {
       const fileName = `${contentData.styles.id}_${randomString()}`;
       const path = this.prepareWorkingDir(fileName);
@@ -167,17 +194,18 @@ export default class PotraceService {
         waitUntil: ['load', 'networkidle0'],
         timeout: TIMEOUT,
       });
-      await page.screenshot({ path, fullPage: true });
-      const svgContent = await this.potraceTrace(path, {
+      await page.screenshot({ path, fullPage: true, optimizeForSpeed: true });
+      results.push(this.potraceTrace(path, {
         threshold: 254,
         color: contentData.styles.fill,
-      });
-      results.push(svgContent);
-      this.prepareWorkingDir(fileName, true);
+      }).then(content => {
+        this.prepareWorkingDir(fileName, true);
+        return content;
+      }));
     }
     await page.close();
     await browserPool.cleanup();
-    return results;
+    return await Promise.all(results);
   }
 
   private async convertTextByPosterize(

@@ -13,7 +13,6 @@ import ExportSVGFilterService from './services/svgFilter';
 import measureCharsRouter from './routes/measure-chars';
 import { prepareWorkingDir } from './helper/file';
 import { im } from 'mathjs';
-import * as WebSocketServer  from 'ws';
 
 const PORT = 3000;
 const app = express();

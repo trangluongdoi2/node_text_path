@@ -39,8 +39,9 @@ export class BrowserPool {
     const chromium = require('@sparticuz/chromium');
     const profilePath = `/tmp/puppeteer_dev_chrome_profile-${randomString(false, 5)}-${Date.now()}`;
 
-    const executablePath = await chromium.executablePath();
-    console.log('launchNewBrowser(): executablePath: ', executablePath, profilePath);
+    // const executablePath = await chromium.executablePath();
+    const executablePath = '/opt/homebrew/bin/chromium';
+    // console.log('launchNewBrowser(): executablePath: ', executablePath, profilePath);
     await fs.promises.mkdir(profilePath, { recursive: true }).catch(err => {
       console.error('Error creating profile directory:', err);
     });
@@ -105,7 +106,7 @@ export class BrowserPool {
     });
 
     this.activeBrowsers.set(browser, profilePath);
-    console.log(`Browser created with profile path: ${profilePath}`);
+    // console.log(`Browser created with profile path: ${profilePath}`);
     return browser;
   }
 
@@ -129,7 +130,7 @@ export class BrowserPool {
           
           // Only delete if the profile is not currently in use
           if (!activeProfiles.includes(path)) {
-            console.log(`Cleaning up inactive Chromium directory: ${path}`);
+            // console.log(`Cleaning up inactive Chromium directory: ${path}`);
             // Add retry mechanism for directory deletion
             let retries = 3;
             while (retries > 0) {
@@ -199,10 +200,10 @@ export class BrowserPool {
       return;
     }
     
-    console.log('BrowserPool.releaseBrowser()');
+    // console.log('BrowserPool.releaseBrowser()');
     const profilePath = this.activeBrowsers.get(browser);
     if (profilePath) {
-      console.log(`Releasing browser with profile path: ${profilePath}`);
+      // console.log(`Releasing browser with profile path: ${profilePath}`);
       this.activeBrowsers.delete(browser);
     }
     
@@ -212,7 +213,7 @@ export class BrowserPool {
   }
 
   public async cleanup() {
-    console.log('BrowserPool.cleanup()');
+    // console.log('BrowserPool.cleanup()');
     const closingPromises = Array.from(this.activeBrowsers.keys()).map(browser => {
       return this.releaseBrowser(browser);
     });
@@ -239,6 +240,6 @@ export class BrowserPool {
       this.browserUsage.clear();
       this.activeBrowsers.clear();
     }
-    console.log('BrowserPool.cleanup() complete');
+    // console.log('BrowserPool.cleanup() complete');
   }
 }

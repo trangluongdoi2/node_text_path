@@ -598,6 +598,7 @@ class HandlerSVGContent {
   // }
 
   async export() {
+    console.time('export SVG');
     const col = 1;
     const row = 1;
     const bleedSize = 0;
@@ -668,6 +669,7 @@ class HandlerSVGContent {
     this.svgContent = this.convertShape(this.svgContent);
     this.svgContent = this.convertFillTransparent(this.svgContent);
     this.svgContent = this.fixAdobeTag(this.svgContent);
+    console.timeEnd('export SVG');
     return this.svgContent;
   }
 }
