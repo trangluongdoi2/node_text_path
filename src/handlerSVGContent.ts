@@ -52,7 +52,7 @@ class HandlerSVGContent {
     this.background = getBackgroundTag(svgContent);
     this.shapeRectangles = getShapeRectanglesTag(svgContent);
     this.filterGradientTags = getFilterGradientTags(svgContent) as string[];
-    
+
     // Extract defs content once instead of repeatedly
     const defsContent = getContentByTag(svgContent, 'defs')?.[0] || '';
     this.shapeClipPaths = getShapeClipPathTags(defsContent) as string[];
@@ -228,7 +228,9 @@ class HandlerSVGContent {
   private async convertTextByPosterize(elementTag: string, outerHTML: string): Promise<SVGElement> {
     // Create SVG content on-demand instead of keeping a backup copy
     const groupElementContent = this.groupElement?.innerHTML || '';
+    // console.log(groupElementContent, 'groupElementContent...')
     const currentOnlyTextHtml = this.svgContent.replace(groupElementContent, outerHTML);
+    // console.log(currentOnlyTextHtml, 'currentOnlyTextHtml...');
     const path = await this.potraceService.convertTextByPotrace(currentOnlyTextHtml, elementTag, this.styles);
     return {
       type: 'TEXT',

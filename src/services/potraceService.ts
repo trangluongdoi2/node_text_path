@@ -77,8 +77,6 @@ export default class PotraceService {
       waitUntil: ['load', 'networkidle0'],
       timeout: TIMEOUT,
     });
-    // await page?.waitForFunction('window.document.readyState === "complete"');
-    await new Promise(resolve => setTimeout(resolve, 500));
     return page as any;
   }
 
@@ -149,7 +147,6 @@ export default class PotraceService {
     const svgContent = await this.potraceTrace(path, {
       threshold: 254,
       color: style.fill,
-      // turdPolicy: 'right',
     });
     this.prepareWorkingDir(fileName, true);
     await browserPool.cleanup();
@@ -204,7 +201,6 @@ export default class PotraceService {
 
       await page?.setContent(contentData.content, {
         waitUntil: ['networkidle0'],
-        // waitUntil: ['domcontentloaded'],
         timeout: TIMEOUT,
       });
       await page.screenshot({
@@ -440,6 +436,7 @@ export default class PotraceService {
     textHtml = insertStringAt(textHtml, styles?.join('') || '', index);
     const texts = getContentByTag(innerHTML, 'text') as string[];
     let pathGroup = '<g>';
+
     for (const text of texts) {
       const style = getElemAttributesByText(text);
       if (style.filter || style.stroke) {
