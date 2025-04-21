@@ -9,6 +9,7 @@ import { ChromiumHandler } from './chromium/chromiumHandler';
 import { Page } from 'puppeteer-core';
 import HandlerSVGContent from './handlerSVGContent';
 import { getContentByTag, removeXMLContent } from './utils-svg';
+import DesignService from './services/designService'
 
 const PORT = 3000;
 const app = express();
@@ -55,8 +56,8 @@ app.listen(PORT, async () => {
     console.log(error, '==> error');
   }
 
-  let url = 'https://www.corjl.com/output/org/GE01JKETWV649R53Q9Y2H89KC3BE/downloads/DO01JKET8BE3MJKGGCFG9XK1Z47S/U01JR503X0PPJM1FP4YDRAWXDT6/html/1.html';
-  // url = 'https://www.corjl.com/output/org/GD01HHP5CRND058V7TNCH9WG0NS5/downloads/DC01HMEY5WSE4C1YXKFPSYQ108R7/U01JRJ40F984XDWEYX1PPQAW6R6/html/1.html';
+  // let url = 'https://www.corjl.com/output/org/GE01JKETWV649R53Q9Y2H89KC3BE/downloads/DO01JKET8BE3MJKGGCFG9XK1Z47S/U01JR503X0PPJM1FP4YDRAWXDT6/html/1.html';
+  let url = 'https://www.corjl.com/output/org/GD01HHP5CRND058V7TNCH9WG0NS5/downloads/DC01HMEY5WSE4C1YXKFPSYQ108R7/U01JRJ40F984XDWEYX1PPQAW6R6/html/1.html';
   // url = 'https://dev.korjl.com/output/org/GD01HHE0HGV05VPEJ5TGT5BF14CT/downloads/DC01JRS0BP87ZPSPDN8BKG6RR02F/U01JRVVY52R3J9EP38KMGNQF2HJ/html/12.html';
   // url = 'https://dev.korjl.com/output/org/GD01HHE0HGV05VPEJ5TGT5BF14CT/downloads/DC01JRS0BP87ZPSPDN8BKG6RR02F/U01JRWAS0JC7DVE5VYHRWED4QAB/html/9.html';
   // url = 'https://dev.korjl.com/output/org/GD01HHE0HGV05VPEJ5TGT5BF14CT/downloads/DC01JRS0BP87ZPSPDN8BKG6RR02F/U01JRWBVT4HXHYBV0K7F3KHR3KV/html/13.html';
@@ -75,23 +76,31 @@ app.listen(PORT, async () => {
   // url = 'https://www.corjl.com/output/org/GD01HHP5CRND058V7TNCH9WG0NS5/downloads/DC01HMEY6SHWBEXZHM5XW3W459BW/U01JS3GDF3M1Y4X4Q222W90SR0X/html/4.html';
   // url = 'https://www.corjl.com/output/org/GD01HHP5CF727JKHP8146TQYV73C/downloads/DC01HHQTEWKB9YCRTWRTVJR16BQ4/U01JS40AWTB0T666A08Y0MT98N3/html/1.html';
 
-
   // NOT FIXED
   // url = 'https://www.corjl.com/output/org/GD01HHP5CRND058V7TNCH9WG0NS5/downloads/DC01HMEY6AQREGH5ATYXQFTMXN0W/U01JS4697M13AAPRDGRC44QN65Y/html/1.html';
-  url = 'https://www.corjl.com/output/org/GD01HHP5CRND058V7TNCH9WG0NS5/downloads/DC01HMEY6AQREGH5ATYXQFTMXN0W/U01JS46V5KZCGAV4QV7GEEY5BT8/html/4.html';
+  // url = 'https://www.corjl.com/output/org/GD01HHP5CRND058V7TNCH9WG0NS5/downloads/DC01HMEY6AQREGH5ATYXQFTMXN0W/U01JS46V5KZCGAV4QV7GEEY5BT8/html/4.html';
+  // url = 'https://www.corjl.com/output/org/GD01HHP5CRND058V7TNCH9WG0NS5/downloads/DC01HMEY7Q8S7WM49YPFRBNWWJDW/U01JSBNWR861TPGS4C3TTV7FXPW/html/1.html';
+  // url = 'https://www.corjl.com/output/org/GD01HHP5CT1KMGNSPFHSYBWT3Y5R/downloads/DC01JP9Y2QHAEA0X0PTQYXY2DYWN/U01JSBP6206EDPYTFGYVDFMEGK7/html/1.html';
+  // url = 'https://www.corjl.com/output/org/GD01HHP5CT1KMGNSPFHSYBWT3Y5R/downloads/DC01JP9Y2QHAEA0X0PTQYXY2DYWN/U01JSBPN2CTCY3NAGBYDDZ7FP8F/html/3.html';
+
   await page?.goto(url);
   await waitForSelector(page as any, '.canvas-loaded');
+
+  const data = await page?.evaluate(() => (window as any).data);
+
+  const { pageSections, orgId } = data.designPage;
+
+  const elementsBySection = await DesignService.getListMasterElementsFromPageSections(pageSections, orgId);
 
   const content = await page?.content();
   // @ts-ignore
   const headTag = getContentByTag(content as string, 'head', 0) as string;
   const styles = getContentByTag(headTag, 'style') as string[];
 
-  const data = fs.readFileSync(path.join(__dirname, './data/index.json'), 'utf8');
   const svgContents = await Promise.all(
-    Array.from({ length: 1 }, async (_, index: number) => {
+    Array.from({ length: pageSections.length }, async (_, index: number) => {
       const svgContent = getContentByTag(content as string, 'svg', index) as string;
-      const exportSvgService = new HandlerSVGContent(svgContent, styles, data);
+      const exportSvgService = new HandlerSVGContent(svgContent, styles, elementsBySection[index]);
       const contentSVG = await exportSvgService.export();
       // await exportSvgService.cleanup().catch((error) => {
       //   console.error(`Error cleaning up ExportSvgService:`, error);

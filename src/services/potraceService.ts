@@ -3,7 +3,7 @@ import { Channels, Metadata } from 'sharp';
 import { Browser, Page, ScreenshotClip, Viewport } from 'puppeteer-core';
 import { PosterizerOptions, PotraceOptions } from 'potrace';
 import { getContentByTag, getElemAttributesByText, getSvgDimensions, insertStringAt, replacePathToGroup } from '@/utils-svg';
-import { SVGTextStyles } from '@/types';
+import { MasterElement, SVGTextStyles } from '@/types';
 import { prepareWorkingDir, writeBufferWithProgress } from '@/helper/file';
 import { randomString } from '@/helper/string';
 import { ChromiumHandler } from '@/chromium/chromiumHandler';
@@ -141,9 +141,9 @@ export default class PotraceService {
     const page = await this.createPageContent(content);
     // await page.screenshot({ path, fullPage: true });
     const buffer = await page.screenshot({ path, fullPage: true });
-    const filePNGName = `${fileName}.png`;
+    // const filePNGName = `${fileName}.png`;
     await page.close();
-    await this.writeBufferWithProgress(buffer, filePNGName);
+    // await this.writeBufferWithProgress(buffer, filePNGName);
     const svgContent = await this.potraceTrace(path, {
       threshold: 254,
       color: style.fill,
@@ -178,7 +178,7 @@ export default class PotraceService {
   //   return results;
   // }
 
-  async converTextByTraceNew(contentsData: Array<{ content: string, styles: SVGTextStyles }>) {
+  async converTextByTraceNew(contentsData: Array<{ content: string, styles: SVGTextStyles, index: number }>) {
     console.log('converTextByTraceNew()');
     const browserPool = new BrowserPool();
     const results: any[] = [];
@@ -199,18 +199,21 @@ export default class PotraceService {
       //   }
       // });
 
+      // fs.writeFileSync(`${contentData.index}.svg`, contentData.content);
+
       await page?.setContent(contentData.content, {
-        waitUntil: ['networkidle0'],
+        waitUntil: ['load', 'networkidle0'],
         timeout: TIMEOUT,
       });
-      await page.screenshot({
+      const buffer = await page.screenshot({
         path,
         fullPage: true,
-        optimizeForSpeed: true,
-        type: 'png',
-        omitBackground: true,
-        encoding: 'binary'
+        // optimizeForSpeed: true,
+        // type: 'png',
+        // omitBackground: true,
+        // encoding: 'binary'
       });
+      // this.writeBufferWithProgress(buffer, `${contentData.index}.png`)
       results.push(this.potraceTrace(path, {
         threshold: 254,
         color: contentData.styles.fill,
@@ -449,6 +452,65 @@ export default class PotraceService {
       const content = this.replaceOnlyText(textHtml, text).replace(/#ffffff/g, '#fdfdfd');
       const multiStylesTextService = new MultiStyleTextService(content, text, style);
       const textPath = await multiStylesTextService.getPathByPotrace();
+      pathGroup = `${pathGroup}<g>${textPath.join('')}</g>`;
+    }
+
+    pathGroup = `${pathGroup}</g>`;
+    const d = pathGroup.match(/d="M.*?"/g) || [];
+    const pathShadows = pathGroup.match(/<path (d="".*?)\/>/g) || [];
+    if (d.length > 0 && pathShadows.length > 0) {
+      for (let index = 0; index < pathShadows.length; index++) {
+        pathGroup = pathGroup.replace(pathShadows[index], pathShadows[index].replace('d=""', `${d[0]}`));
+      }
+    }
+    return replacePathToGroup(innerHTML, pathGroup);
+  }
+
+  isMultiSyles(element?: MasterElement) {
+    if (!element) {
+      return false;
+    }
+    if (element.type !== 'textbox') {
+      return false;
+    }
+    const { styles = {} } = element as any;
+    return Object.keys(styles)?.length >= 1;
+  }
+
+  public async converTextByPotraceNew(content: { textHTML: string, innerHTML: string }, convertData: {
+    styles?: string[],
+    element?: MasterElement,
+  }) {
+    let { textHTML = '', innerHTML = '' } = content;
+    const { styles = [''], element } = convertData;
+
+    const index: number = [...(textHTML.match(/<svg(.*?)>/g) ?? [])][0].length;
+
+    textHTML = insertStringAt(textHTML, styles?.join('') || '', index);
+    const texts = getContentByTag(innerHTML, 'text') as string[];
+    let pathGroup = '<g>';
+
+    for (const text of texts) {
+      const style = getElemAttributesByText(text);
+      if (style.filter || style.stroke) {
+        const strokeWidth = style.strokeWidth ?? 0;
+        const strokeOpacity = style.strokeOpacity ?? 0;
+        const textPath = `<path d="" fill-rule="evenodd" fill="${style.fill}" stroke="${style.stroke}" stroke-width="${strokeWidth}" stroke-opacity="${strokeOpacity}" />`;
+        pathGroup = `${pathGroup}<g filter="${style.filter}">${textPath}</g>`;
+        continue;
+      }
+      const content = this.replaceOnlyText(textHTML, text).replace(/#ffffff/g, '#fdfdfd');
+
+      let textPath;
+      if (this.isMultiSyles(element)) {
+        console.log(element, 'element...')
+        const multiStylesTextService = new MultiStyleTextService(content, text, style);
+        textPath = await multiStylesTextService.getPathByPotrace();
+      } else {
+        const svg = await this.convertTextByTrace(content, style);
+        textPath =  svg.match(/<path(.*?)\/>/g) || [];
+      }
+
       pathGroup = `${pathGroup}<g>${textPath.join('')}</g>`;
     }
 

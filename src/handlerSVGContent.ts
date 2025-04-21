@@ -1,7 +1,7 @@
 import { JSDOM } from 'jsdom';
 import sharp from 'sharp';
 import { TextService } from './services/textService';
-import { SVGElement } from './types/index'
+import { MasterElement, SVGElement } from './types/index'
 
 import {
   getContentByTag,
@@ -59,7 +59,10 @@ class HandlerSVGContent {
     this.shapeClipPathsExluceText = this.shapeClipPaths.filter((shapeClipPath) => !shapeClipPath.includes('text'));
     this.shapeClipPathsByText = this.shapeClipPaths.filter((shapeClipPath) => shapeClipPath.includes('text'));
     this.textRectangles = getTextRectanglesTag(svgContent);
-    this.data = Object.values(data);
+    // this.data = Object.values(data);
+    this.data = data;
+
+    console.log(this.data, 'data...')
 
     // Use a single pass approach to replace content instead of multiple iterations
     if (this.filterGradientTags?.length) {
@@ -225,13 +228,19 @@ class HandlerSVGContent {
     };
   }
 
-  private async convertTextByPosterize(elementTag: string, outerHTML: string): Promise<SVGElement> {
+  private async convertTextByPosterize(elementTag: string, outerHTML: string, element?: MasterElement): Promise<SVGElement> {
     // Create SVG content on-demand instead of keeping a backup copy
     const groupElementContent = this.groupElement?.innerHTML || '';
-    // console.log(groupElementContent, 'groupElementContent...')
     const currentOnlyTextHtml = this.svgContent.replace(groupElementContent, outerHTML);
-    // console.log(currentOnlyTextHtml, 'currentOnlyTextHtml...');
-    const path = await this.potraceService.convertTextByPotrace(currentOnlyTextHtml, elementTag, this.styles);
+    // const path = await this.potraceService.convertTextByPotrace(currentOnlyTextHtml, elementTag, this.styles);
+    const path = await this.potraceService.converTextByPotraceNew({
+        textHTML: currentOnlyTextHtml,
+        innerHTML: elementTag,
+      },
+      {
+      styles: this.styles,
+      element,
+    });
     return {
       type: 'TEXT',
       elementTag,
@@ -612,11 +621,11 @@ class HandlerSVGContent {
         batch.map((element: Element, index: number) => {
           const { outerHTML, innerHTML } = element;
           if (this.isTextElement(innerHTML)) {
-            // const masterElement = this.getMasterElement(innerHTML);
+            const masterElement = this.getMasterElement(innerHTML);
             if (this.hasClipPath(i + index)) {
               return this.convertTextClippingMaskByPosterize(i + index, innerHTML, outerHTML);
             }
-            return this.convertTextByPosterize(innerHTML, outerHTML);
+            return this.convertTextByPosterize(innerHTML, outerHTML, masterElement);
           }
 
           if (this.isImageElement(innerHTML)) {

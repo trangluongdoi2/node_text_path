@@ -3,7 +3,7 @@ import PotraceService from './potraceService';
 import { SVGTextStyles } from '@/types';
 import { randomString } from '@/helper/string';
 import fs from 'fs';
-import { removeXMLContent } from '@/utils-svg';
+import { curryingGetByField } from '@/helper/function';
 
 type TagData = {
   text: string,
@@ -19,7 +19,6 @@ export class MultiStyleTextService {
   private tspanWrapperContents: string[] = [];
   private potraceService = new PotraceService();
   private uniqueKey: string;
-  private primaryFill: string;
   constructor(svgContent: string, textContent: string, styles: SVGTextStyles) {
     this.styles = styles;
     this.svgContent = this.formatContent(svgContent);
@@ -27,32 +26,13 @@ export class MultiStyleTextService {
     this.uniqueKey = randomString(false, 5);
     this.svgContent = this.svgContent.replace(this.textContent, `##text_replace_${this.uniqueKey}##`);
     this.textContent = this.formatTextContent(this.textContent);
-    this.getPrimaryFill();
+    // this.getPrimaryFill();
   }
 
   formatContent(content: string) {
     const { window } = new JSDOM(content);
     content = window.document.body.innerHTML;
     return content.replace(/\s+/g, ' ');
-  }
-
-  getFillByTspanData(tspanElement: any) {
-    let fill = tspanElement.style?.fill || this.styles?.fill || 'none';
-    if (tspanElement.childNodes) {
-      const childNodesArray = Array.from(tspanElement.childNodes);
-      for (const childNode of childNodesArray) {
-        // @ts-ignore
-        console.log(childNode.style, 'childNode.style')
-        // console.log(childNode, 'childNode...')
-        // const { window } = new JSDOM(childNode);
-        // childNode = window.document.body.innerHTML;
-        // // @ts-ignore
-        // console.log(childNode.outerHTML, 'childNode.outerHTML..')
-        fill = this.getFillByTspanData(childNode);
-      }
-    }
-    return fill;
-    // return tspanElement.style.fill || this.styles.fill || 'none';
   }
 
   getTagElements(element: SVGTextElement) {
@@ -63,10 +43,6 @@ export class MultiStyleTextService {
         continue;
       }
       if (child.nodeName === 'TSPAN') {
-        if (child.textContent === 'c') {
-          const fill = this.getFillByTspanData(child);
-          console.log(fill, 'filll...')
-        }
         const tagData: TagData = {
           text: child.textContent,
           fill: (child as SVGElement).style.fill || this.styles.fill || 'none',
@@ -78,14 +54,16 @@ export class MultiStyleTextService {
     return results;
   }
 
-  getPrimaryFill() {
-    const tspanElement = new JSDOM(this.textContent).window.document.getElementsByTagName('text')?.[0];
-    this.primaryFill = tspanElement.getAttribute('fill') || this.styles.fill || '';
-  }
+  // getPrimaryFill() {
+  //   const tspanElement = new JSDOM(this.textContent).window.document.getElementsByTagName('text')?.[0];
+  //   this.primaryFill = tspanElement.getAttribute('fill') || this.styles.fill || '';
+  // }
 
   splitTextIntoTspans(tspanContent: string) {
     const { window } = new JSDOM(tspanContent);
     const tspan = window.document.querySelector('tspan');
+    let fill = this.styles.fill || 'none';
+
     
     if (!tspan) {
       return tspanContent;
@@ -112,22 +90,18 @@ export class MultiStyleTextService {
         const styledTspan = node as Element;
         const style = styledTspan.getAttribute('style');
         let childStyleContent = '';
+        // @ts-ignore
+        fill = styledTspan.style.fill || this.styles.fill;
+
         if (node.childNodes.length) {
-          const childOfChildNodes = Array.from(node.childNodes);
-          for (const childnodes of childOfChildNodes) {
-            if (childStyleContent) {
-              return;
-            }
+          for (const childnodes of node.childNodes) {
             if (childnodes.nodeName === 'TSPAN') {
-              const childStyles = (childnodes as any).getAttribute('style');
-              if (childStyles) {
-                childStyleContent = childStyles;
-              }
+              // @ts-ignore
+              fill = childnodes.style.fill;
             }
           }
         }
         const text = styledTspan.textContent || '';
-        console.log(text,  'text...')
         const chars = text.split('');
 
         let styleContent = '';
@@ -136,6 +110,8 @@ export class MultiStyleTextService {
         } else if (!style && childStyleContent) {
           styleContent = `style="${childStyleContent}"`
         }
+
+        styleContent = this.updateStyleFillForContent(styleContent, fill);
 
         chars.forEach(char => {
           if (char.trim()) {
@@ -171,15 +147,62 @@ export class MultiStyleTextService {
     return textContent;
   }
 
-  setStyleFillNoneToTspan(tspanContent: string) {
-    if (tspanContent.match(/style="[^"]*fill:\s*[^;"]+/)) {
-      return tspanContent.replace(/style="([^"]*?)fill:\s*[^;"]+([^"]*)"/, `style="$1fill: none$2"`);
+  private cleanContent(content: string): string {
+    // Remove extra whitespace between attributes
+    content = content.replace(/\s+/g, ' ');
+    
+    // Remove redundant semicolons in style attributes
+    content = content.replace(/style="([^"]*)"/g, (match, styleContent) => {
+      // Remove multiple consecutive semicolons
+      styleContent = styleContent.replace(/;+/g, ';');
+      // Remove leading/trailing semicolons
+      styleContent = styleContent.replace(/^;|;$/g, '');
+      // Remove spaces around semicolons
+      styleContent = styleContent.replace(/\s*;\s*/g, ';');
+      return `style="${styleContent}"`;
+    });
+
+    // Remove empty style attributes
+    content = content.replace(/style="\s*"/g, '');
+    
+    // Remove redundant quotes in attributes
+    content = content.replace(/(\w+)="([^"]*)"/g, (match, attr, value) => {
+      // If value is just a number or doesn't contain spaces, remove quotes
+      if (/^\d+$/.test(value) || !value.includes(' ')) {
+        return `${attr}=${value}`;
+      }
+      return match;
+    });
+
+    // Remove self-closing tags that shouldn't be self-closing
+    content = content.replace(/<(\w+)([^>]*)\/>/g, (match, tag, attrs) => {
+      if (!['path', 'line', 'rect', 'circle', 'ellipse', 'polygon', 'polyline'].includes(tag)) {
+        return `<${tag}${attrs}></${tag}>`;
+      }
+      return match;
+    });
+
+    return content;
+  }
+
+  updateStyleFillForContent(content: string, value: string = 'none') {
+    if (content.match(/style="[^"]*fill:\s*[^;"]+/)) {
+      return this.cleanContent(content.replace(/style="([^"]*?)fill:\s*[^;"]+([^"]*)"/, (match, before, after) => {
+        before = before.replace(/;\s*$/, '');
+        after = after.replace(/^\s*;/, '');
+        return `style="${before ? before + ';' : ''}fill: ${value}${after}"`;
+      }));
     }
-    if (tspanContent.match(/style="[^"]*"/)) {
-      return tspanContent.replace(/style="([^"]*)"/, `style="$1;fill: none"`);
+    
+    if (content.match(/style="[^"]*"/)) {
+      return this.cleanContent(content.replace(/style="([^"]*)"/, (match, styleContent) => {
+        styleContent = styleContent.replace(/;\s*$/, '');
+        return `style="${styleContent ? styleContent + ';' : ''}fill: ${value}"`;
+      }));
     }
-    return tspanContent.replace(/>/, ` style="fill: none">`);
-  };
+    
+    return this.cleanContent(content.replace(/>/, ` style="fill: ${value}">`));
+  }
 
   async getPathByPotrace() {
     const tspanForEachChars = this.tspanWrapperContents.flatMap(wrapper => {
@@ -187,13 +210,11 @@ export class MultiStyleTextService {
       return this.getTagElements(tspanElement);
     });
 
-    // console.log(tspanForEachChars, 'tspanForEachChars...')
-
     const baseContent = this.svgContent;
     const baseTextContent = this.textContent;
     const tspanChildElements = tspanForEachChars.map((tspanData, idx) => ({
       content: tspanData.content,
-      key: `##tspan_${idx}_${this.uniqueKey}##`, 
+      key: `##tspan_${idx}_${this.uniqueKey}##`,
       text: tspanData.text,
     }));
 
@@ -206,25 +227,23 @@ export class MultiStyleTextService {
 
       const currentTspan = tspanChildElements[index];
       const otherTspans = tspanChildElements.filter((_, i) => i !== index);
-      // if (currentTspan.text === 'c') {
-      //   console.log(tspanForEachChars, 'tspanForEachChars....')
-      // }
       otherTspans.forEach((tspan: any) => {
-        const styledContent = this.setStyleFillNoneToTspan(tspan.content);
+        const styledContent = this.updateStyleFillForContent(tspan.content);
         cloneTextContent = cloneTextContent.replace(tspan.key, styledContent);
       });
 
       cloneTextContent = cloneTextContent.replace(currentTspan.key, currentTspan.content);
 
-      const test = baseContent.replace(`##text_replace_${this.uniqueKey}##`, cloneTextContent);
-      fs.writeFileSync(`${index}.svg`, test);
+      // const test = baseContent.replace(`##text_replace_${this.uniqueKey}##`, cloneTextContent);
+      // fs.writeFileSync(`${index}.svg`, test);
 
       return {
         content: baseContent.replace(`##text_replace_${this.uniqueKey}##`, cloneTextContent),
         styles: {
           ...this.styles,
           fill: tspanData.fill
-        }
+        },
+        index,
       };
     });
 
