@@ -1,6 +1,8 @@
-import { JSDOM } from 'jsdom';
+// import { JSDOM } from 'jsdom';
+import fs from 'fs';
+// import sax from 'sax';
 import sharp from 'sharp';
-import { TextService } from './services/textService';
+// import { TextService } from './services/textService';
 import { MasterElement, SVGElement } from './types/index'
 
 import {
@@ -18,18 +20,31 @@ import {
   getFilterUrls,
   getTypeFiltersFromFilterTag,
   getTextRectanglesTag,
+  getImageParentTags,
+  getElemAttributesByImageWithRegex,
 } from './utils-svg';
 import PotraceService from './services/potraceService';
 import { ClippathTagsOutput } from './types/convert-text';
+import { prepareWorkingDir } from './helper/file';
 // import { pipe } from './helper/function';
 
+
+type OptionsExportSVG = {
+  groupElementFilePathTmp: string[],
+  elementsFilePathTmp: Map<string, string[]>,
+}
+
+type PartialElement = {
+  outerHTML: string,
+  innerHTML: string,
+}
 class HandlerSVGContent {
   private svgContent: string;
   private potraceService = new PotraceService();
   private background: string;
   private shapeRectangles: string[];
-  private elements: Element[];
-  private groupElement: Element | null;
+  private elements: PartialElement[];
+  private groupElement: PartialElement;
   private configs: Record<string, any>;
   private data: any;
   private filterGradientTags: string[];
@@ -39,8 +54,10 @@ class HandlerSVGContent {
   private textRectangles: string[];
   private styles: string[];
   private replacementMap = new Map<string, string>();
+  private elementsFilePathTmp = new Map<string, string[]>;
+  private groupElementFilePathTmp: string[];
 
-  constructor(svgContent: string, styles: any, data: any) {
+  constructor(svgContent: string, styles: any, data: any, options: OptionsExportSVG) {
     this.styles = styles;
     this.potraceService = new PotraceService();
     this.configs = {
@@ -48,23 +65,26 @@ class HandlerSVGContent {
       pageRows: 1,
       sectionIndex: 1,
     }
+    console.log('By pass 1');
     svgContent = svgContent.replace(/\s+/g, ' ');
+    console.log('By pass 2');
     this.background = getBackgroundTag(svgContent);
+    console.log('By pass 3');
     this.shapeRectangles = getShapeRectanglesTag(svgContent);
+    console.log('By pass 4');
     this.filterGradientTags = getFilterGradientTags(svgContent) as string[];
-
-    // Extract defs content once instead of repeatedly
+    console.log('By pass 5');
     const defsContent = getContentByTag(svgContent, 'defs')?.[0] || '';
+    console.log('By pass 6');
     this.shapeClipPaths = getShapeClipPathTags(defsContent) as string[];
+    console.log('By pass 7');
     this.shapeClipPathsExluceText = this.shapeClipPaths.filter((shapeClipPath) => !shapeClipPath.includes('text'));
+    console.log('By pass 8');
     this.shapeClipPathsByText = this.shapeClipPaths.filter((shapeClipPath) => shapeClipPath.includes('text'));
+    console.log('By pass 9');
     this.textRectangles = getTextRectanglesTag(svgContent);
-    // this.data = Object.values(data);
+    console.log('By pass 10');
     this.data = data;
-
-    console.log(this.data, 'data...')
-
-    // Use a single pass approach to replace content instead of multiple iterations
     if (this.filterGradientTags?.length) {
       this.filterGradientTags.forEach((filterGradient, index) => {
         this.replacementMap.set(filterGradient, `##filterGradient${index}##`);
@@ -98,17 +118,89 @@ class HandlerSVGContent {
     for (const [key, value] of this.replacementMap.entries()) {
       svgContent = svgContent.replace(key, value);
     }
+    console.log('By pass 11');
     this.replacementMap.clear();
-
     svgContent = svgContent.replace(/<rect(.*?)<\/rect>/g, '');
-    
     this.svgContent = svgContent;
-    
-    const { window } = new JSDOM(this.svgContent);
-    this.elements = [...window.document.getElementsByClassName('not-select')];
-    this.groupElement = window.document.getElementsByClassName('group_elements')[0];
-    window.close();
+    this.elements = [];
+    this.groupElement = {
+      outerHTML: '',
+      innerHTML: '',
+    };
+    this.elementsFilePathTmp = options.elementsFilePathTmp;
+    this.groupElementFilePathTmp = options.groupElementFilePathTmp;
+
+    this.groupElementFilePathTmp.forEach((fileTemp: string, index: number) => {
+      if (index === 0) {
+        this.groupElement.outerHTML = fs.readFileSync(fileTemp, { encoding: 'utf8' });
+      } else {
+        this.groupElement.innerHTML = fs.readFileSync(fileTemp, { encoding: 'utf8' });
+      }
+    })
+
+    this.elementsFilePathTmp.get('innerHTML')?.forEach((fileTemp: string, index: number) => {
+      if (!this.elements[index]) {
+        this.elements[index] = { outerHTML: '', innerHTML: '' };
+      }
+      const content = fs.readFileSync(fileTemp, { encoding: 'utf8' });
+      this.elements[index].innerHTML = content;
+    });
+
+    this.elementsFilePathTmp.get('outerHTML')?.forEach((fileTemp: string, index: number) => {
+      const content = fs.readFileSync(fileTemp, { encoding: 'utf8' });
+      this.elements[index].innerHTML = content;
+    });
+    // console.log(this.elements.length, 'this.elements.length..');
+    this.removeFileTemp();
   }
+
+  private removeFileTemp() {
+    // this.groupElementFilePathTmp.forEach(temp => {
+    //   prepareWorkingDir(temp, true);
+    // });
+    // for (const [_, value] of this.elementsFilePathTmp.entries()) {
+    //   console.log(value, 'value..')
+    //   value.forEach(temp => {
+    //     prepareWorkingDir(temp, true);
+    //   });
+    // }
+    prepareWorkingDir('temp');
+    // this.elementsFilePathTmp.values)
+  }
+
+  // private async parseSVGContentAsync(): Promise<void> {
+  //   return new Promise<void>((resolve, reject) => {
+  //     const fileName = 'svg-0.svg';
+  //     const sax = require('sax');
+  //     sax.MAX_BUFFER_LENGTH = Infinity;
+  //     const parser = new sax.createStream(true);
+  //     const stream = fs.createReadStream(fileName, { encoding: 'utf-8' });
+      
+  //     parser.on('opentag', (node: any) => {
+  //       const tagName = node.name; 
+  //       const attrs = node.attributes;
+  //       console.log(tagName, 'tagName...')
+  //       if (tagName === 'g' && attrs.class && attrs.class.includes('not-select')) {
+  //         console.log(node.outerHTML, 'this.elements.push..');
+  //         this.elements.push(node);
+  //       }
+  //       if (tagName === 'g' && attrs.class && attrs.class.includes('group_elements')) {
+  //         this.groupElement = node as any;
+  //       }
+  //     });
+  
+  //     parser.on('end', () => {
+  //       console.log('END...');
+  //       resolve();
+  //     });
+  
+  //     parser.on('error', (error: Error) => {
+  //       reject(error);
+  //     });
+  
+  //     stream.pipe(parser);
+  //   });
+  // }
 
   isTextElement(elementHtml: string) {
     return getContentByTag(elementHtml, 'text').length > 0
@@ -229,9 +321,9 @@ class HandlerSVGContent {
   }
 
   private async convertTextByPosterize(elementTag: string, outerHTML: string, element?: MasterElement): Promise<SVGElement> {
-    // Create SVG content on-demand instead of keeping a backup copy
     const groupElementContent = this.groupElement?.innerHTML || '';
     const currentOnlyTextHtml = this.svgContent.replace(groupElementContent, outerHTML);
+
     // const path = await this.potraceService.convertTextByPotrace(currentOnlyTextHtml, elementTag, this.styles);
     const path = await this.potraceService.converTextByPotraceNew({
         textHTML: currentOnlyTextHtml,
@@ -244,7 +336,7 @@ class HandlerSVGContent {
     return {
       type: 'TEXT',
       elementTag,
-      path,
+      path: elementTag,
     };
   }
 
@@ -252,25 +344,25 @@ class HandlerSVGContent {
     const outerHtmlByClipPath: string = this.elements[index + 1].outerHTML || '';
     const clippingMaskTag = this.isClipPath(outerHtmlByClipPath) ? outerHtmlByClipPath : '';
 
-    const imageClipPathTag = getContentByTag(clippingMaskTag, 'image')?.[0] || '';
-    const styleImageClipPathTag = getElemAttributesByImage(imageClipPathTag);
-    const displayNone = [
-      'display: none',
-      'visibility: hidden',
-      'opacity: 0',
-    ];
+    // const imageClipPathTag = getContentByTag(clippingMaskTag, 'image')?.[0] || '';
+    // const styleImageClipPathTag = getElemAttributesByImage(imageClipPathTag);
+    // const displayNone = [
+    //   'display: none',
+    //   'visibility: hidden',
+    //   'opacity: 0',
+    // ];
 
-    if (displayNone.some((style: string) => (styleImageClipPathTag?.style || '').includes(style))) {
-      this.elements.splice(index + 1, 1);
-      return this.convertTextByPosterize(elementTag, outerHTML);
-    }
+    // if (displayNone.some((style: string) => (styleImageClipPathTag?.style || '').includes(style))) {
+    //   this.elements.splice(index + 1, 1);
+    //   return this.convertTextByPosterize(elementTag, outerHTML);
+    // }
 
-    const groupElementContent = this.groupElement?.innerHTML || '';
-    const currentOnlyTextHtml = this.svgContent.replace(groupElementContent, `${outerHTML}${clippingMaskTag}`);
-    const path = await this.potraceService.convertTextClipPathByPotrace(currentOnlyTextHtml, elementTag, this.styles);
+    // const groupElementContent = this.groupElement?.innerHTML || '';
+    // const currentOnlyTextHtml = this.svgContent.replace(groupElementContent, `${outerHTML}${clippingMaskTag}`);
+    // const path = await this.potraceService.convertTextClipPathByPotrace(currentOnlyTextHtml, elementTag, this.styles);
     return {
       elementTag,
-      path,
+      path: elementTag,
       clippingMaskTag,
       type: 'TEXT_CLIP_PATH',
     };
@@ -610,6 +702,7 @@ class HandlerSVGContent {
 
   async export() {
     console.time('export SVG');
+    // console.log(this.elements.length, 'this.elements.length..');
     const col = 1;
     const row = 1;
     const bleedSize = 0;
@@ -618,7 +711,7 @@ class HandlerSVGContent {
     for (let i = 0; i < this.elements.length; i += batchSize) {
       const batch = this.elements.slice(i, i + batchSize);
       const batchResult = await Promise.all(
-        batch.map((element: Element, index: number) => {
+        batch.map((element: PartialElement, index: number) => {
           const { outerHTML, innerHTML } = element;
           if (this.isTextElement(innerHTML)) {
             const masterElement = this.getMasterElement(innerHTML);
@@ -662,18 +755,18 @@ class HandlerSVGContent {
       }
     }
 
-    // const imageParentTags = getImageParentTags(this.svgContent);
-    // imageParentTags.forEach((imageParentTag: string) => {
-    //   let newImageParentTag = imageParentTag;
-    //   const styles = getElemAttributesByImageWithRegex(imageParentTag);
-    //   const transform = getMatrixFromTransform(styles?.transform || '');
-    //   const translateX = (col === 1) ? bleedSize : 0;
-    //   const translateY = (row === 1) ? bleedSize : 0;
-    //   transform[4] = transform[4] + translateX;
-    //   transform[5] = transform[5] + translateY;
-    //   newImageParentTag = imageParentTag.replace(/transform="[^"]*"/, `transform="matrix(${transform.join(',')})"`);
-    //   this.svgContent = this.svgContent.replace(imageParentTag, newImageParentTag);
-    // });
+    const imageParentTags = getImageParentTags(this.svgContent);
+    imageParentTags.forEach((imageParentTag: string) => {
+      let newImageParentTag = imageParentTag;
+      const styles = getElemAttributesByImageWithRegex(imageParentTag);
+      const transform = getMatrixFromTransform(styles?.transform || '');
+      const translateX = (col === 1) ? bleedSize : 0;
+      const translateY = (row === 1) ? bleedSize : 0;
+      transform[4] = transform[4] + translateX;
+      transform[5] = transform[5] + translateY;
+      newImageParentTag = imageParentTag.replace(/transform="[^"]*"/, `transform="matrix(${transform.join(',')})"`);
+      this.svgContent = this.svgContent.replace(imageParentTag, newImageParentTag);
+    });
 
     this.svgContent = this.svgContent.replace(/&nbsp;/g, ' ');
     this.svgContent = this.convertBackground(this.svgContent);

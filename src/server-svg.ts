@@ -6,12 +6,21 @@ import cors from 'cors';
 import path from 'path';
 import bodyParser from 'body-parser';
 import { ChromiumHandler } from './chromium/chromiumHandler';
-import { Page } from 'puppeteer-core';
+import { ElementHandle, Page, Target } from 'puppeteer-core';
 import HandlerSVGContent from './handlerSVGContent';
 import { getContentByTag, removeXMLContent } from './utils-svg';
 import DesignService from './services/designService'
+import { FileGeneratorInput } from './services/svgFilter';
+import { prepareWorkingDir } from './helper/file';
+import { randomString } from './helper/string';
+// import { ChromiumHandler } from '@/chromium/chromiumHandler';
 
 const PORT = 3000;
+export const CHROMIUM_DEFAULT_PPI = 96;
+
+export const LINUX_DEFAULT_PPI = 72;
+
+export const RATIO_PPI_BETWEEN_LINUX_AND_CHROMIUM = LINUX_DEFAULT_PPI / CHROMIUM_DEFAULT_PPI;
 const app = express();
 
 app.use(bodyParser.json({ limit: 'Infinity' }));
@@ -25,6 +34,11 @@ app.use(
   })
 );
 
+app.get('/healthcheck', (req, res) => {
+  res.send('Ok')
+});
+
+// Text path
 app.listen(PORT, async () => {
   function preProcessSVG(svgContent: string) {
     const dom = new JSDOM(svgContent);
@@ -41,13 +55,330 @@ app.listen(PORT, async () => {
     try {
       await page.waitForSelector(className, { timeout });
     } catch (error) {
+      console.log('Error when waiting selctor..')
       console.error(error);
     }
   }
 
+  async function screenshotWithChromium(page: Page, input: { width: number, height: number, format: 'png' | 'jpeg' }): Promise<Buffer> {
+    const imageBuffer = await page.screenshot({
+      type: input.format,
+      clip: {
+        x: 0,
+        y: 0,
+        width: input.width,
+        height: input.height,
+      },
+      quality: input.format === 'jpeg' ? 100 : undefined,
+      omitBackground: input.format == 'png' ? true : undefined,
+    });
+    const fileName = `result-${Math.random() * 100}.${input.format}`;
+    console.log(fileName, '==> fileName...');
+    fs.writeFileSync(fileName, imageBuffer);
+    return imageBuffer;
+  }
+
+  function getOutputSize(input: FileGeneratorInput) {
+    let outputWidth = input.pageWidth;
+    let outputHeight = input.pageHeight;
+    // if (input.showBleed) {
+    //   outputWidth += (input.pageBleed * 2);
+    //   outputHeight += (input.pageBleed * 2);
+    //   console.log('calculateActualSizeOutput showBleed: ', outputWidth, outputHeight);
+    // }
+  
+    
+    // if (input.showTrimMarks) {
+    //   outputWidth += TRIM_MARKS_SIZE;
+    //   outputHeight += TRIM_MARKS_SIZE;
+    //   console.log('calculateActualSizeOutput showTrimMarks: ', outputWidth, outputHeight);
+    // }
+  
+    const size = {
+      outputWidth,
+      outputHeight,
+    }
+  
+    return size;
+  }
+
+  function getPdfZoomValue(pixelsPerInch: number) {
+    const defaultPPI = CHROMIUM_DEFAULT_PPI;
+    const scaleBydesignPPI = defaultPPI / pixelsPerInch;
+    const scaleByDefaultPPI = pixelsPerInch / defaultPPI;
+    const scale = (defaultPPI < pixelsPerInch) ? scaleBydesignPPI : scaleByDefaultPPI;
+    console.log(`getPdfZoomValue: scale: ${scale}, pixelsPerInch: ${pixelsPerInch}`);
+    return Number(scale);
+  }
+
+  async function createPDFWithChromium(page: Page, input: FileGeneratorInput): Promise<Buffer> {
+    const { outputWidth, outputHeight } = getOutputSize(input);
+    // const scale = 96 / input.pixelsPerInch;
+    // const scale = 1;
+    const scalePdfByRatioPPI = getPdfZoomValue(input.pixelsPerInch) * RATIO_PPI_BETWEEN_LINUX_AND_CHROMIUM;
+    const scaledWidth = outputWidth * scalePdfByRatioPPI;
+    const scaledHeight = outputHeight * scalePdfByRatioPPI;
+
+    console.log(scaledWidth, scaledHeight, 'scaledWidth, scaledHeight..');
+
+    const content = await page.pdf({
+      width: scaledWidth,
+      height: scaledHeight,
+      margin: {
+        top: 0,   
+        right: 0,
+        bottom: 0,
+        left: 0,
+      },
+      printBackground: true,
+    });
+    return content;
+  }
+
+  // async function chunkSizeString(content: string) {
+  //   const CHUNK_SIZE = 1024 * 1024 * 5; // 5Mb;
+  // }
+
+  async function getDataFromContent(content: string) {
+    const TIMEOUT: number = 10 * 60 * 1000;
+    return new Promise(async (resolve, reject) => {
+      let page: Page | undefined;
+      
+      try {
+        page = await ChromiumHandler.newPage();
+        await page?.setViewport({ width: 1, height: 1 });
+        await page?.setContent(content, {
+          waitUntil: ['load', 'networkidle0'],
+          timeout: TIMEOUT,
+        });
+        resolve(1);
+      } catch (error) {
+        console.error('Error when setting content to page:', error);
+        reject(error);
+      } finally {
+        if (page) {
+          await page.close().catch(console.error);
+        }
+      }
+    });
+  }
+
+  async function getSVGContentBySections(page: Page): Promise<any> {
+    const result = await page.evaluate(() => {
+      const svgEditorBySections = document.querySelectorAll('svg.svg-main-canvas');
+      const svgNodeBySections = [...svgEditorBySections];
+      const svgDataBySections = svgNodeBySections.map((nodeSVGSection: any, index: number) => ({
+        svgContent: nodeSVGSection.outerHTML,
+        index,
+      }));
+      return svgDataBySections;
+    });
+    return result;
+  }
+
+  // async function getElementsFromNode(node: any) {
+  //   const element = node.getElementsByClassName('not-select');
+  //   return [...element].map(el => {
+  //     return {
+  //       outerHTML: el.outerHTML,
+  //       innerHTML: el.innerHTML,
+  //     }
+  //   })
+  // }
+
+  async function getStylesFromPage(page: Page): Promise<string[]> {
+    return await page.evaluate(() => {
+      const head = document.getElementsByTagName('head')?.[0];
+      const styles = Array.from(head.getElementsByTagName('style')).map(tag => tag.outerHTML) as string[];
+      return styles;
+    });
+  }
+  
+  async function getDataDesignPageFromPage(page: Page): Promise<any> {
+    return await page.evaluate(() => {
+      return (window as any).data;
+    });
+  };
+
+  // async function writeArrayToFileStream(data: string, tmpFile: string, callback: Function) {
+  //   return new Promise((resolve, reject) => {
+  //     const writeStream = fs.createWriteStream(tmpFile, {
+  //       flags: 'a',
+  //       encoding: 'utf8'
+  //     });
+
+  //     writeStream.on('error', (error) => {
+  //       reject(error);
+  //     });
+
+  //     writeStream.on('finish', () => {
+  //       resolve(true);
+  //     });
+  //     writeStream.write(data);
+  //     callback(writeStream);
+  //   });
+  // }
+
+  function createWriteStream(fileTemp: string) {
+    return fs.createWriteStream(fileTemp, {
+      flags: 'w',
+      encoding: 'utf8',
+    });
+  }
+
+  async function getLargeDataFromPage(page: Page): Promise<{
+    styles: string[],
+    data: any,
+    svgContents: string[],
+    groupElementFilePathTmp: string[],
+    elementsFilePathTmp: Map<string, string[]>
+  }> {
+    // const svgContents: string[] = [];
+    const [data, styles] = await Promise.all([getDataDesignPageFromPage(page), getStylesFromPage(page)]);
+    const workingDirTmp = 'temp';
+    prepareWorkingDir(workingDirTmp);
+    const groupOuterHTMLFileTmp = `${workingDirTmp}/groupOuterHTML-${randomString(false, 5)}.txt`;
+    const groupInnerHTMLFileTmp = `${workingDirTmp}/groupInnerHTML-${randomString(false, 5)}.txt`;
+
+    const writeStreamGroupOuterHTML = createWriteStream(groupOuterHTMLFileTmp);
+    const writeStreamGroupInnerHTML = createWriteStream(groupInnerHTMLFileTmp);
+    const writeStreamElementMap = new Map();
+    const elementsFilePathTmp = new Map();
+    elementsFilePathTmp.set('outerHTML', []);
+    elementsFilePathTmp.set('innerHTML', []);
+  
+    await page.exposeFunction('setChunkSize', async (data: any) => {
+      try {
+        // Case element
+        if (typeof data.index === 'number') {
+          const elementFileTmp = `${workingDirTmp}/element-${data.index}-${data.tag}-${randomString(false, 5)}.txt`;
+          if (!writeStreamElementMap.has(elementFileTmp)) {
+            const arrayFilePath = elementsFilePathTmp.get(data.tag) || [];
+            arrayFilePath.push(elementFileTmp);
+            writeStreamElementMap.set(elementFileTmp, createWriteStream(elementFileTmp));
+            elementsFilePathTmp.set(data.tag, arrayFilePath);
+          }
+          const stream = writeStreamElementMap.get(elementFileTmp);
+          stream.write(data.content || '');
+          return;
+        }
+        if (data && data.content) {
+          if (data.tag === 'outerHTML') {
+            writeStreamGroupOuterHTML.write(data.content);
+          } else {
+            writeStreamGroupInnerHTML.write(data.content);
+          }
+        }
+      } catch (error) {
+        console.error('Error writing chunk:', error);
+      }
+    });
+
+    await page.exposeFunction('setSVGContent', (data: any) => {
+      svgContents.push(data);
+    });
+
+    await page.exposeFunction('finishWriting', (data: any) => {
+      if (typeof data.index) {
+        const keyPattern = `element-${data.index}-${data.tag}`;
+        for (const [_, key] of elementsFilePathTmp.entries()) {
+          if (key.includes(keyPattern)) {
+            writeStreamElementMap.get(key).end();
+            console.log('end with file ' + key);
+          }
+        }
+      }
+      if (data.tag === 'outerHTML') {
+        writeStreamGroupOuterHTML.end();
+      } else {
+        writeStreamGroupInnerHTML.end();
+      }
+    });
+
+    const svgContents = await page.evaluate(() => {
+      type TagType = 'outerHTML' | 'innerHTML';
+      const CHUNK_SIZE = 1024 * 1024 * 5;
+      const svgEditorBySections = document.querySelectorAll('svg.svg-main-canvas');
+      const svgNodeBySections = [...svgEditorBySections];
+      const result: string[] = [];
+
+      function setChunkSize(content: string, tag: TagType, chunkSize = 1024 * 1024 * 5, fn1: Function, fn2?: Function) {
+        const totalChunks = Math.ceil(content.length / chunkSize);
+        let sendChunks = 0;
+        function sendNextChunk() {
+          if (sendChunks >= totalChunks) {
+            if (fn2) {
+              fn2();
+              return;
+            }
+            (window as any).finishWriting({ tag });
+            return;
+          }
+          const start = sendChunks * chunkSize;
+          const end = Math.min(start + chunkSize, content.length);
+          const chunk = content.substring(start, end);
+          fn1({ content: chunk, tag });
+          sendChunks++;
+          setTimeout(sendNextChunk, 0);
+        }
+        sendNextChunk();
+      }
+
+      function executeElements(node: any) {
+        const elements = node.getElementsByClassName('not-select');
+        for (let i = 0; i < elements.length; i++) {
+          const element = elements[i];
+          setChunkSize(element.outerHTML, 'outerHTML', CHUNK_SIZE, (data: any) => {
+            (window as any).setChunkSize({
+              ...data,
+              type: 'element',
+              index: i,
+            })
+          }, () => (window as any).finishWriting({ index: i, tag: 'outerHTML' }));
+          setChunkSize(element.innerHTML, 'innerHTML', CHUNK_SIZE, (data: any) => {
+            (window as any).setChunkSize({
+              ...data,
+              type: 'element',
+              index: i,
+            })
+          }, () => (window as any).finishWriting({ index: i, tag: 'innerHTML' }));
+        }
+      }
+
+      for (let i = 0; i < svgNodeBySections.length; i++) {
+        const nodeSVGSection = svgNodeBySections[i];
+        result.push(nodeSVGSection.outerHTML);
+        const groupElement = nodeSVGSection.getElementsByClassName('group_elements')[0];
+        if (groupElement) {
+          setChunkSize(groupElement.outerHTML, 'outerHTML', CHUNK_SIZE, (data: any) => {
+            (window as any).setChunkSize({
+              ...data,
+              type: 'group',
+            });
+          });
+          setChunkSize(groupElement.innerHTML, 'innerHTML', CHUNK_SIZE, (data: any) => {
+            (window as any).setChunkSize({
+              ...data,
+              type: 'group',
+            });
+          });
+        }
+        executeElements(nodeSVGSection);
+      }
+      return result;
+    });
+
+    return {
+      styles,
+      svgContents,
+      data,
+      groupElementFilePathTmp: [groupOuterHTMLFileTmp, groupInnerHTMLFileTmp],
+      elementsFilePathTmp,
+    }
+  }
+
   console.log(`Server is running on port ${PORT} ` + `http://localhost:${PORT}/`);
-  // let svgContent = fs.readFileSync(path.join(__dirname, './files/input_text_2.svg'), 'utf8');
-  // let svgContent = fs.readFileSync(path.join(__dirname, './files/input_1.svg'), 'utf8');
+
   let page: Page | undefined;
   try {
     page = await ChromiumHandler.newPage();
@@ -56,11 +387,11 @@ app.listen(PORT, async () => {
     console.log(error, '==> error');
   }
 
-  // let url = 'https://www.corjl.com/output/org/GE01JKETWV649R53Q9Y2H89KC3BE/downloads/DO01JKET8BE3MJKGGCFG9XK1Z47S/U01JR503X0PPJM1FP4YDRAWXDT6/html/1.html';
-  let url = 'https://www.corjl.com/output/org/GD01HHP5CRND058V7TNCH9WG0NS5/downloads/DC01HMEY5WSE4C1YXKFPSYQ108R7/U01JRJ40F984XDWEYX1PPQAW6R6/html/1.html';
+  let url = 'https://www.corjl.com/output/org/GE01JKETWV649R53Q9Y2H89KC3BE/downloads/DO01JKET8BE3MJKGGCFG9XK1Z47S/U01JR503X0PPJM1FP4YDRAWXDT6/html/1.html';
+  // let url = 'https://www.corjl.com/output/org/GD01HHP5CRND058V7TNCH9WG0NS5/downloads/DC01HMEY5WSE4C1YXKFPSYQ108R7/U01JRJ40F984XDWEYX1PPQAW6R6/html/1.html';
   // url = 'https://dev.korjl.com/output/org/GD01HHE0HGV05VPEJ5TGT5BF14CT/downloads/DC01JRS0BP87ZPSPDN8BKG6RR02F/U01JRVVY52R3J9EP38KMGNQF2HJ/html/12.html';
   // url = 'https://dev.korjl.com/output/org/GD01HHE0HGV05VPEJ5TGT5BF14CT/downloads/DC01JRS0BP87ZPSPDN8BKG6RR02F/U01JRWAS0JC7DVE5VYHRWED4QAB/html/9.html';
-  // url = 'https://dev.korjl.com/output/org/GD01HHE0HGV05VPEJ5TGT5BF14CT/downloads/DC01JRS0BP87ZPSPDN8BKG6RR02F/U01JRWBVT4HXHYBV0K7F3KHR3KV/html/13.html';
+  url = 'https://dev.korjl.com/output/org/GD01HHE0HGV05VPEJ5TGT5BF14CT/downloads/DC01JRS0BP87ZPSPDN8BKG6RR02F/U01JRWBVT4HXHYBV0K7F3KHR3KV/html/13.html';
   // url = 'https://dev.korjl.com/output/org/GD01HHE0HGV05VPEJ5TGT5BF14CT/downloads/DC01JRS0BP87ZPSPDN8BKG6RR02F/U01JRWD37BAQR5QMSW99CBE7HHS/html/14.html';
   // url = 'https://dev.korjl.com/output/org/GD01HHE0HGV05VPEJ5TGT5BF14CT/downloads/DC01JRS0BP87ZPSPDN8BKG6RR02F/U01JRWGE0TP41B6R20ZPFQ8F4HG/html/14.html ';
   // url = 'https://dev.korjl.com/output/org/GD01HHE0HGV05VPEJ5TGT5BF14CT/downloads/DC01JRS0BP87ZPSPDN8BKG6RR02F/U01JRWHACW31N4C2ETATFNJF5CZ/html/14.html';
@@ -83,32 +414,59 @@ app.listen(PORT, async () => {
   // url = 'https://www.corjl.com/output/org/GD01HHP5CT1KMGNSPFHSYBWT3Y5R/downloads/DC01JP9Y2QHAEA0X0PTQYXY2DYWN/U01JSBP6206EDPYTFGYVDFMEGK7/html/1.html';
   // url = 'https://www.corjl.com/output/org/GD01HHP5CT1KMGNSPFHSYBWT3Y5R/downloads/DC01JP9Y2QHAEA0X0PTQYXY2DYWN/U01JSBPN2CTCY3NAGBYDDZ7FP8F/html/3.html';
 
+
+  // url = 'https://dev.korjl.com/output/org/GD01HHDZSMZQ57K00R3XXZ50CCT6/downloads/DC01JWSZ2NBC5J1WV13Z26N7P8JD/U01JWSZ8HD435Y5YKM973EFJPYP/html/25.html';
+  // url = 'https://www.corjl.com/output/org/GE01JXEFEK3ZV4Q2DEPCX4QC7HF1/downloads/DO01JXECNE9M55ZP99EBRCQG2SFJ/U01JXKMRTCY72Z5FS8C7ZG0ZCF9/html/1.html';
+  // url = 'https://www.corjl.com/output/org/GE01HHPMGJAP6RWJCHKKTTD6TPQ9/downloads/DO01JVWQ53XKQZ4PKMP6MCYFWPVF/U01JXMC1ZGSZ12JM72SE3VTB2GR/html/1.html';
+  // url = 'https://dev.korjl.com/output/org/GD01HHDZSMZQ57K00R3XXZ50CCT6/downloads/DC01HQ59V143VPYYB0NPFJKAP06G/U01JYJYWFXZT9Y1ETR517SY3JDH/html/1.html';
+
+  // Large SVG Editor
+  // url = 'https://dev.korjl.com/output/org/GD01HHDZT87PZVNN1AH165EPDC5F/downloads/DC01HM8PPXV9T12X7H66D9V0GH41/U01JZPGJSHT29CZGANSF9MHDX13/html/2.html';
+  url = 'https://dev.korjl.com/output/org/GD01HHDZT87PZVNN1AH165EPDC5F/downloads/DC01HM8PPXV9T12X7H66D9V0GH41/U01JZPGJSHT29CZGANSF9MHDX13/html/2.html';
+
   await page?.goto(url);
+
   await waitForSelector(page as any, '.canvas-loaded');
 
-  const data = await page?.evaluate(() => (window as any).data);
+  const { data, styles, svgContents, groupElementFilePathTmp, elementsFilePathTmp } = await getLargeDataFromPage(page as Page);
+
+  // const input = {
+  //   pageWidth: data.designPage.pageWidth,
+  //   pageHeight: data.designPage.pageHeight,
+  //   format: 'png',
+  //   pixelsPerInch: 12,
+  // }
+
+  // console.log(input, 'input..')
+  // const result = await createPDFWithChromium(page as Page, input as any);
+  // const pdfFileName = `result-${Math.random() * 100}.pdf`;
+  // fs.writeFileSync(pdfFileName, result);
+  // console.log(`PDF file written successfully: ${pdfFileName}`);
+
+  // // await screenshotWithChromium(page as any, input as any)
 
   const { pageSections, orgId } = data.designPage;
 
   const elementsBySection = await DesignService.getListMasterElementsFromPageSections(pageSections, orgId);
 
-  const content = await page?.content();
-  // @ts-ignore
-  const headTag = getContentByTag(content as string, 'head', 0) as string;
-  const styles = getContentByTag(headTag, 'style') as string[];
-
-  const svgContents = await Promise.all(
+  const finalSVGContents = await Promise.all(
     Array.from({ length: pageSections.length }, async (_, index: number) => {
-      const svgContent = getContentByTag(content as string, 'svg', index) as string;
-      const exportSvgService = new HandlerSVGContent(svgContent, styles, elementsBySection[index]);
+      const svgContent = svgContents[index];
+      const exportSvgService = new HandlerSVGContent(
+        svgContent,
+        styles,
+        elementsBySection[index],
+        { elementsFilePathTmp, groupElementFilePathTmp }
+      );
       const contentSVG = await exportSvgService.export();
       // await exportSvgService.cleanup().catch((error) => {
       //   console.error(`Error cleaning up ExportSvgService:`, error);
       // });
+      // prepareWorkingDir(fileName, true);
       return removeXMLContent(contentSVG);
     })
   );
   const random = 'huhu-hehe.svg';
-  fs.writeFileSync(random, svgContents.join(''));
+  fs.writeFileSync(random, finalSVGContents.join(''));
   console.log(`File is write successfully in ${random}`);
 });

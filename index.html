@@ -5,32 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Document</title>
   <style>
-    #svg-container {
-      border: 1px solid black;
+    #container {
+      display: flex;
+      flex-direction: column;
       width: 500px;
       height: 500px;
     }
-    .text-font1 {
-      font-family: "font_1";
-      /* font-size: 40px; */
-      /* color: red; */
+    #myCanvas {
+      border: 1px solid red;
     }
-    .text-font-bug {
-      font-family: "font_bug";
-      /* font-size: 40px; */
-      /* color: red; */
-    }
-    .container {
-      gap: 10px;
-      width: 200px;
-      height: 200px;
-      border: 1px solid black;
-      background-color: #ccc;
-    }
-
     @font-face {
       font-family: "font_1";
-      src: url("./fonts/font_1.woff") format("woff");
+      src: url("https://www.corjl.com/assets/org/GD01HHP5CRKDGFJ9JAP7C2G28VHW/font/optimized/6b/6b7rz73funihgt5x.woff");
     }
     @font-face {
       font-family: "font_bug";
@@ -41,41 +27,81 @@
 </head>
 
 <body>
-  <form>
-    <input id="input" placeholder="Copy link S3 here"></input>
-    <button id="btn" type="submit">Load</button>
-  </form>
-  <div id="svg-container"></div>
-  <script src="
-https://cdn.jsdelivr.net/npm/jsdom-browser.screen@0.2.2/src/index.min.js
-"></script>
+  <div>
+    <input type="range" min="0" max="100" id="myRange" value="0">
+    <p>Letter spacing: <span id="output"></span></p>
+  </div>
+  <div id="container">
+    <text style="font-family: font_1; font-size: 100px; text-transform: uppercase;">
+      Edit and Download
+    </text>
+    <canvas id="myCanvas" width="500" height="500"></canvas>
+  </div>
+  <!-- <script src="https://cdn.jsdelivr.net/npm/jsdom-browser.screen@0.2.2/src/index.min.js"></script> -->
   <!-- <script src="https://cdn.jsdelivr.net/npm/jsdom@25.0.1/lib/api.min.js"></script> -->
   <script>
-    let currentURL = '';
-    function getPureSVG(content) {
-      // console.log('getPureSVG...');
-      // console.log(js);
-    }
-    async function fetchContentHTML(url) {
-      return new Promise((resolve) => {
-        fetch(url)
-          .then(data => data.text())
-          .then(data => {
-            resolve(data)
-          })
+    var valueSlide = 0;
+    const slider = document.getElementById("myRange");
+    const canvas = document.getElementById("myCanvas");
+    const output = document.getElementById("output");
+    output.innerText = 50;
+
+    const fonturl = "https://www.corjl.com/assets/org/GD01HHP5CRKDGFJ9JAP7C2G28VHW/font/optimized/6b/6b7rz73funihgt5x.woff";
+    const fontPacifico = new FontFace('font_1', `url(${fonturl})`, {
+      style: 'normal',
+      weight: 'normal',
+    });
+    // console.log(fontPacifico, 'fontPacifico...');
+
+    async function drawText() {
+      fontPacifico.load().then(() => {
+        const text = 'Edit and Download'.toUpperCase();
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, 500, 500);
+        ctx.letterSpacing = `${valueSlide}px`
+        ctx.font = `normal normal normal 40px "font_1"`;
+        ctx.fillText(text, 50, 200);
       })
     }
-    function updateEvent(e) {
-      currentURL = e.target.value;
+
+    slider.oninput = async function(e) {
+      output.innerText = e.target.value;
+      valueSlide = e.target.value;
+      await drawText();
+      console.log('aaa');
     }
-    const inputEl = document.getElementById('input');
-    const btn = document.getElementById('btn');
-    inputEl.addEventListener('input', updateEvent)
-    btn.addEventListener('click', async (e) => {
-      e.preventDefault();
-      const content = await fetchContentHTML(currentURL);
-      getPureSVG(content);
-    })
+
+    drawText();
+
+    // document.addEventListener('DOMContentLoader', async () => {
+    //   console.log('dom contentload');
+    //   await drawText();
+    // });
+
+    // function getPureSVG(content) {
+    // }
+    // async function fetchContentHTML(url) {
+    //   return new Promise((resolve) => {
+    //     fetch(url)
+    //       .then(data => data.text())
+    //       .then(data => {
+    //         resolve(data)
+    //       })
+    //   })
+    // }
+    // function updateEvent(e) {
+    //   valueSlide = e.target.value;
+    //   console.log(valueSlide, 'valueSlide...');
+    // }
+    // const inputEl = document.getElementById('input');
+    // const btn = document.getElementById('btn');
+    // inputEl.addEventListener('input', updateEvent)
+    // btn.addEventListener('click', async (e) => {
+    //   e.preventDefault();
+    //   const content = await fetchContentHTML(currentURL);
+    //   getPureSVG(content);
+    // })
+
   </script>
 </body>
 </html>

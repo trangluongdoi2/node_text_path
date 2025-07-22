@@ -1,4 +1,6 @@
 import * as fs from 'fs';
+import * as gm from 'gm';
+import path from 'path';
 import { pipeline, Readable } from 'stream';
 
 export const toArrayBuffer = (buffer: Buffer) => {
@@ -89,3 +91,55 @@ export async function writeArrayToFileStream(data: string[], filename: string) {
     writeStream.end();
   });
 }
+
+export async function base64ToBuffer(url: string) {
+  const base64Data = url.split(',')[1];
+  return Buffer.from(base64Data, 'base64');
+}
+
+export function setOutputImagePPI(imageBuffer: Buffer, input: any): Promise<Buffer> {
+  console.log(`setOutputImagePPI(): starting for pageId ${input.pageId}, pixelsPerUnit: ${input.pixelsPerInch}`);
+  
+  const imageMagick = gm.subClass({ imageMagick: true });
+  return new Promise((resolve, reject) => {
+    imageMagick(imageBuffer)
+      .units('PixelsPerInch')
+      .density(input.pixelsPerInch, input.pixelsPerInch)
+      .toBuffer((err: Error | null, buffer: Buffer) => {
+        if (err) {
+          reject(new Error(`Error occurred during ImageMagick processing: ${err.message}`));
+        } else {
+          resolve(buffer);
+        }
+      });
+  });
+}
+
+export function setOutputImagePPI2(imageBuffer: Buffer, input: any): Promise<Buffer> {
+  console.log(`setOutputImagePPI(): starting for pageId ${input.pageId}, pixelsPerUnit: ${input.pixelsPerInch}`);
+  
+  console.log(imageBuffer, 'imageBuffer..');
+  const imageMagick = gm.subClass({ imageMagick: true });
+  return new Promise((resolve, reject) => {
+    // imageBuffer.stream((err, stdout, stderr) => {
+    //   if (err) { return reject(err) }
+    //   const chunks = []
+    //   stdout.on('data', (chunk) => { chunks.push(chunk) })
+    //   // these are 'once' because they can and do fire multiple times for multiple errors,
+    //   // but this is a promise so you'll have to deal with them one at a time
+    //   stdout.once('end', () => { resolve(Buffer.concat(chunks)) })
+    //   stderr.once('data', (data) => { reject(String(data)) })
+    // })
+    console.log(input.pixelsPerInch, 'input.pixelsPerInch...');
+    // const outputPath1 = path.join(__dirname, '../files/output1.jpeg');
+    // fs.writeFileSync(outputPath1, imageBuffer);
+    const outputPath = path.join(__dirname, '../files/output.jpeg');
+    // const outputPath = path.join(__dirname, '../files/output.png');
+    const writeStream = fs.createWriteStream(outputPath);
+    imageMagick(imageBuffer)
+      // .units('PixelsPerInch')
+      // .density(input.pixelsPerInch, input.pixelsPerInch)
+      .stream('jpg')
+      .pipe(writeStream);
+    });
+};

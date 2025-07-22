@@ -64,20 +64,70 @@ export default class PotraceService {
   async createPageContent(content: string, viewport?: Viewport): Promise<Page> {
     const TIMEOUT: number = 10 * 60 * 1000;
     let page: Page | undefined = undefined;
+    
     try {
       page = await ChromiumHandler.newPage();
       console.log('Chromium DONE!');
+      
+      if (!page) {
+        throw new Error('Failed to create page');
+      }
+      
+      // Set memory limits and performance optimizations for large content
+      await page.setCacheEnabled(false);
+      await page.setRequestInterception(true);
+      
+      // Block unnecessary resources to save memory
+      page.on('request', (req) => {
+        if (['image', 'stylesheet', 'font', 'media'].includes(req.resourceType())) {
+          req.abort();
+        } else {
+          req.continue();
+        }
+      });
+
+      // Set larger memory limits
+      await page.evaluateOnNewDocument(() => {
+        // Increase memory limits for large content
+        (window as any).__LARGE_CONTENT_MODE__ = true;
+      });
+
+      if (viewport) {
+        await page.setViewport(viewport);
+      }
+
+      // For very large content, use appropriate handling method
+      if (content.length > 100 * 1024 * 1024) { // 100MB threshold - use file-based approach
+        console.log('Extremely large content detected, using file-based approach...');
+        await this.handleLargeContentViaFile(page, content, TIMEOUT);
+      } else if (content.length > 50 * 1024 * 1024) { // 50MB threshold - use streaming approach
+        console.log('Large content detected, using streaming approach...');
+        await this.handleLargeContentStreaming(page, content, TIMEOUT);
+      } else if (content.length > 10 * 1024 * 1024) { // 10MB threshold - use chunked approach
+        console.log('Medium-large content detected, using chunked loading...');
+        await this.setLargeContentChunked(page, content, TIMEOUT);
+      } else {
+        await page.setContent(content, {
+          waitUntil: ['load', 'networkidle0'],
+          timeout: TIMEOUT,
+        });
+      }
+
+      // Monitor memory usage
+      const metrics = await page.metrics();
+      const heapUsed = metrics.JSHeapUsedSize ? Math.round(metrics.JSHeapUsedSize / 1024 / 1024) : 0;
+      const heapTotal = metrics.JSHeapTotalSize ? Math.round(metrics.JSHeapTotalSize / 1024 / 1024) : 0;
+      console.log(`Memory usage - JSHeapUsedSize: ${heapUsed}MB, JSHeapTotalSize: ${heapTotal}MB`);
+
     } catch (error) {
-      console.log(error, '==> error');
+      console.error('Error in createPageContent:', error);
+      if (page) {
+        await page.close().catch(console.error);
+      }
+      throw error;
     }
-    if (viewport) {
-      await page?.setViewport(viewport);
-    }
-    await page?.setContent(content, {
-      waitUntil: ['load', 'networkidle0'],
-      timeout: TIMEOUT,
-    });
-    return page as any;
+    
+    return page;
   }
 
   private async getImagePng(file: string): Promise<Buffer> {
@@ -503,12 +553,13 @@ export default class PotraceService {
 
       let textPath;
       if (this.isMultiSyles(element)) {
-        console.log(element, 'element...')
+        console.log('Case 1');
         const multiStylesTextService = new MultiStyleTextService(content, text, style);
         textPath = await multiStylesTextService.getPathByPotrace();
       } else {
+        console.log('Case 2');
         const svg = await this.convertTextByTrace(content, style);
-        textPath =  svg.match(/<path(.*?)\/>/g) || [];
+        textPath = svg.match(/<path(.*?)\/>/g) || [];
       }
 
       pathGroup = `${pathGroup}<g>${textPath.join('')}</g>`;
@@ -556,6 +607,166 @@ export default class PotraceService {
       // }
     } catch (error) {
       console.error(`Error cleaning up temporary directory ${this.workingDirTmp}:`, error);
+    }
+  }
+
+  /**
+   * Handles large content by chunked loading to prevent memory issues
+   */
+  private async setLargeContentChunked(page: Page, content: string, timeout: number): Promise<void> {
+    const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB chunks
+    const chunks = [];
+    
+    for (let i = 0; i < content.length; i += CHUNK_SIZE) {
+      chunks.push(content.slice(i, i + CHUNK_SIZE));
+    }
+
+    console.log(`Content split into ${chunks.length} chunks`);
+
+    // Set up the page structure first
+    await page.setContent(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Large Content</title>
+        </head>
+        <body>
+          <div id="content-container"></div>
+        </body>
+      </html>
+    `, {
+      waitUntil: 'domcontentloaded',
+      timeout: timeout / 2,
+    });
+
+    // Inject chunks progressively
+    for (let i = 0; i < chunks.length; i++) {
+      console.log(`Injecting chunk ${i + 1}/${chunks.length}`);
+      
+      await page.evaluate((chunk, index) => {
+        const container = document.getElementById('content-container');
+        if (!container) {
+          throw new Error('Content container not found');
+        }
+        if (index === 0) {
+          container.innerHTML = chunk;
+        } else {
+          container.innerHTML += chunk;
+        }
+        
+        // Force garbage collection if available
+        if ((window as any).gc) {
+          (window as any).gc();
+        }
+      }, chunks[i], i);
+
+      // Small delay to prevent overwhelming the browser
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    // Wait for the content to be fully processed
+    await page.waitForFunction(() => {
+      return document.readyState === 'complete';
+    }, { timeout: timeout / 2 });
+  }
+
+  /**
+   * Handles large content by streaming it in chunks to prevent memory issues
+   */
+  private async handleLargeContentStreaming(page: Page, content: string, timeout: number): Promise<void> {
+    const STREAM_CHUNK_SIZE = 5 * 1024 * 1024; // 5MB chunks
+    const totalChunks = Math.ceil(content.length / STREAM_CHUNK_SIZE);
+    
+    console.log(`Streaming large content: ${totalChunks} chunks of ${STREAM_CHUNK_SIZE / 1024 / 1024}MB each`);
+
+    // Set up streaming infrastructure
+    await page.evaluateOnNewDocument(() => {
+      (window as any).__STREAMING_MODE__ = true;
+      (window as any).__CONTENT_CHUNKS__ = [];
+    });
+
+    // Stream chunks with memory monitoring
+    for (let i = 0; i < totalChunks; i++) {
+      const start = i * STREAM_CHUNK_SIZE;
+      const end = Math.min(start + STREAM_CHUNK_SIZE, content.length);
+      const chunk = content.slice(start, end);
+
+      console.log(`Processing chunk ${i + 1}/${totalChunks}`);
+
+      await page.evaluate((chunkData, chunkIndex) => {
+        (window as any).__CONTENT_CHUNKS__[chunkIndex] = chunkData;
+        
+        // Force garbage collection if available
+        if ((window as any).gc) {
+          (window as any).gc();
+        }
+      }, chunk, i);
+
+      // Monitor memory usage every few chunks
+      if (i % 5 === 0) {
+        const metrics = await page.metrics();
+        const heapUsed = metrics.JSHeapUsedSize ? Math.round(metrics.JSHeapUsedSize / 1024 / 1024) : 0;
+        console.log(`Memory usage at chunk ${i}: ${heapUsed}MB`);
+        
+        // If memory usage is too high, force garbage collection
+        if (heapUsed > 6000) { // 6GB threshold
+          console.log('High memory usage detected, forcing garbage collection...');
+          await page.evaluate(() => {
+            if ((window as any).gc) {
+              (window as any).gc();
+            }
+          });
+        }
+      }
+
+      // Small delay to prevent overwhelming the browser
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+
+    // Combine all chunks
+    await page.evaluate(() => {
+      const combinedContent = (window as any).__CONTENT_CHUNKS__.join('');
+      document.body.innerHTML = combinedContent;
+      
+      // Clean up
+      delete (window as any).__CONTENT_CHUNKS__;
+      
+      if ((window as any).gc) {
+        (window as any).gc();
+      }
+    });
+
+    // Wait for content to be fully processed
+    await page.waitForFunction(() => {
+      return document.readyState === 'complete';
+    }, { timeout: timeout / 2 });
+  }
+
+  /**
+   * Alternative method using file-based approach for extremely large content
+   */
+  private async handleLargeContentViaFile(page: Page, content: string, timeout: number): Promise<void> {
+    const tempFile = `/tmp/large-content-${Date.now()}.html`;
+    
+    try {
+      // Write content to temporary file
+      await fs.promises.writeFile(tempFile, content, 'utf8');
+      console.log(`Large content written to temporary file: ${tempFile}`);
+
+      // Load content from file
+      await page.goto(`file://${tempFile}`, {
+        waitUntil: ['load', 'networkidle0'],
+        timeout: timeout,
+      });
+
+    } finally {
+      // Clean up temporary file
+      try {
+        await fs.promises.unlink(tempFile);
+      } catch (error) {
+        console.warn('Failed to clean up temporary file:', error);
+      }
     }
   }
 }

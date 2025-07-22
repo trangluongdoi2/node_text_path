@@ -36,7 +36,7 @@ export class BrowserPool {
    */
   private async launchNewBrowser(): Promise<Browser> {
     const puppeteer = require('puppeteer-core');
-    const chromium = require('@sparticuz/chromium');
+    // const chromium = require('@sparticuz/chromium');
     const profilePath = `/tmp/puppeteer_dev_chrome_profile-${randomString(false, 5)}-${Date.now()}`;
 
     // const executablePath = await chromium.executablePath();

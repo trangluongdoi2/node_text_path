@@ -722,6 +722,7 @@ export class TextService {
     charIndex: number,
   ): TextStyleDeclaration {
     const lineStyle = this.object.styles && this.object.styles[lineIndex];
+    // @ts-ignore
     return lineStyle ? lineStyle[charIndex] ?? {} : {};
   }
 

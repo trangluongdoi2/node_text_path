@@ -225,6 +225,7 @@ export class TextClippingPath {
       height: 620.8385620117188
     }
 
+    // @ts-ignore
     const p1 = new Point(positionClipPathHasRotate.x, positionClipPathHasRotate.y);
     const radians = degreesToRadians(-this.object.angle || 0);
     const pNotRotate = p1.rotate(radians, { x: this.boundingElement.cx, y: this.boundingElement.cy });
