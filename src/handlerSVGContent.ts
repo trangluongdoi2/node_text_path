@@ -31,6 +31,7 @@ type PartialElement = {
 
 class HandlerSVGContent {
   private svgContent: string;
+  private backupSvgContent: string;
   private potraceService = new PotraceService();
   private background: string;
   private shapeRectangles: string[];
@@ -113,6 +114,7 @@ class HandlerSVGContent {
     this.replacementMap.clear();
     svgContent = svgContent.replace(/<rect(.*?)<\/rect>/g, '');
     this.svgContent = svgContent;
+    this.backupSvgContent = svgContent;
     this.elements = [];
     this.groupElement = {
       outerHTML: '',
@@ -401,10 +403,8 @@ class HandlerSVGContent {
   }
 
   private async convertTextByPosterize(elementTag: string, outerHTML: string, element?: MasterElement): Promise<SVGElement> {
-    // const groupElementContent = this.groupElement?.innerHTML || '';
     const groupElementContent = this.getContentGroupWithTemp('innerHTML') || '';
-    // console.log(groupElementContent.slice(-100), 'CONVERT TEXT POSTERIZE');
-    const currentOnlyTextHtml = this.svgContent.replace(groupElementContent, outerHTML);
+    const currentOnlyTextHtml = this.backupSvgContent.replace(groupElementContent, outerHTML);
 
     // const path = await this.potraceService.convertTextByPotrace(currentOnlyTextHtml, elementTag, this.styles);
     const path = await this.potraceService.converTextByPotraceNew({
@@ -415,6 +415,9 @@ class HandlerSVGContent {
       styles: this.styles,
       element,
     });
+    console.log(elementTag.slice(0, 200), 'elementTag Text...');
+    fs.writeFileSync('temp/test.txt', elementTag);
+    console.log(path.slice(0, 200), 'path Text...');
     return {
       type: 'TEXT',
       elementTag,
@@ -514,18 +517,14 @@ class HandlerSVGContent {
   }
 
   removeMetadata(svgContent: string) {
-    // Remove all metadata elements including their content
     return svgContent.replace(/<metadata[^>]*>[\s\S]*?<\/metadata>/g, '');
   }
 
   removeInkscapeAttributes(svgContent: string) {
-    // Remove all inkscape attributes like inkscape:connector-curvature="0"
     return svgContent.replace(/\s+inkscape:[^=]*="[^"]*"/g, '');
   }
 
   removeSodipodiNamedview(svgContent: string) {
-    // Remove all sodipodi:namedview elements including their content
-    // Handle both self-closing and non-self-closing tags
     return svgContent.replace(/<sodipodi:namedview[^>]*\/?>/g, '');
   }
 
@@ -823,8 +822,9 @@ class HandlerSVGContent {
           const outerHTML = this.getContentWithFileTemp(i + index, 'outerHTML');
           const innerHTML = this.getContentWithFileTemp(i + index, 'innerHTML');
           if (this.isTextElement(innerHTML)) {
-            console.log('isTextElement...')
+            console.log(i + index, 'isTextElement...')
             const masterElement = this.getMasterElement(innerHTML);
+            // console.log(masterElement, 'masterElement..');
             if (this.hasClipPath(i + index)) {
               return this.convertTextClippingMaskByPosterize(i + index, innerHTML, outerHTML);
             }
@@ -850,6 +850,7 @@ class HandlerSVGContent {
      
       switch (element.type) {
         case 'TEXT': {
+          // console.log(elementTag)
           this.svgContent = this.svgContent.replace(elementTag, path);
           break;
         }
