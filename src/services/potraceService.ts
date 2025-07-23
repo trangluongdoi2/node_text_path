@@ -189,8 +189,8 @@ export default class PotraceService {
     const path = this.prepareWorkingDir(fileName);
     const browserPool = new BrowserPool();
     const page = await this.createPageContent(content);
-    // await page.screenshot({ path, fullPage: true });
-    const buffer = await page.screenshot({ path, fullPage: true });
+    await page.screenshot({ path, fullPage: true });
+    // const buffer = await page.screenshot({ path, fullPage: true });
     // const filePNGName = `${fileName}.png`;
     await page.close();
     // await this.writeBufferWithProgress(buffer, filePNGName);
@@ -283,6 +283,7 @@ export default class PotraceService {
   ): Promise<{ png: Buffer; content: string; clip: ScreenshotClip }> {
     const path = this.prepareWorkingDir(style.id);
     const viewport = getSvgDimensions(content);
+    // TODO: Need refactor
     const page = await this.createPageContent(content, viewport);
     const element = await page.$(`#${style.id}`);
 
@@ -720,7 +721,6 @@ export default class PotraceService {
         }
       }
 
-      // Small delay to prevent overwhelming the browser
       await new Promise(resolve => setTimeout(resolve, 50));
     }
 
@@ -760,6 +760,8 @@ export default class PotraceService {
         timeout: timeout,
       });
 
+    } catch(error) {
+      console.log(error, 'Eror when load image...');
     } finally {
       // Clean up temporary file
       try {

@@ -469,6 +469,12 @@ export const removeXYTranslate = (content: string) => {
   return content;
 }
 
+export const removeSodipodiNamedview = (svgContent: string) => {
+  // Remove all sodipodi:namedview elements including their content
+  // Handle both self-closing and non-self-closing tags
+  return svgContent.replace(/<sodipodi:namedview[^>]*\/?>/g, '');
+}
+
 export const getMatrixFromTransform = (transform: string) => {
   const regex = /matrix\(([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),([^,]+)\)/;
   const match = transform.match(regex);

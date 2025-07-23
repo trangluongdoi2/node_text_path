@@ -1,8 +1,5 @@
-// import { JSDOM } from 'jsdom';
 import fs from 'fs';
-// import sax from 'sax';
 import sharp from 'sharp';
-// import { TextService } from './services/textService';
 import { MasterElement, SVGElement } from './types/index'
 
 import {
@@ -16,18 +13,11 @@ import {
   getShapeClipPathTags,
   getClipPathId,
   removeDOCTYPE,
-  getTextStylesContent,
-  getFilterUrls,
-  getTypeFiltersFromFilterTag,
   getTextRectanglesTag,
   getImageParentTags,
   getElemAttributesByImageWithRegex,
 } from './utils-svg';
 import PotraceService from './services/potraceService';
-import { ClippathTagsOutput } from './types/convert-text';
-import { prepareWorkingDir } from './helper/file';
-// import { pipe } from './helper/function';
-
 
 type OptionsExportSVG = {
   groupElementFilePathTmp: string[],
@@ -38,6 +28,7 @@ type PartialElement = {
   outerHTML: string,
   innerHTML: string,
 }
+
 class HandlerSVGContent {
   private svgContent: string;
   private potraceService = new PotraceService();
@@ -130,77 +121,164 @@ class HandlerSVGContent {
     this.elementsFilePathTmp = options.elementsFilePathTmp;
     this.groupElementFilePathTmp = options.groupElementFilePathTmp;
 
-    this.groupElementFilePathTmp.forEach((fileTemp: string, index: number) => {
-      if (index === 0) {
-        this.groupElement.outerHTML = fs.readFileSync(fileTemp, { encoding: 'utf8' });
-      } else {
-        this.groupElement.innerHTML = fs.readFileSync(fileTemp, { encoding: 'utf8' });
-      }
-    })
+    // this.initGroupElementContent();
+    // this.initElementsContent();
+    // this.removeFileTemp();
+  }
 
-    this.elementsFilePathTmp.get('innerHTML')?.forEach((fileTemp: string, index: number) => {
+  private chunkSize(content: string, callback: Function): Promise<void> {
+    return new Promise(resolve => {
+      const CHUNK_SIZE = 1024 * 1024 * 5;
+      const totalChunks = Math.ceil(content.length / CHUNK_SIZE);
+      let nextChunk = 0;
+      function sendNextChunk() {
+        if (nextChunk >= totalChunks) {
+          resolve();
+        }
+        let start = CHUNK_SIZE * nextChunk;
+        let end = Math.min(start + CHUNK_SIZE, content.length);
+        const subContent = content.substring(start, end);
+        callback(subContent);
+        nextChunk++;
+        setTimeout(sendNextChunk, 0);
+      }
+      sendNextChunk();
+    })
+  }
+
+  private async initGroupElementContent() {
+    this.groupElement = {
+      outerHTML: '',
+      innerHTML: '',
+    };
+
+    // this.groupElementFilePathTmp.forEach((fileTemp: string, index: number) => {
+    //   if (index === 0) {
+    //     const content = fs.readFileSync(fileTemp, { encoding: 'utf8' });
+    //     this.groupElement.outerHTML = this.chunkSize(content, this.groupElement.outerHTML);
+    //   } else {
+    //     const content = fs.readFileSync(fileTemp, { encoding: 'utf8' });
+    //     this.groupElement.innerHTML = this.chunkSize(content, this.groupElement.innerHTML);
+    //   }
+    // });
+    // const ps1 = this.groupElementFilePathTmp.map((fileTemp: string, index: number) => {
+
+    // })
+    const content1 = fs.readFileSync(this.groupElementFilePathTmp[0], { encoding: 'utf8' });
+    const content2 = fs.readFileSync(this.groupElementFilePathTmp[1], { encoding: 'utf8' });
+    const ps1 = [
+      this.chunkSize(content1, (data: string) => { this.groupElement.outerHTML += data }),
+      this.chunkSize(content2, (data: string) => { this.groupElement.innerHTML += data }),
+    ];
+    await Promise.all(ps1);
+    this.groupElementFilePathTmp = [];
+  }
+
+  private async initElementsContent() {
+    this.elements = [];
+    // this.elementsFilePathTmp.get('innerHTML')?.forEach((fileTemp: string, index: number) => {
+    //   if (!this.elements[index]) {
+    //     this.elements[index] = { outerHTML: '', innerHTML: '' };
+    //   }
+    //   const content = fs.readFileSync(fileTemp, { encoding: 'utf8' });
+    //   // this.elements[index].innerHTML = content;
+    //   this.elements[index].innerHTML = this.chunkSize(content, this.elements[index].innerHTML);
+    // });
+
+    // this.elementsFilePathTmp.get('outerHTML')?.forEach((fileTemp: string, index: number) => {
+    //   const content = fs.readFileSync(fileTemp, { encoding: 'utf8' });
+    //   // this.elements[index].outerHTML = content;
+    //   this.elements[index].outerHTML = this.chunkSize(content, this.elements[index].outerHTML);
+    // });
+
+    const ps1 = this.elementsFilePathTmp.get('innerHTML')?.map((fileTemp: string, index: number) => {
       if (!this.elements[index]) {
         this.elements[index] = { outerHTML: '', innerHTML: '' };
       }
       const content = fs.readFileSync(fileTemp, { encoding: 'utf8' });
-      this.elements[index].innerHTML = content;
-    });
+      return this.chunkSize(content, (data: string) => {
+        this.elements[index].innerHTML += data;
+      });
+    }) as any[];
+    await Promise.all(ps1);
 
-    this.elementsFilePathTmp.get('outerHTML')?.forEach((fileTemp: string, index: number) => {
+    const ps2 = this.elementsFilePathTmp.get('outerHTML')?.map((fileTemp: string, index: number) => {
       const content = fs.readFileSync(fileTemp, { encoding: 'utf8' });
-      this.elements[index].innerHTML = content;
-    });
-    // console.log(this.elements.length, 'this.elements.length..');
-    this.removeFileTemp();
+      return this.chunkSize(content, (data: string) => {
+        this.elements[index].outerHTML += data;
+      });
+    }) as any[];
+    await Promise.all(ps2);
+    console.log('By pass load elements...')
+    this.elementsFilePathTmp.clear();
   }
 
   private removeFileTemp() {
-    // this.groupElementFilePathTmp.forEach(temp => {
-    //   prepareWorkingDir(temp, true);
-    // });
-    // for (const [_, value] of this.elementsFilePathTmp.entries()) {
-    //   console.log(value, 'value..')
-    //   value.forEach(temp => {
-    //     prepareWorkingDir(temp, true);
-    //   });
-    // }
-    prepareWorkingDir('temp');
-    // this.elementsFilePathTmp.values)
+    try {
+      // Remove group element temp files
+      this.groupElementFilePathTmp.forEach((fileTemp: string) => {
+        try {
+          if (fs.existsSync(fileTemp)) {
+            fs.unlinkSync(fileTemp);
+            console.log(`Removed group temp file: ${fileTemp}`);
+          }
+        } catch (error) {
+          console.warn(`Failed to remove group temp file ${fileTemp}:`, error);
+        }
+      });
+
+      // Remove elements temp files
+      for (const [_, filePaths] of this.elementsFilePathTmp.entries()) {
+        filePaths.forEach((fileTemp: string) => {
+          try {
+            if (fs.existsSync(fileTemp)) {
+              fs.unlinkSync(fileTemp);
+              console.log(`Removed element temp file: ${fileTemp}`);
+            }
+          } catch (error) {
+            console.warn(`Failed to remove element temp file ${fileTemp}:`, error);
+          }
+        });
+      }
+
+      // Try to remove the temp directory if it's empty
+      // try {
+      //   const tempDir = 'temp';
+      //   if (fs.existsSync(tempDir)) {
+      //     const files = fs.readdirSync(tempDir);
+      //     if (files.length === 0) {
+      //       fs.rmdirSync(tempDir);
+      //       console.log('Removed empty temp directory');
+      //     } else {
+      //       console.log(`Temp directory still contains ${files.length} files`);
+      //     }
+      //   }
+      // } catch (error) {
+      //   console.warn('Failed to remove temp directory:', error);
+      // }
+
+      console.log('Temp file cleanup completed successfully!');
+    } catch (error) {
+      console.error('Error during temp file cleanup:', error);
+    }
   }
 
-  // private async parseSVGContentAsync(): Promise<void> {
-  //   return new Promise<void>((resolve, reject) => {
-  //     const fileName = 'svg-0.svg';
-  //     const sax = require('sax');
-  //     sax.MAX_BUFFER_LENGTH = Infinity;
-  //     const parser = new sax.createStream(true);
-  //     const stream = fs.createReadStream(fileName, { encoding: 'utf-8' });
-      
-  //     parser.on('opentag', (node: any) => {
-  //       const tagName = node.name; 
-  //       const attrs = node.attributes;
-  //       console.log(tagName, 'tagName...')
-  //       if (tagName === 'g' && attrs.class && attrs.class.includes('not-select')) {
-  //         console.log(node.outerHTML, 'this.elements.push..');
-  //         this.elements.push(node);
-  //       }
-  //       if (tagName === 'g' && attrs.class && attrs.class.includes('group_elements')) {
-  //         this.groupElement = node as any;
-  //       }
-  //     });
-  
-  //     parser.on('end', () => {
-  //       console.log('END...');
-  //       resolve();
-  //     });
-  
-  //     parser.on('error', (error: Error) => {
-  //       reject(error);
-  //     });
-  
-  //     stream.pipe(parser);
-  //   });
-  // }
+  getFileTempById(index: number, tag: string, format = 'txt') {
+    return `temp/element-${index}-${tag}.${format}`;
+  }
+
+  getContentWithFileTemp(index: number, tag: string) {
+    const fileTmp = this.getFileTempById(index, tag);
+    return fs.readFileSync(fileTmp, { encoding: 'utf8' });
+  }
+
+  getContentGroupWithTemp(tag: string) {
+    let fileTmp = 'temp/groupOuterHTML.txt';
+    if (tag === 'innerHTML') {
+      fileTmp = 'temp/groupInnerHTML.txt';
+    }
+    return fs.readFileSync(fileTmp, { encoding: 'utf8' });
+  }
 
   isTextElement(elementHtml: string) {
     return getContentByTag(elementHtml, 'text').length > 0
@@ -260,9 +338,10 @@ class HandlerSVGContent {
       if (imageContent.startsWith('data:image/svg+xml')) {
         imageContent = decodeURIComponent(imageContent.split(',')[1]);
         if (imageContent.indexOf('svg_has_been_converted') !== -1) {
+          console.log('Case svg uncode3')
           const xml = '<?xml version="1.0"?>';
           imageContent = imageContent.replace(xml, '');
-          svgImages.push({ imageElement, imageContent });
+          svgImages.push({ imageElement, imageContent: this.removeMetadata(imageContent) });
           continue;
         }
 
@@ -285,6 +364,7 @@ class HandlerSVGContent {
         const imageStylesBySvg = getElemAttributesByImage(imageContent);
         imageContent = imageContent.replace(/<\/svg>/g, '').replace(/<svg[^>]*>/g, '');
         imageContent = removeDOCTYPE(imageContent);
+        imageContent = this.removeMetadata(imageContent);
         
         // Build SVG content using template string (more efficient)
         imageContent = `
@@ -321,7 +401,9 @@ class HandlerSVGContent {
   }
 
   private async convertTextByPosterize(elementTag: string, outerHTML: string, element?: MasterElement): Promise<SVGElement> {
-    const groupElementContent = this.groupElement?.innerHTML || '';
+    // const groupElementContent = this.groupElement?.innerHTML || '';
+    const groupElementContent = this.getContentGroupWithTemp('innerHTML') || '';
+    // console.log(groupElementContent.slice(-100), 'CONVERT TEXT POSTERIZE');
     const currentOnlyTextHtml = this.svgContent.replace(groupElementContent, outerHTML);
 
     // const path = await this.potraceService.convertTextByPotrace(currentOnlyTextHtml, elementTag, this.styles);
@@ -336,33 +418,36 @@ class HandlerSVGContent {
     return {
       type: 'TEXT',
       elementTag,
-      path: elementTag,
+      path,
     };
   }
 
   private async convertTextClippingMaskByPosterize(index: number, elementTag: string, outerHTML: string): Promise<SVGElement> {
-    const outerHtmlByClipPath: string = this.elements[index + 1].outerHTML || '';
+    // const outerHtmlByClipPath: string = this.elements[index + 1].outerHTML || '';
+    const outerHtmlByClipPath = this.getContentWithFileTemp(index + 1, 'outerHTML');
     const clippingMaskTag = this.isClipPath(outerHtmlByClipPath) ? outerHtmlByClipPath : '';
+    console.log(clippingMaskTag.slice(-100), 'slice 100');
 
-    // const imageClipPathTag = getContentByTag(clippingMaskTag, 'image')?.[0] || '';
-    // const styleImageClipPathTag = getElemAttributesByImage(imageClipPathTag);
-    // const displayNone = [
-    //   'display: none',
-    //   'visibility: hidden',
-    //   'opacity: 0',
-    // ];
+    const imageClipPathTag = getContentByTag(clippingMaskTag, 'image')?.[0] || '';
+    const styleImageClipPathTag = getElemAttributesByImage(imageClipPathTag);
+    const displayNone = [
+      'display: none',
+      'visibility: hidden',
+      'opacity: 0',
+    ];
 
-    // if (displayNone.some((style: string) => (styleImageClipPathTag?.style || '').includes(style))) {
-    //   this.elements.splice(index + 1, 1);
-    //   return this.convertTextByPosterize(elementTag, outerHTML);
-    // }
+    if (displayNone.some((style: string) => (styleImageClipPathTag?.style || '').includes(style))) {
+      this.elements.splice(index + 1, 1);
+      return this.convertTextByPosterize(elementTag, outerHTML);
+    }
 
     // const groupElementContent = this.groupElement?.innerHTML || '';
-    // const currentOnlyTextHtml = this.svgContent.replace(groupElementContent, `${outerHTML}${clippingMaskTag}`);
-    // const path = await this.potraceService.convertTextClipPathByPotrace(currentOnlyTextHtml, elementTag, this.styles);
+    const groupElementContent = this.getContentGroupWithTemp('innerHTML') || '';
+    const currentOnlyTextHtml = this.svgContent.replace(groupElementContent, `${outerHTML}${clippingMaskTag}`);
+    const path = await this.potraceService.convertTextClipPathByPotrace(currentOnlyTextHtml, elementTag, this.styles);
     return {
       elementTag,
-      path: elementTag,
+      path,
       clippingMaskTag,
       type: 'TEXT_CLIP_PATH',
     };
@@ -426,6 +511,22 @@ class HandlerSVGContent {
       ${result}
     `;
     return result;
+  }
+
+  removeMetadata(svgContent: string) {
+    // Remove all metadata elements including their content
+    return svgContent.replace(/<metadata[^>]*>[\s\S]*?<\/metadata>/g, '');
+  }
+
+  removeInkscapeAttributes(svgContent: string) {
+    // Remove all inkscape attributes like inkscape:connector-curvature="0"
+    return svgContent.replace(/\s+inkscape:[^=]*="[^"]*"/g, '');
+  }
+
+  removeSodipodiNamedview(svgContent: string) {
+    // Remove all sodipodi:namedview elements including their content
+    // Handle both self-closing and non-self-closing tags
+    return svgContent.replace(/<sodipodi:namedview[^>]*\/?>/g, '');
   }
 
   getBleedSize() {
@@ -627,7 +728,11 @@ class HandlerSVGContent {
   // }
 
   public async cleanup() {
-    await this.potraceService.cleanup();
+    try {
+      await this.potraceService.cleanup();
+    } catch (error) {
+      console.error('Error during cleanup:', error);
+    }
   }
 
   // async export() {
@@ -701,8 +806,11 @@ class HandlerSVGContent {
   // }
 
   async export() {
+    await this.initGroupElementContent();
+    await this.initElementsContent();
+    // this.removeFileTemp();
     console.time('export SVG');
-    // console.log(this.elements.length, 'this.elements.length..');
+    console.log(this.elements.length, 'this.elements.length..');
     const col = 1;
     const row = 1;
     const bleedSize = 0;
@@ -711,9 +819,11 @@ class HandlerSVGContent {
     for (let i = 0; i < this.elements.length; i += batchSize) {
       const batch = this.elements.slice(i, i + batchSize);
       const batchResult = await Promise.all(
-        batch.map((element: PartialElement, index: number) => {
-          const { outerHTML, innerHTML } = element;
+        batch.map((_, index: number) => {
+          const outerHTML = this.getContentWithFileTemp(i + index, 'outerHTML');
+          const innerHTML = this.getContentWithFileTemp(i + index, 'innerHTML');
           if (this.isTextElement(innerHTML)) {
+            console.log('isTextElement...')
             const masterElement = this.getMasterElement(innerHTML);
             if (this.hasClipPath(i + index)) {
               return this.convertTextClippingMaskByPosterize(i + index, innerHTML, outerHTML);
@@ -722,6 +832,7 @@ class HandlerSVGContent {
           }
 
           if (this.isImageElement(innerHTML)) {
+            console.log('isImageElement...')
             this.updateTransformClippingPathWithBleedSize(outerHTML, { col, row, bleedSize });
             return this.convertImage(innerHTML);
           }
@@ -769,10 +880,16 @@ class HandlerSVGContent {
     });
 
     this.svgContent = this.svgContent.replace(/&nbsp;/g, ' ');
+    this.svgContent = this.removeMetadata(this.svgContent);
+    this.svgContent = this.removeInkscapeAttributes(this.svgContent);
+    this.svgContent = this.removeSodipodiNamedview(this.svgContent);
     this.svgContent = this.convertBackground(this.svgContent);
     this.svgContent = this.convertShape(this.svgContent);
     this.svgContent = this.convertFillTransparent(this.svgContent);
     this.svgContent = this.fixAdobeTag(this.svgContent);
+    
+    // this.removeAllTempFiles();
+    
     console.timeEnd('export SVG');
     return this.svgContent;
   }

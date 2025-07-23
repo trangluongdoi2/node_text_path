@@ -237,8 +237,10 @@ app.listen(PORT, async () => {
     const [data, styles] = await Promise.all([getDataDesignPageFromPage(page), getStylesFromPage(page)]);
     const workingDirTmp = 'temp';
     prepareWorkingDir(workingDirTmp);
-    const groupOuterHTMLFileTmp = `${workingDirTmp}/groupOuterHTML-${randomString(false, 5)}.txt`;
-    const groupInnerHTMLFileTmp = `${workingDirTmp}/groupInnerHTML-${randomString(false, 5)}.txt`;
+    // const groupOuterHTMLFileTmp = `${workingDirTmp}/groupOuterHTML-${randomString(false, 5)}.txt`;
+    // const groupInnerHTMLFileTmp = `${workingDirTmp}/groupInnerHTML-${randomString(false, 5)}.txt`;
+    const groupOuterHTMLFileTmp = `${workingDirTmp}/groupOuterHTML.txt`;
+    const groupInnerHTMLFileTmp = `${workingDirTmp}/groupInnerHTML.txt`;
 
     const writeStreamGroupOuterHTML = createWriteStream(groupOuterHTMLFileTmp);
     const writeStreamGroupInnerHTML = createWriteStream(groupInnerHTMLFileTmp);
@@ -251,7 +253,7 @@ app.listen(PORT, async () => {
       try {
         // Case element
         if (typeof data.index === 'number') {
-          const elementFileTmp = `${workingDirTmp}/element-${data.index}-${data.tag}-${randomString(false, 5)}.txt`;
+          const elementFileTmp = `${workingDirTmp}/element-${data.index}-${data.tag}.txt`;
           if (!writeStreamElementMap.has(elementFileTmp)) {
             const arrayFilePath = elementsFilePathTmp.get(data.tag) || [];
             arrayFilePath.push(elementFileTmp);
@@ -279,7 +281,7 @@ app.listen(PORT, async () => {
     });
 
     await page.exposeFunction('finishWriting', (data: any) => {
-      if (typeof data.index) {
+      if (typeof data.index === 'number') {
         const keyPattern = `element-${data.index}-${data.tag}`;
         for (const [_, key] of elementsFilePathTmp.entries()) {
           if (key.includes(keyPattern)) {
@@ -295,7 +297,7 @@ app.listen(PORT, async () => {
       }
     });
 
-    const svgContents = await page.evaluate(() => {
+    const svgContents = await page.evaluate(async () => {
       type TagType = 'outerHTML' | 'innerHTML';
       const CHUNK_SIZE = 1024 * 1024 * 5;
       const svgEditorBySections = document.querySelectorAll('svg.svg-main-canvas');
@@ -324,46 +326,125 @@ app.listen(PORT, async () => {
         sendNextChunk();
       }
 
-      function executeElements(node: any) {
-        const elements = node.getElementsByClassName('not-select');
-        for (let i = 0; i < elements.length; i++) {
-          const element = elements[i];
-          setChunkSize(element.outerHTML, 'outerHTML', CHUNK_SIZE, (data: any) => {
-            (window as any).setChunkSize({
-              ...data,
-              type: 'element',
-              index: i,
-            })
-          }, () => (window as any).finishWriting({ index: i, tag: 'outerHTML' }));
-          setChunkSize(element.innerHTML, 'innerHTML', CHUNK_SIZE, (data: any) => {
-            (window as any).setChunkSize({
-              ...data,
-              type: 'element',
-              index: i,
-            })
-          }, () => (window as any).finishWriting({ index: i, tag: 'innerHTML' }));
+      function setChunkSizePs(content: string, tag: TagType, chunkSize = 1024 * 1024 * 5, fn1: Function, fn2?: Function): Promise<void> {
+        return new Promise(resolve => {
+          const totalChunks = Math.ceil(content.length / chunkSize);
+          let sendChunks = 0;
+          function sendNextChunk() {
+            if (sendChunks >= totalChunks) {
+              if (fn2) {
+                fn2();
+                resolve();
+                return;
+              }
+              (window as any).finishWriting({ tag });
+              resolve();
+              return;
+            }
+            const start = sendChunks * chunkSize;
+            const end = Math.min(start + chunkSize, content.length);
+            const chunk = content.substring(start, end);
+            fn1({ content: chunk, tag });
+            sendChunks++;
+            setTimeout(sendNextChunk, 0);
+          }
+          sendNextChunk();
+        });
+      }
+
+      async function executeGroupElement(node: any) {
+        if (!node) {
+          return;
         }
+        const groupPromise = [
+          setChunkSizePs(node.outerHTML, 'outerHTML', CHUNK_SIZE, (data: any) => {
+            (window as any).setChunkSize({ ...data, type: 'group' });
+          }),
+          setChunkSizePs(node.innerHTML, 'innerHTML', CHUNK_SIZE, (data: any) => {
+            (window as any).setChunkSize({ ...data, type: 'group' });
+          }),
+        ];
+        await Promise.all(groupPromise);
+      }
+
+      async function executeElements(node: any) {
+        const elements = node.getElementsByClassName('not-select');
+        const ps1 = [...elements].map((element: any, index: number) => {
+          return setChunkSizePs(element.outerHTML, 'outerHTML', CHUNK_SIZE, (data: any) => {
+            (window as any).setChunkSize({
+              ...data,
+              type: 'element',
+              index,
+            })
+          }, () => (window as any).finishWriting({ index, tag: 'outerHTML' }));
+        });
+        const ps2 = [...elements].map((element: any, index: number) => {
+          return setChunkSizePs(element.innerHTML, 'innerHTML', CHUNK_SIZE, (data: any) => {
+            (window as any).setChunkSize({
+              ...data,
+              type: 'element',
+              index,
+            })
+          }, () => (window as any).finishWriting({ index, tag: 'innerHTML' }));
+        });
+
+        await Promise.all(ps1);
+        await Promise.all(ps2);
+
+        // for (let i = 0; i < elements.length; i++) {
+        //   const element = elements[i];
+        //   setChunkSize(element.outerHTML, 'outerHTML', CHUNK_SIZE, (data: any) => {
+        //     (window as any).setChunkSize({
+        //       ...data,
+        //       type: 'element',
+        //       index: i,
+        //     })
+        //   }, () => (window as any).finishWriting({ index: i, tag: 'outerHTML' }));
+        //   setChunkSize(element.innerHTML, 'innerHTML', CHUNK_SIZE, (data: any) => {
+        //     (window as any).setChunkSize({
+        //       ...data,
+        //       type: 'element',
+        //       index: i,
+        //     })
+        //   }, () => (window as any).finishWriting({ index: i, tag: 'innerHTML' }));
+        // }
       }
 
       for (let i = 0; i < svgNodeBySections.length; i++) {
         const nodeSVGSection = svgNodeBySections[i];
         result.push(nodeSVGSection.outerHTML);
         const groupElement = nodeSVGSection.getElementsByClassName('group_elements')[0];
-        if (groupElement) {
-          setChunkSize(groupElement.outerHTML, 'outerHTML', CHUNK_SIZE, (data: any) => {
-            (window as any).setChunkSize({
-              ...data,
-              type: 'group',
-            });
-          });
-          setChunkSize(groupElement.innerHTML, 'innerHTML', CHUNK_SIZE, (data: any) => {
-            (window as any).setChunkSize({
-              ...data,
-              type: 'group',
-            });
-          });
-        }
-        executeElements(nodeSVGSection);
+        await executeGroupElement(groupElement);
+        await executeElements(nodeSVGSection);
+        // if (groupElement) {
+        //   setChunkSize(groupElement.outerHTML, 'outerHTML', CHUNK_SIZE, (data: any) => {
+        //     (window as any).setChunkSize({
+        //       ...data,
+        //       type: 'group',
+        //     });
+        //   });
+        //   setChunkSize(groupElement.innerHTML, 'innerHTML', CHUNK_SIZE, (data: any) => {
+        //     (window as any).setChunkSize({
+        //       ...data,
+        //       type: 'group',
+        //     });
+        //   });
+        // }
+        // const groupPromise = [
+        //   setChunkSizePs(groupElement.outerHTML, 'outerHTML', CHUNK_SIZE, (data: any) => {
+        //     (window as any).setChunkSize({
+        //       ...data,
+        //       type: 'group',
+        //     });
+        //   }),
+        //   setChunkSizePs(groupElement.innerHTML, 'innerHTML', CHUNK_SIZE, (data: any) => {
+        //     (window as any).setChunkSize({
+        //       ...data,
+        //       type: 'group',
+        //     });
+        //   }),
+        // ];
+        // await Promise.all(groupPromise);
       }
       return result;
     });
