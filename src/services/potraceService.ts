@@ -190,10 +190,10 @@ export default class PotraceService {
     const browserPool = new BrowserPool();
     const page = await this.createPageContent(content);
     await page.screenshot({ path, fullPage: true });
-    // const buffer = await page.screenshot({ path, fullPage: true });
-    // const filePNGName = `${fileName}.png`;
+    const buffer = await page.screenshot({ path, fullPage: true });
+    const filePNGName = `temp/${fileName}.png`;
     await page.close();
-    // await this.writeBufferWithProgress(buffer, filePNGName);
+    await this.writeBufferWithProgress(buffer, filePNGName);
     const svgContent = await this.potraceTrace(path, {
       threshold: 254,
       color: style.fill,
@@ -263,7 +263,7 @@ export default class PotraceService {
         // omitBackground: true,
         // encoding: 'binary'
       });
-      // this.writeBufferWithProgress(buffer, `${contentData.index}.png`)
+      this.writeBufferWithProgress(buffer, `${contentData.index}.png`)
       results.push(this.potraceTrace(path, {
         threshold: 254,
         color: contentData.styles.fill,
@@ -759,6 +759,8 @@ export default class PotraceService {
         waitUntil: ['load', 'networkidle0'],
         timeout: timeout,
       });
+
+      const buffer = page.screenshot()
 
     } catch(error) {
       console.log(error, 'Eror when load image...');

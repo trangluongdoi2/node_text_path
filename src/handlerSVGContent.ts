@@ -123,6 +123,8 @@ class HandlerSVGContent {
     this.elementsFilePathTmp = options.elementsFilePathTmp;
     this.groupElementFilePathTmp = options.groupElementFilePathTmp;
 
+    // fs.writeFileSync('temp/originalSVG.txt', this.svgContent);
+
     // this.initGroupElementContent();
     // this.initElementsContent();
     // this.removeFileTemp();
@@ -271,7 +273,9 @@ class HandlerSVGContent {
 
   getContentWithFileTemp(index: number, tag: string) {
     const fileTmp = this.getFileTempById(index, tag);
-    return fs.readFileSync(fileTmp, { encoding: 'utf8' });
+    const content = fs.readFileSync(fileTmp, { encoding: 'utf8' });
+    return content.replace(/<rect[^>]*fill="none"[^>]*\/?><\/rect>/g, '');
+    // return fs.readFileSync(fileTmp, { encoding: 'utf8' });
   }
 
   getContentGroupWithTemp(tag: string) {
@@ -279,7 +283,9 @@ class HandlerSVGContent {
     if (tag === 'innerHTML') {
       fileTmp = 'temp/groupInnerHTML.txt';
     }
-    return fs.readFileSync(fileTmp, { encoding: 'utf8' });
+    const content = fs.readFileSync(fileTmp, { encoding: 'utf8' });
+    return content.replace(/<rect[^>]*fill="none"[^>]*\/?><\/rect>/g, '');
+    // return fs.readFileSync(fileTmp, { encoding: 'utf8' });
   }
 
   isTextElement(elementHtml: string) {
@@ -403,21 +409,21 @@ class HandlerSVGContent {
   }
 
   private async convertTextByPosterize(elementTag: string, outerHTML: string, element?: MasterElement): Promise<SVGElement> {
+    console.log('convertTextByPosterize...')
     const groupElementContent = this.getContentGroupWithTemp('innerHTML') || '';
     const currentOnlyTextHtml = this.backupSvgContent.replace(groupElementContent, outerHTML);
 
     // const path = await this.potraceService.convertTextByPotrace(currentOnlyTextHtml, elementTag, this.styles);
+    // console.log(this.styles, 'this.styles..');
     const path = await this.potraceService.converTextByPotraceNew({
         textHTML: currentOnlyTextHtml,
         innerHTML: elementTag,
       },
-      {
-      styles: this.styles,
-      element,
-    });
-    console.log(elementTag.slice(0, 200), 'elementTag Text...');
-    fs.writeFileSync('temp/test.txt', elementTag);
-    console.log(path.slice(0, 200), 'path Text...');
+      { styles: this.styles, element });
+    // console.log(elementTag.slice(0, 200), 'elementTag Text...');
+    fs.writeFileSync('temp/elementTag.txt', elementTag);
+    fs.writeFileSync('temp/path.txt', path);
+    // console.log(path.slice(0, 200), 'path Text...');
     return {
       type: 'TEXT',
       elementTag,
@@ -446,7 +452,7 @@ class HandlerSVGContent {
 
     // const groupElementContent = this.groupElement?.innerHTML || '';
     const groupElementContent = this.getContentGroupWithTemp('innerHTML') || '';
-    const currentOnlyTextHtml = this.svgContent.replace(groupElementContent, `${outerHTML}${clippingMaskTag}`);
+    const currentOnlyTextHtml = this.backupSvgContent.replace(groupElementContent, `${outerHTML}${clippingMaskTag}`);
     const path = await this.potraceService.convertTextClipPathByPotrace(currentOnlyTextHtml, elementTag, this.styles);
     return {
       elementTag,

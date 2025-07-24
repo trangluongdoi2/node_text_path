@@ -1,19 +1,15 @@
 import fs from 'fs';
 import { JSDOM } from 'jsdom';
-import { Readable } from 'stream';
-import express, { Request, Response } from 'express';
+import express from 'express';
 import cors from 'cors';
-import path from 'path';
 import bodyParser from 'body-parser';
 import { ChromiumHandler } from './chromium/chromiumHandler';
-import { ElementHandle, Page, Target } from 'puppeteer-core';
+import { Page } from 'puppeteer-core';
 import HandlerSVGContent from './handlerSVGContent';
-import { getContentByTag, removeXMLContent } from './utils-svg';
+import { removeXMLContent } from './utils-svg';
 import DesignService from './services/designService'
 import { FileGeneratorInput } from './services/svgFilter';
 import { prepareWorkingDir } from './helper/file';
-import { randomString } from './helper/string';
-// import { ChromiumHandler } from '@/chromium/chromiumHandler';
 
 const PORT = 3000;
 export const CHROMIUM_DEFAULT_PPI = 96;
@@ -102,88 +98,72 @@ app.listen(PORT, async () => {
     return size;
   }
 
-  function getPdfZoomValue(pixelsPerInch: number) {
-    const defaultPPI = CHROMIUM_DEFAULT_PPI;
-    const scaleBydesignPPI = defaultPPI / pixelsPerInch;
-    const scaleByDefaultPPI = pixelsPerInch / defaultPPI;
-    const scale = (defaultPPI < pixelsPerInch) ? scaleBydesignPPI : scaleByDefaultPPI;
-    console.log(`getPdfZoomValue: scale: ${scale}, pixelsPerInch: ${pixelsPerInch}`);
-    return Number(scale);
-  }
-
-  async function createPDFWithChromium(page: Page, input: FileGeneratorInput): Promise<Buffer> {
-    const { outputWidth, outputHeight } = getOutputSize(input);
-    // const scale = 96 / input.pixelsPerInch;
-    // const scale = 1;
-    const scalePdfByRatioPPI = getPdfZoomValue(input.pixelsPerInch) * RATIO_PPI_BETWEEN_LINUX_AND_CHROMIUM;
-    const scaledWidth = outputWidth * scalePdfByRatioPPI;
-    const scaledHeight = outputHeight * scalePdfByRatioPPI;
-
-    console.log(scaledWidth, scaledHeight, 'scaledWidth, scaledHeight..');
-
-    const content = await page.pdf({
-      width: scaledWidth,
-      height: scaledHeight,
-      margin: {
-        top: 0,   
-        right: 0,
-        bottom: 0,
-        left: 0,
-      },
-      printBackground: true,
-    });
-    return content;
-  }
-
-  // async function chunkSizeString(content: string) {
-  //   const CHUNK_SIZE = 1024 * 1024 * 5; // 5Mb;
+  // function getPdfZoomValue(pixelsPerInch: number) {
+  //   const defaultPPI = CHROMIUM_DEFAULT_PPI;
+  //   const scaleBydesignPPI = defaultPPI / pixelsPerInch;
+  //   const scaleByDefaultPPI = pixelsPerInch / defaultPPI;
+  //   const scale = (defaultPPI < pixelsPerInch) ? scaleBydesignPPI : scaleByDefaultPPI;
+  //   console.log(`getPdfZoomValue: scale: ${scale}, pixelsPerInch: ${pixelsPerInch}`);
+  //   return Number(scale);
   // }
 
-  async function getDataFromContent(content: string) {
-    const TIMEOUT: number = 10 * 60 * 1000;
-    return new Promise(async (resolve, reject) => {
-      let page: Page | undefined;
+  // async function createPDFWithChromium(page: Page, input: FileGeneratorInput): Promise<Buffer> {
+  //   const { outputWidth, outputHeight } = getOutputSize(input);
+  //   const scalePdfByRatioPPI = getPdfZoomValue(input.pixelsPerInch) * RATIO_PPI_BETWEEN_LINUX_AND_CHROMIUM;
+  //   const scaledWidth = outputWidth * scalePdfByRatioPPI;
+  //   const scaledHeight = outputHeight * scalePdfByRatioPPI;
+
+  //   console.log(scaledWidth, scaledHeight, 'scaledWidth, scaledHeight..');
+
+  //   const content = await page.pdf({
+  //     width: scaledWidth,
+  //     height: scaledHeight,
+  //     margin: {
+  //       top: 0,   
+  //       right: 0,
+  //       bottom: 0,
+  //       left: 0,
+  //     },
+  //     printBackground: true,
+  //   });
+  //   return content;
+  // }
+
+  // async function getDataFromContent(content: string) {
+  //   const TIMEOUT: number = 10 * 60 * 1000;
+  //   return new Promise(async (resolve, reject) => {
+  //     let page: Page | undefined;
       
-      try {
-        page = await ChromiumHandler.newPage();
-        await page?.setViewport({ width: 1, height: 1 });
-        await page?.setContent(content, {
-          waitUntil: ['load', 'networkidle0'],
-          timeout: TIMEOUT,
-        });
-        resolve(1);
-      } catch (error) {
-        console.error('Error when setting content to page:', error);
-        reject(error);
-      } finally {
-        if (page) {
-          await page.close().catch(console.error);
-        }
-      }
-    });
-  }
-
-  async function getSVGContentBySections(page: Page): Promise<any> {
-    const result = await page.evaluate(() => {
-      const svgEditorBySections = document.querySelectorAll('svg.svg-main-canvas');
-      const svgNodeBySections = [...svgEditorBySections];
-      const svgDataBySections = svgNodeBySections.map((nodeSVGSection: any, index: number) => ({
-        svgContent: nodeSVGSection.outerHTML,
-        index,
-      }));
-      return svgDataBySections;
-    });
-    return result;
-  }
-
-  // async function getElementsFromNode(node: any) {
-  //   const element = node.getElementsByClassName('not-select');
-  //   return [...element].map(el => {
-  //     return {
-  //       outerHTML: el.outerHTML,
-  //       innerHTML: el.innerHTML,
+  //     try {
+  //       page = await ChromiumHandler.newPage();
+  //       await page?.setViewport({ width: 1, height: 1 });
+  //       await page?.setContent(content, {
+  //         waitUntil: ['load', 'networkidle0'],
+  //         timeout: TIMEOUT,
+  //       });
+  //       resolve(1);
+  //     } catch (error) {
+  //       console.error('Error when setting content to page:', error);
+  //       reject(error);
+  //     } finally {
+  //       if (page) {
+  //         await page.close().catch(console.error);
+  //       }
   //     }
-  //   })
+  //   });
+  // }
+
+  // async function getSVGContentBySections(page: Page): Promise<any> {
+  //   const result = await page.evaluate(() => {
+  //     const svgEditorBySections = document.querySelectorAll('svg.svg-main-canvas');
+  //     const svgNodeBySections = [...svgEditorBySections];
+  //     const svgDataBySections = svgNodeBySections.map((nodeSVGSection: any, index: number) => ({
+  //       svgContent: nodeSVGSection.outerHTML,
+  //       index,
+  //     }));
+  //     return svgDataBySections;
+  //   });
+  //   return result;
   // }
 
   async function getStylesFromPage(page: Page): Promise<string[]> {
@@ -200,25 +180,6 @@ app.listen(PORT, async () => {
     });
   };
 
-  // async function writeArrayToFileStream(data: string, tmpFile: string, callback: Function) {
-  //   return new Promise((resolve, reject) => {
-  //     const writeStream = fs.createWriteStream(tmpFile, {
-  //       flags: 'a',
-  //       encoding: 'utf8'
-  //     });
-
-  //     writeStream.on('error', (error) => {
-  //       reject(error);
-  //     });
-
-  //     writeStream.on('finish', () => {
-  //       resolve(true);
-  //     });
-  //     writeStream.write(data);
-  //     callback(writeStream);
-  //   });
-  // }
-
   function createWriteStream(fileTemp: string) {
     return fs.createWriteStream(fileTemp, {
       flags: 'w',
@@ -233,7 +194,6 @@ app.listen(PORT, async () => {
     groupElementFilePathTmp: string[],
     elementsFilePathTmp: Map<string, string[]>
   }> {
-    // const svgContents: string[] = [];
     const [data, styles] = await Promise.all([getDataDesignPageFromPage(page), getStylesFromPage(page)]);
     const workingDirTmp = 'temp';
     prepareWorkingDir(workingDirTmp);
@@ -503,8 +463,10 @@ app.listen(PORT, async () => {
 
   // Large SVG Editor
   // url = 'https://dev.korjl.com/output/org/GD01HHDZT87PZVNN1AH165EPDC5F/downloads/DC01HM8PPXV9T12X7H66D9V0GH41/U01JZPGJSHT29CZGANSF9MHDX13/html/2.html';
-  url = 'https://dev.korjl.com/output/org/GD01HHDZT87PZVNN1AH165EPDC5F/downloads/DC01HM8PPXV9T12X7H66D9V0GH41/U01JZPGJSHT29CZGANSF9MHDX13/html/2.html';
+  // Large SVG File
+  // url = 'https://dev.korjl.com/output/org/GD01HHDZT87PZVNN1AH165EPDC5F/downloads/DC01HM8PPXV9T12X7H66D9V0GH41/U01JZPGJSHT29CZGANSF9MHDX13/html/2.html';
 
+  url = 'https://dev.korjl.com/output/org/GD01HHE0HGV05VPEJ5TGT5BF14CT/downloads/DC01K0X4RJSB4K17CPJRFTE3HAFT/U01K0XY8PQVD68XYP7H7FNARPQJ/html/13.html';
   await page?.goto(url);
 
   await waitForSelector(page as any, '.canvas-loaded');
