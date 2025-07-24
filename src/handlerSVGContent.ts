@@ -57,26 +57,17 @@ class HandlerSVGContent {
       pageRows: 1,
       sectionIndex: 1,
     }
-    console.log('By pass 1');
     svgContent = svgContent.replace(/\s+/g, ' ');
-    console.log('By pass 2');
     this.background = getBackgroundTag(svgContent);
-    console.log('By pass 3');
     this.shapeRectangles = getShapeRectanglesTag(svgContent);
-    console.log('By pass 4');
     this.filterGradientTags = getFilterGradientTags(svgContent) as string[];
-    console.log('By pass 5');
     const defsContent = getContentByTag(svgContent, 'defs')?.[0] || '';
-    console.log('By pass 6');
     this.shapeClipPaths = getShapeClipPathTags(defsContent) as string[];
-    console.log('By pass 7');
     this.shapeClipPathsExluceText = this.shapeClipPaths.filter((shapeClipPath) => !shapeClipPath.includes('text'));
-    console.log('By pass 8');
     this.shapeClipPathsByText = this.shapeClipPaths.filter((shapeClipPath) => shapeClipPath.includes('text'));
-    console.log('By pass 9');
     this.textRectangles = getTextRectanglesTag(svgContent);
-    console.log('By pass 10');
     this.data = data;
+
     if (this.filterGradientTags?.length) {
       this.filterGradientTags.forEach((filterGradient, index) => {
         this.replacementMap.set(filterGradient, `##filterGradient${index}##`);
@@ -110,11 +101,13 @@ class HandlerSVGContent {
     for (const [key, value] of this.replacementMap.entries()) {
       svgContent = svgContent.replace(key, value);
     }
-    console.log('By pass 11');
+
     this.replacementMap.clear();
     svgContent = svgContent.replace(/<rect(.*?)<\/rect>/g, '');
+
     this.svgContent = svgContent;
     this.backupSvgContent = svgContent;
+
     this.elements = [];
     this.groupElement = {
       outerHTML: '',
@@ -122,12 +115,6 @@ class HandlerSVGContent {
     };
     this.elementsFilePathTmp = options.elementsFilePathTmp;
     this.groupElementFilePathTmp = options.groupElementFilePathTmp;
-
-    // fs.writeFileSync('temp/originalSVG.txt', this.svgContent);
-
-    // this.initGroupElementContent();
-    // this.initElementsContent();
-    // this.removeFileTemp();
   }
 
   private chunkSize(content: string, callback: Function): Promise<void> {
@@ -273,9 +260,9 @@ class HandlerSVGContent {
 
   getContentWithFileTemp(index: number, tag: string) {
     const fileTmp = this.getFileTempById(index, tag);
-    const content = fs.readFileSync(fileTmp, { encoding: 'utf8' });
+    let content = fs.readFileSync(fileTmp, { encoding: 'utf8' });
+    content = this.removeBoundingRectElements(content);
     return content.replace(/<rect[^>]*fill="none"[^>]*\/?><\/rect>/g, '');
-    // return fs.readFileSync(fileTmp, { encoding: 'utf8' });
   }
 
   getContentGroupWithTemp(tag: string) {
@@ -283,9 +270,9 @@ class HandlerSVGContent {
     if (tag === 'innerHTML') {
       fileTmp = 'temp/groupInnerHTML.txt';
     }
-    const content = fs.readFileSync(fileTmp, { encoding: 'utf8' });
+    let content = fs.readFileSync(fileTmp, { encoding: 'utf8' });
+    content = this.removeBoundingRectElements(content);
     return content.replace(/<rect[^>]*fill="none"[^>]*\/?><\/rect>/g, '');
-    // return fs.readFileSync(fileTmp, { encoding: 'utf8' });
   }
 
   isTextElement(elementHtml: string) {
@@ -409,21 +396,26 @@ class HandlerSVGContent {
   }
 
   private async convertTextByPosterize(elementTag: string, outerHTML: string, element?: MasterElement): Promise<SVGElement> {
-    console.log('convertTextByPosterize...')
     const groupElementContent = this.getContentGroupWithTemp('innerHTML') || '';
+    // console.log(groupElementContent.slice(0, 100));
+    // fs.writeFileSync('temp/backupSvgContent.txt', this.backupSvgContent);
+    // console.log(this.backupSvgContent.slice(0, 100));
+
+    // Bug maybe here??
+    // Debug: Check if replacement will happen
+
+    const hasGroupElementContent = this.backupSvgContent.includes(groupElementContent);
+    console.log('Group element content found:', hasGroupElementContent);
+
     const currentOnlyTextHtml = this.backupSvgContent.replace(groupElementContent, outerHTML);
 
-    // const path = await this.potraceService.convertTextByPotrace(currentOnlyTextHtml, elementTag, this.styles);
-    // console.log(this.styles, 'this.styles..');
     const path = await this.potraceService.converTextByPotraceNew({
         textHTML: currentOnlyTextHtml,
         innerHTML: elementTag,
       },
       { styles: this.styles, element });
-    // console.log(elementTag.slice(0, 200), 'elementTag Text...');
-    fs.writeFileSync('temp/elementTag.txt', elementTag);
-    fs.writeFileSync('temp/path.txt', path);
-    // console.log(path.slice(0, 200), 'path Text...');
+    // fs.writeFileSync('temp/elementTag.txt', elementTag);
+    // fs.writeFileSync('temp/path.txt', path);
     return {
       type: 'TEXT',
       elementTag,
@@ -435,7 +427,6 @@ class HandlerSVGContent {
     // const outerHtmlByClipPath: string = this.elements[index + 1].outerHTML || '';
     const outerHtmlByClipPath = this.getContentWithFileTemp(index + 1, 'outerHTML');
     const clippingMaskTag = this.isClipPath(outerHtmlByClipPath) ? outerHtmlByClipPath : '';
-    console.log(clippingMaskTag.slice(-100), 'slice 100');
 
     const imageClipPathTag = getContentByTag(clippingMaskTag, 'image')?.[0] || '';
     const styleImageClipPathTag = getElemAttributesByImage(imageClipPathTag);
@@ -452,6 +443,8 @@ class HandlerSVGContent {
 
     // const groupElementContent = this.groupElement?.innerHTML || '';
     const groupElementContent = this.getContentGroupWithTemp('innerHTML') || '';
+    const flag = this.backupSvgContent.includes(groupElementContent);
+    console.log(flag, 'Has group ElementContent in Clippingmask');
     const currentOnlyTextHtml = this.backupSvgContent.replace(groupElementContent, `${outerHTML}${clippingMaskTag}`);
     const path = await this.potraceService.convertTextClipPathByPotrace(currentOnlyTextHtml, elementTag, this.styles);
     return {
@@ -532,6 +525,11 @@ class HandlerSVGContent {
 
   removeSodipodiNamedview(svgContent: string) {
     return svgContent.replace(/<sodipodi:namedview[^>]*\/?>/g, '');
+  }
+
+  removeBoundingRectElements(svgContent: string) {
+    // Remove rect elements with svg_select_boundingRect class
+    return svgContent.replace(/<rect[^>]*class="[^"]*svg_select_boundingRect[^"]*"[^>]*><\/rect>/g, '');
   }
 
   getBleedSize() {
@@ -828,9 +826,9 @@ class HandlerSVGContent {
           const outerHTML = this.getContentWithFileTemp(i + index, 'outerHTML');
           const innerHTML = this.getContentWithFileTemp(i + index, 'innerHTML');
           if (this.isTextElement(innerHTML)) {
-            console.log(i + index, 'isTextElement...')
+            console.log('isTextElement...');
+            // console.log(i + index, 'isTextElement...')
             const masterElement = this.getMasterElement(innerHTML);
-            // console.log(masterElement, 'masterElement..');
             if (this.hasClipPath(i + index)) {
               return this.convertTextClippingMaskByPosterize(i + index, innerHTML, outerHTML);
             }
@@ -890,6 +888,7 @@ class HandlerSVGContent {
     this.svgContent = this.removeMetadata(this.svgContent);
     this.svgContent = this.removeInkscapeAttributes(this.svgContent);
     this.svgContent = this.removeSodipodiNamedview(this.svgContent);
+    // this.svgContent = this.removeBoundingRectElements(this.svgContent);
     this.svgContent = this.convertBackground(this.svgContent);
     this.svgContent = this.convertShape(this.svgContent);
     this.svgContent = this.convertFillTransparent(this.svgContent);

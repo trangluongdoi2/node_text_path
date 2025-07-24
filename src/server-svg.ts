@@ -6,7 +6,7 @@ import bodyParser from 'body-parser';
 import { ChromiumHandler } from './chromium/chromiumHandler';
 import { Page } from 'puppeteer-core';
 import HandlerSVGContent from './handlerSVGContent';
-import { removeXMLContent } from './utils-svg';
+import { getContentByTag, removeXMLContent } from './utils-svg';
 import DesignService from './services/designService'
 import { FileGeneratorInput } from './services/svgFilter';
 import { prepareWorkingDir } from './helper/file';
@@ -208,6 +208,13 @@ app.listen(PORT, async () => {
     const elementsFilePathTmp = new Map();
     elementsFilePathTmp.set('outerHTML', []);
     elementsFilePathTmp.set('innerHTML', []);
+
+    // const content: string = await page.content();
+    // const headTag = getContentByTag(content, 'head', 0) as string;
+    // const styles2 = getContentByTag(headTag, 'style') as string[];
+    // console.log(styles2, 'styles2..');
+    // console.log(styles, 'styles..');
+
   
     await page.exposeFunction('setChunkSize', async (data: any) => {
       try {

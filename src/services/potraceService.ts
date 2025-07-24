@@ -74,23 +74,24 @@ export default class PotraceService {
       }
       
       // Set memory limits and performance optimizations for large content
-      await page.setCacheEnabled(false);
-      await page.setRequestInterception(true);
+      // await page.setCacheEnabled(false);
+      // await page.setRequestInterception(true);
       
       // Block unnecessary resources to save memory
-      page.on('request', (req) => {
-        if (['image', 'stylesheet', 'font', 'media'].includes(req.resourceType())) {
-          req.abort();
-        } else {
-          req.continue();
-        }
-      });
+      // page.on('request', (req) => {
+      //   if (['image', 'stylesheet', 'font', 'media'].includes(req.resourceType())) {
+      //     req.abort();
+      //   } else {
+      //     req.continue();
+      //   }
+      // });
 
       // Set larger memory limits
-      await page.evaluateOnNewDocument(() => {
-        // Increase memory limits for large content
-        (window as any).__LARGE_CONTENT_MODE__ = true;
-      });
+      // Maybe cause bug
+      // await page.evaluateOnNewDocument(() => {
+      //   // Increase memory limits for large content
+      //   (window as any).__LARGE_CONTENT_MODE__ = true;
+      // });
 
       if (viewport) {
         await page.setViewport(viewport);
@@ -108,16 +109,16 @@ export default class PotraceService {
         await this.setLargeContentChunked(page, content, TIMEOUT);
       } else {
         await page.setContent(content, {
-          waitUntil: ['load', 'networkidle0'],
+          waitUntil: ['networkidle2'],
           timeout: TIMEOUT,
         });
       }
 
       // Monitor memory usage
-      const metrics = await page.metrics();
-      const heapUsed = metrics.JSHeapUsedSize ? Math.round(metrics.JSHeapUsedSize / 1024 / 1024) : 0;
-      const heapTotal = metrics.JSHeapTotalSize ? Math.round(metrics.JSHeapTotalSize / 1024 / 1024) : 0;
-      console.log(`Memory usage - JSHeapUsedSize: ${heapUsed}MB, JSHeapTotalSize: ${heapTotal}MB`);
+      // const metrics = await page.metrics();
+      // const heapUsed = metrics.JSHeapUsedSize ? Math.round(metrics.JSHeapUsedSize / 1024 / 1024) : 0;
+      // const heapTotal = metrics.JSHeapTotalSize ? Math.round(metrics.JSHeapTotalSize / 1024 / 1024) : 0;
+      // console.log(`Memory usage - JSHeapUsedSize: ${heapUsed}MB, JSHeapTotalSize: ${heapTotal}MB`);
 
     } catch (error) {
       console.error('Error in createPageContent:', error);
@@ -189,11 +190,11 @@ export default class PotraceService {
     const path = this.prepareWorkingDir(fileName);
     const browserPool = new BrowserPool();
     const page = await this.createPageContent(content);
-    await page.screenshot({ path, fullPage: true });
+    // await page.screenshot({ path, fullPage: true });
     const buffer = await page.screenshot({ path, fullPage: true });
     const filePNGName = `temp/${fileName}.png`;
     await page.close();
-    await this.writeBufferWithProgress(buffer, filePNGName);
+    // await this.writeBufferWithProgress(buffer, filePNGName);
     const svgContent = await this.potraceTrace(path, {
       threshold: 254,
       color: style.fill,
