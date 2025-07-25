@@ -187,7 +187,7 @@ app.listen(PORT, async () => {
     });
   }
 
-  async function getLargeDataFromPage(page: Page): Promise<{
+  async function getDataFromLargePage(page: Page): Promise<{
     styles: string[],
     data: any,
     svgContents: string[],
@@ -214,7 +214,6 @@ app.listen(PORT, async () => {
     // const styles2 = getContentByTag(headTag, 'style') as string[];
     // console.log(styles2, 'styles2..');
     // console.log(styles, 'styles..');
-
   
     await page.exposeFunction('setChunkSize', async (data: any) => {
       try {
@@ -288,7 +287,7 @@ app.listen(PORT, async () => {
           const chunk = content.substring(start, end);
           fn1({ content: chunk, tag });
           sendChunks++;
-          setTimeout(sendNextChunk, 0);
+          setTimeout(sendNextChunk, 10);
         }
         sendNextChunk();
       }
@@ -426,6 +425,7 @@ app.listen(PORT, async () => {
   }
 
   console.log(`Server is running on port ${PORT} ` + `http://localhost:${PORT}/`);
+  // const WORKING_DIR = '/tmp/chromiumFile';
 
   let page: Page | undefined;
   try {
@@ -468,17 +468,22 @@ app.listen(PORT, async () => {
   // url = 'https://www.corjl.com/output/org/GE01HHPMGJAP6RWJCHKKTTD6TPQ9/downloads/DO01JVWQ53XKQZ4PKMP6MCYFWPVF/U01JXMC1ZGSZ12JM72SE3VTB2GR/html/1.html';
   // url = 'https://dev.korjl.com/output/org/GD01HHDZSMZQ57K00R3XXZ50CCT6/downloads/DC01HQ59V143VPYYB0NPFJKAP06G/U01JYJYWFXZT9Y1ETR517SY3JDH/html/1.html';
 
-  // Large SVG Editor
-  // url = 'https://dev.korjl.com/output/org/GD01HHDZT87PZVNN1AH165EPDC5F/downloads/DC01HM8PPXV9T12X7H66D9V0GH41/U01JZPGJSHT29CZGANSF9MHDX13/html/2.html';
   // Large SVG File
-  // url = 'https://dev.korjl.com/output/org/GD01HHDZT87PZVNN1AH165EPDC5F/downloads/DC01HM8PPXV9T12X7H66D9V0GH41/U01JZPGJSHT29CZGANSF9MHDX13/html/2.html';
+  url = 'https://dev.korjl.com/output/org/GD01HHDZT87PZVNN1AH165EPDC5F/downloads/DC01HM8PPXV9T12X7H66D9V0GH41/U01JZPGJSHT29CZGANSF9MHDX13/html/2.html';
+  // url = 'https://dev.korjl.com/output/org/GD01HHDZT87PZVNN1AH165EPDC5F/downloads/DC01JYNH7G2WWPB6HCBF6NTDDJK0/U01K109HG6PCCJDR961Q52EP2F0/html/1.html';
 
-  url = 'https://dev.korjl.com/output/org/GD01HHE0HGV05VPEJ5TGT5BF14CT/downloads/DC01K0X4RJSB4K17CPJRFTE3HAFT/U01K0XY8PQVD68XYP7H7FNARPQJ/html/13.html';
+  // url = 'https://dev.korjl.com/output/org/GD01HHE0HGV05VPEJ5TGT5BF14CT/downloads/DC01K0X4RJSB4K17CPJRFTE3HAFT/U01K0XY8PQVD68XYP7H7FNARPQJ/html/13.html';
   await page?.goto(url);
 
   await waitForSelector(page as any, '.canvas-loaded');
 
-  const { data, styles, svgContents, groupElementFilePathTmp, elementsFilePathTmp } = await getLargeDataFromPage(page as Page);
+  const {
+    data,
+    styles,
+    svgContents,
+    groupElementFilePathTmp,
+    elementsFilePathTmp,
+  } = await getDataFromLargePage(page as Page);
 
   // const input = {
   //   pageWidth: data.designPage.pageWidth,
@@ -487,7 +492,6 @@ app.listen(PORT, async () => {
   //   pixelsPerInch: 12,
   // }
 
-  // console.log(input, 'input..')
   // const result = await createPDFWithChromium(page as Page, input as any);
   // const pdfFileName = `result-${Math.random() * 100}.pdf`;
   // fs.writeFileSync(pdfFileName, result);
@@ -508,12 +512,7 @@ app.listen(PORT, async () => {
         elementsBySection[index],
         { elementsFilePathTmp, groupElementFilePathTmp }
       );
-      const contentSVG = await exportSvgService.export();
-      // await exportSvgService.cleanup().catch((error) => {
-      //   console.error(`Error cleaning up ExportSvgService:`, error);
-      // });
-      // prepareWorkingDir(fileName, true);
-      return removeXMLContent(contentSVG);
+      return await exportSvgService.export();
     })
   );
   const random = 'huhu-hehe.svg';

@@ -469,6 +469,11 @@ export const removeXYTranslate = (content: string) => {
   return content;
 }
 
+export const removeOpacity = (content: string) => {
+  // content = content.replace()
+  return content;
+}
+
 export const removeSodipodiNamedview = (svgContent: string) => {
   // Remove all sodipodi:namedview elements including their content
   // Handle both self-closing and non-self-closing tags
@@ -641,4 +646,8 @@ export function findRepeatingPattern(arrPatterns: number[]) {
 	}
 
 	return null;
+}
+
+export function getSizeContent(content: string) {
+  return (content.length / 1024) / 1024;
 }

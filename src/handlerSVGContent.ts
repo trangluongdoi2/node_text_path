@@ -16,8 +16,12 @@ import {
   getTextRectanglesTag,
   getImageParentTags,
   getElemAttributesByImageWithRegex,
+  removeXMLContent,
+  getTextParentTags,
 } from './utils-svg';
 import PotraceService from './services/potraceService';
+import { randomString } from './helper/string';
+import { prepareWorkingDir } from './helper/file';
 
 type OptionsExportSVG = {
   groupElementFilePathTmp: string[],
@@ -85,11 +89,11 @@ class HandlerSVGContent {
       });
     }
 
-    if (this.shapeClipPathsByText?.length) {
-      this.shapeClipPathsByText.forEach((shapeClipPath, index) => {
-        this.replacementMap.set(shapeClipPath, `##shapeClipPathsByText${index}##`);
-      });
-    }
+    // if (this.shapeClipPathsByText?.length) {
+    //   this.shapeClipPathsByText.forEach((shapeClipPath, index) => {
+    //     this.replacementMap.set(shapeClipPath, `##shapeClipPathsByText${index}##`);
+    //   });
+    // }
       
     if (this.shapeClipPathsExluceText?.length) {
       this.shapeClipPathsExluceText.forEach((shapeClipPath, index) => {
@@ -324,16 +328,18 @@ class HandlerSVGContent {
     
     for (let imageElement of imageElements) {
       const imageStyles = getElemAttributesByImage(imageElement);
-      // @ts-ignore
-      let imageContent = imageStyles?.href as any;
+      let imageContent = imageStyles?.href as string;
       if (!imageContent) {
         continue;
       }
+
+      // fs.writeFileSync(`temp/image-${randomString(false, 5)}.txt`, imageContent);
       
       if (imageContent.startsWith('data:image/svg+xml')) {
         imageContent = decodeURIComponent(imageContent.split(',')[1]);
         if (imageContent.indexOf('svg_has_been_converted') !== -1) {
-          console.log('Case svg uncode3')
+          console.log('CASE SVG UNCODING');
+          // console.log('Case svg uncode3');
           const xml = '<?xml version="1.0"?>';
           imageContent = imageContent.replace(xml, '');
           svgImages.push({ imageElement, imageContent: this.removeMetadata(imageContent) });
@@ -397,14 +403,8 @@ class HandlerSVGContent {
 
   private async convertTextByPosterize(elementTag: string, outerHTML: string, element?: MasterElement): Promise<SVGElement> {
     const groupElementContent = this.getContentGroupWithTemp('innerHTML') || '';
-    // console.log(groupElementContent.slice(0, 100));
-    // fs.writeFileSync('temp/backupSvgContent.txt', this.backupSvgContent);
-    // console.log(this.backupSvgContent.slice(0, 100));
-
-    // Bug maybe here??
-    // Debug: Check if replacement will happen
-
     const hasGroupElementContent = this.backupSvgContent.includes(groupElementContent);
+    console.log(groupElementContent.slice(0, 100), 'convertTextByPosterize.. groupElementContent.slice');
     console.log('Group element content found:', hasGroupElementContent);
 
     const currentOnlyTextHtml = this.backupSvgContent.replace(groupElementContent, outerHTML);
@@ -424,7 +424,6 @@ class HandlerSVGContent {
   }
 
   private async convertTextClippingMaskByPosterize(index: number, elementTag: string, outerHTML: string): Promise<SVGElement> {
-    // const outerHtmlByClipPath: string = this.elements[index + 1].outerHTML || '';
     const outerHtmlByClipPath = this.getContentWithFileTemp(index + 1, 'outerHTML');
     const clippingMaskTag = this.isClipPath(outerHtmlByClipPath) ? outerHtmlByClipPath : '';
 
@@ -441,10 +440,10 @@ class HandlerSVGContent {
       return this.convertTextByPosterize(elementTag, outerHTML);
     }
 
-    // const groupElementContent = this.groupElement?.innerHTML || '';
     const groupElementContent = this.getContentGroupWithTemp('innerHTML') || '';
-    const flag = this.backupSvgContent.includes(groupElementContent);
-    console.log(flag, 'Has group ElementContent in Clippingmask');
+    // const flag = this.backupSvgContent.includes(groupElementContent);
+    // console.log(flag, 'Has group ElementContent in Clippingmask');
+    // fs.writeFileSync('temp/clipping-mask.txt',`${outerHTML}${clippingMaskTag}` as string);
     const currentOnlyTextHtml = this.backupSvgContent.replace(groupElementContent, `${outerHTML}${clippingMaskTag}`);
     const path = await this.potraceService.convertTextClipPathByPotrace(currentOnlyTextHtml, elementTag, this.styles);
     return {
@@ -499,7 +498,7 @@ class HandlerSVGContent {
     const pgfs = getContentByPoint(svgContent, '<i:pgf ', '</i:pgf>');
     const pgfRefs = getContentByPoint(svgContent, '<i:pgfRef ', '</i:pgfRef>');
 
-    let result = svgContent;
+    let result = svgContent; 
     [...pgfs, ...pgfRefs].forEach(tag => {
       result = result.replace(tag, '');
     });
@@ -528,7 +527,6 @@ class HandlerSVGContent {
   }
 
   removeBoundingRectElements(svgContent: string) {
-    // Remove rect elements with svg_select_boundingRect class
     return svgContent.replace(/<rect[^>]*class="[^"]*svg_select_boundingRect[^"]*"[^>]*><\/rect>/g, '');
   }
 
@@ -808,30 +806,33 @@ class HandlerSVGContent {
   //   return this.svgContent;
   // }
 
+  removeAllTempFiles() {
+    prepareWorkingDir('temp', true);
+  }
+
   async export() {
     await this.initGroupElementContent();
     await this.initElementsContent();
     // this.removeFileTemp();
     console.time('export SVG');
-    console.log(this.elements.length, 'this.elements.length..');
     const col = 1;
     const row = 1;
     const bleedSize = 0;
-    const batchSize = 3;
+    const BATCH_SIZE = 4;
     const elementsResult = [];
-    for (let i = 0; i < this.elements.length; i += batchSize) {
-      const batch = this.elements.slice(i, i + batchSize);
+    for (let i = 0; i < this.elements.length; i += BATCH_SIZE) {
+      const batch = this.elements.slice(i, i + BATCH_SIZE);
       const batchResult = await Promise.all(
         batch.map((_, index: number) => {
           const outerHTML = this.getContentWithFileTemp(i + index, 'outerHTML');
           const innerHTML = this.getContentWithFileTemp(i + index, 'innerHTML');
           if (this.isTextElement(innerHTML)) {
-            console.log('isTextElement...');
-            // console.log(i + index, 'isTextElement...')
             const masterElement = this.getMasterElement(innerHTML);
             if (this.hasClipPath(i + index)) {
+              console.log('hasClipPath...');
               return this.convertTextClippingMaskByPosterize(i + index, innerHTML, outerHTML);
             }
+            console.log('isTextElement...');
             return this.convertTextByPosterize(innerHTML, outerHTML, masterElement);
           }
 
@@ -851,10 +852,9 @@ class HandlerSVGContent {
       }
   
       const { elementTag, clippingMaskTag, path } = element as any;
-     
+      
       switch (element.type) {
         case 'TEXT': {
-          // console.log(elementTag)
           this.svgContent = this.svgContent.replace(elementTag, path);
           break;
         }
@@ -893,8 +893,9 @@ class HandlerSVGContent {
     this.svgContent = this.convertShape(this.svgContent);
     this.svgContent = this.convertFillTransparent(this.svgContent);
     this.svgContent = this.fixAdobeTag(this.svgContent);
+    this.svgContent = removeXMLContent(this.svgContent);
     
-    // this.removeAllTempFiles();
+    this.removeAllTempFiles();
     
     console.timeEnd('export SVG');
     return this.svgContent;

@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import { Channels, Metadata } from 'sharp';
 import { Browser, Page, ScreenshotClip, Viewport } from 'puppeteer-core';
 import { PosterizerOptions, PotraceOptions } from 'potrace';
-import { getContentByTag, getElemAttributesByText, getSvgDimensions, insertStringAt, replacePathToGroup } from '@/utils-svg';
+import { getContentByTag, getElemAttributesByText, getSizeContent, getSvgDimensions, getTextParentTags, insertStringAt, replacePathToGroup } from '@/utils-svg';
 import { MasterElement, SVGTextStyles } from '@/types';
 import { prepareWorkingDir, writeBufferWithProgress } from '@/helper/file';
 import { randomString } from '@/helper/string';
@@ -61,73 +61,101 @@ export default class PotraceService {
     });
   }
 
-  async createPageContent(content: string, viewport?: Viewport): Promise<Page> {
+  // async createPageContent(browserPool: BrowserPool, content: string, viewport?: Viewport): Promise<Page> {
+  //   const TIMEOUT: number = 10 * 60 * 1000;
+  //   // let page: Page | undefined = undefined;
+  //   const browser: Browser = await browserPool.getBrowser();
+  //   const page: Page = await browser.newPage();
+  //   try {
+  //     // page = await ChromiumHandler.newPage();
+  //     console.log('Chromium DONE!');
+  //     if (!page) {
+  //       throw new Error('Failed to create page');
+  //     }
+      
+  //     // Set memory limits and performance optimizations for large content
+  //     // await page.setCacheEnabled(false);
+  //     // await page.setRequestInterception(true);
+      
+  //     // Block unnecessary resources to save memory
+  //     // page.on('request', (req) => {
+  //     //   if (['image', 'stylesheet', 'font', 'media'].includes(req.resourceType())) {
+  //     //     req.abort();
+  //     //   } else {
+  //     //     req.continue();
+  //     //   }
+  //     // });
+
+  //     // Set larger memory limits
+  //     // Maybe cause bug
+  //     // await page.evaluateOnNewDocument(() => {
+  //     //   // Increase memory limits for large content
+  //     //   (window as any).__LARGE_CONTENT_MODE__ = true;
+  //     // });
+
+  //     if (viewport) {
+  //       await page.setViewport(viewport);
+  //     }
+
+  //     const sizeContent = getSizeContent(content);
+  //     console.log(sizeContent, 'sizeContent..');
+
+  //     // For very large content, use appropriate handling method
+  //     // if (content.length > 100 * 1024 * 1024) { // 100MB threshold - use file-based approach
+  //     //   // console.log('Case 1');
+  //     //   console.log('Extremely large content detected, using file-based approach...');
+  //     //   await this.handleLargeContentViaFile(page, content, TIMEOUT);
+  //     // } else if (content.length > 50 * 1024 * 1024) { // 50MB threshold - use streaming approach
+  //     //   // console.log('Case 2');
+  //     //   console.log('Large content detected, using streaming approach...');
+  //     //   await this.handleLargeContentStreaming(page, content, TIMEOUT);
+  //     // } else if (content.length > 10 * 1024 * 1024) { // 10MB threshold - use chunked approach
+  //     //   // console.log('Case 3');
+  //     //   console.log('Medium-large content detected, using chunked loading...');
+  //     //   await this.setLargeContentChunked(page, content, TIMEOUT);
+  //     // } else {
+  //     //   console.log('Case 4');
+  //     // }
+  //     await page.setContent(content, {
+  //       waitUntil: ['load', 'networkidle0'],
+  //       timeout: TIMEOUT,
+  //     });
+
+  //     await new Promise(resolve => setTimeout(resolve, 100));
+
+  //     // Monitor memory usage
+  //     // const metrics = await page.metrics();
+  //     // const heapUsed = metrics.JSHeapUsedSize ? Math.round(metrics.JSHeapUsedSize / 1024 / 1024) : 0;
+  //     // const heapTotal = metrics.JSHeapTotalSize ? Math.round(metrics.JSHeapTotalSize / 1024 / 1024) : 0;
+  //     // console.log(`Memory usage - JSHeapUsedSize: ${heapUsed}MB, JSHeapTotalSize: ${heapTotal}MB`);
+
+  //   } catch (error) {
+  //     console.error('Error in createPageContent:', error);
+  //     if (page) {
+  //       await page.close().catch(console.error);
+  //     }
+  //     throw error;
+  //   }
+    
+  //   return page;
+  // }
+
+  private async createPageContent(browserPool: BrowserPool, content: string, viewport?: Viewport): Promise<Page> {
     const TIMEOUT: number = 10 * 60 * 1000;
-    let page: Page | undefined = undefined;
-    
-    try {
-      page = await ChromiumHandler.newPage();
-      console.log('Chromium DONE!');
-      
-      if (!page) {
-        throw new Error('Failed to create page');
-      }
-      
-      // Set memory limits and performance optimizations for large content
-      // await page.setCacheEnabled(false);
-      // await page.setRequestInterception(true);
-      
-      // Block unnecessary resources to save memory
-      // page.on('request', (req) => {
-      //   if (['image', 'stylesheet', 'font', 'media'].includes(req.resourceType())) {
-      //     req.abort();
-      //   } else {
-      //     req.continue();
-      //   }
-      // });
-
-      // Set larger memory limits
-      // Maybe cause bug
-      // await page.evaluateOnNewDocument(() => {
-      //   // Increase memory limits for large content
-      //   (window as any).__LARGE_CONTENT_MODE__ = true;
-      // });
-
-      if (viewport) {
-        await page.setViewport(viewport);
-      }
-
-      // For very large content, use appropriate handling method
-      if (content.length > 100 * 1024 * 1024) { // 100MB threshold - use file-based approach
-        console.log('Extremely large content detected, using file-based approach...');
-        await this.handleLargeContentViaFile(page, content, TIMEOUT);
-      } else if (content.length > 50 * 1024 * 1024) { // 50MB threshold - use streaming approach
-        console.log('Large content detected, using streaming approach...');
-        await this.handleLargeContentStreaming(page, content, TIMEOUT);
-      } else if (content.length > 10 * 1024 * 1024) { // 10MB threshold - use chunked approach
-        console.log('Medium-large content detected, using chunked loading...');
-        await this.setLargeContentChunked(page, content, TIMEOUT);
-      } else {
-        await page.setContent(content, {
-          waitUntil: ['networkidle2'],
-          timeout: TIMEOUT,
-        });
-      }
-
-      // Monitor memory usage
-      // const metrics = await page.metrics();
-      // const heapUsed = metrics.JSHeapUsedSize ? Math.round(metrics.JSHeapUsedSize / 1024 / 1024) : 0;
-      // const heapTotal = metrics.JSHeapTotalSize ? Math.round(metrics.JSHeapTotalSize / 1024 / 1024) : 0;
-      // console.log(`Memory usage - JSHeapUsedSize: ${heapUsed}MB, JSHeapTotalSize: ${heapTotal}MB`);
-
-    } catch (error) {
-      console.error('Error in createPageContent:', error);
-      if (page) {
-        await page.close().catch(console.error);
-      }
-      throw error;
+    const browser: Browser = await browserPool.getBrowser();
+    const page: Page = await browser.newPage();
+    if (viewport) {
+      await page.setViewport(viewport);
     }
-    
+    // await page.setContent(content, {
+    //   waitUntil: 'networkidle2',
+    //   timeout: TIMEOUT,
+    // });
+    await page.setContent(content, {
+      waitUntil: ['load', 'networkidle0', 'networkidle2'],
+      timeout: TIMEOUT,
+    });
+    await new Promise(resolve => setTimeout(resolve, 200));
     return page;
   }
 
@@ -185,24 +213,39 @@ export default class PotraceService {
     }
   }
 
-  async convertTextByTrace(content: string, style: SVGTextStyles, key?: string): Promise<string> {
-    const fileName = key || `${style.id}_${randomString(false, 5)}`;
-    const path = this.prepareWorkingDir(fileName);
+  private async convertTextByTrace(content: string, style: SVGTextStyles): Promise<string> {
+    const path = this.prepareWorkingDir(style.id);
     const browserPool = new BrowserPool();
-    const page = await this.createPageContent(content);
-    // await page.screenshot({ path, fullPage: true });
-    const buffer = await page.screenshot({ path, fullPage: true });
-    const filePNGName = `temp/${fileName}.png`;
+    const page = await this.createPageContent(browserPool, content);
+    await page.screenshot({ path, fullPage: true });
     await page.close();
-    // await this.writeBufferWithProgress(buffer, filePNGName);
     const svgContent = await this.potraceTrace(path, {
       threshold: 254,
       color: style.fill,
     });
-    this.prepareWorkingDir(fileName, true);
+    this.prepareWorkingDir(style.id, true);
     await browserPool.cleanup();
     return svgContent;
   }
+
+  // async convertTextByTrace(content: string, style: SVGTextStyles, key?: string): Promise<string> {
+  //   const fileName = `${style.id}`;
+  //   const path = this.prepareWorkingDir(fileName);
+  //   const browserPool = new BrowserPool();
+  //   const page = await this.createPageContent(browserPool, content);
+  //   const buffer = await page.screenshot({ path, fullPage: true });
+  //   const filePNGName = `temp/${fileName}.png`;
+  //   await page.close();
+  //   await this.writeBufferWithProgress(buffer, filePNGName);
+  //   const svgContent = await this.potraceTrace(path, {
+  //     threshold: 254,
+  //     color: style.fill,
+  //   });
+  //   this.prepareWorkingDir(fileName, true);
+  //   await browserPool.cleanup();
+  //   fs.writeFileSync('temp/svgContent.svg', svgContent);
+  //   return svgContent;
+  // }
 
   // async converTextByTraceNew(contentsData: Array<{ content: string, styles: SVGTextStyles }>) {
   //   const browserPool = new BrowserPool();
@@ -240,18 +283,6 @@ export default class PotraceService {
       const fileName = `${contentData.styles.id}_${randomString()}`;
       const path = this.prepareWorkingDir(fileName);
 
-      // await page.setViewport({ width: 1920, height: 1080 });
-      // await page.setRequestInterception(true);
-      // page.on('request', (req) => {
-      //   if (req.resourceType() === 'image') {
-      //     req.abort();
-      //   } else {
-      //     req.continue();
-      //   }
-      // });
-
-      // fs.writeFileSync(`${contentData.index}.svg`, contentData.content);
-
       await page?.setContent(contentData.content, {
         waitUntil: ['load', 'networkidle0'],
         timeout: TIMEOUT,
@@ -259,10 +290,6 @@ export default class PotraceService {
       const buffer = await page.screenshot({
         path,
         fullPage: true,
-        // optimizeForSpeed: true,
-        // type: 'png',
-        // omitBackground: true,
-        // encoding: 'binary'
       });
       this.writeBufferWithProgress(buffer, `${contentData.index}.png`)
       results.push(this.potraceTrace(path, {
@@ -282,10 +309,13 @@ export default class PotraceService {
     content: string,
     style: SVGTextStyles
   ): Promise<{ png: Buffer; content: string; clip: ScreenshotClip }> {
+    const browserPool = new BrowserPool();
     const path = this.prepareWorkingDir(style.id);
     const viewport = getSvgDimensions(content);
+    // fs.writeFileSync('temp/convertTextByPosterize.svg', content);
     // TODO: Need refactor
-    const page = await this.createPageContent(content, viewport);
+    const page = await this.createPageContent(browserPool, content, viewport);
+
     const element = await page.$(`#${style.id}`);
 
     const screenshotClip: ScreenshotClip = {
@@ -305,6 +335,7 @@ export default class PotraceService {
       }
     }
     await page.close();
+    await browserPool.cleanup();
     const png = await this.getImagePng(path);
     const svgContent = await this.potracePosterize(path, {
       steps: 10,
@@ -559,7 +590,7 @@ export default class PotraceService {
         const multiStylesTextService = new MultiStyleTextService(content, text, style);
         textPath = await multiStylesTextService.getPathByPotrace();
       } else {
-        console.log('Case 2');
+        console.log('Dont have multi styles..');
         const svg = await this.convertTextByTrace(content, style);
         textPath = svg.match(/<path(.*?)\/>/g) || [];
       }
@@ -579,15 +610,35 @@ export default class PotraceService {
   }
 
   public async convertTextClipPathByPotrace(textHtml: string, innerHTML: string, styles?: string[]): Promise<string> {
+    function removeOpacityStylesInParentTextTag(content: string) {
+      const parentTextTags = getTextParentTags(content) as string[];
+      const newParentTextTags = parentTextTags.map((textTag: string, index: number) => {
+        content = content.replace(textTag, `##textTag${index}##`);
+        return textTag.replace(/opacity:\s*[^;]*;?\s*/g, '');
+      });
+      newParentTextTags.forEach((textTag: string, index: number) => {
+        content = content.replace(`##textTag{${index}##`, textTag);
+      });
+      return content;
+    }
+
     const index: number = [...(textHtml.match(/<svg(.*?)>/g) ?? [])][0].length;
     textHtml = insertStringAt(textHtml, (styles || [''])?.join(''), index);
 
     const element = innerHTML.match(/<g(.*?)>/g) || [];
+    innerHTML = removeOpacityStylesInParentTextTag(innerHTML);
+    // fs.writeFileSync('temp/innerHTML.txt', innerHTML);
     const style = getElemAttributesByText(String(element[0]));
     const result = await this.convertTextByPosterize(textHtml, style);
+    const fileName = `${randomString(false, 5)}`;
+    // fs.writeFileSync(`temp/ClipPathByPotrace-${fileName}.png`, result.png);
+    // fs.writeFileSync(`temp/ClipPathByPotrace-${fileName}-1.svg`, result.content);
     let svg = this.getSolidSvg(result.content);
+    // fs.writeFileSync(`temp/ClipPathByPotrace-${fileName}-2.svg`, svg);
     svg = await this.getColorizedSvg(svg, result.png);
     svg = await this.getOptimizedSvg(svg);
+    // fs.writeFileSync(`temp/ClipPathByPotrace-${fileName}-3.svg`, svg);
+    // fs.writeFileSync(`temp/ClipPathByPotrace-${fileName}-4.txt`, innerHTML);
     let pathGroup = `<g transform="matrix(1,0,0,1,${result.clip.x},${result.clip.y})">`;
     const textPath: string[] = svg.match(/<path(.*?)\/>/g) || [];
     pathGroup += textPath.join('');
@@ -612,9 +663,6 @@ export default class PotraceService {
     }
   }
 
-  /**
-   * Handles large content by chunked loading to prevent memory issues
-   */
   private async setLargeContentChunked(page: Page, content: string, timeout: number): Promise<void> {
     const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB chunks
     const chunks = [];
@@ -642,7 +690,6 @@ export default class PotraceService {
       timeout: timeout / 2,
     });
 
-    // Inject chunks progressively
     for (let i = 0; i < chunks.length; i++) {
       console.log(`Injecting chunk ${i + 1}/${chunks.length}`);
       
@@ -663,19 +710,14 @@ export default class PotraceService {
         }
       }, chunks[i], i);
 
-      // Small delay to prevent overwhelming the browser
       await new Promise(resolve => setTimeout(resolve, 100));
     }
 
-    // Wait for the content to be fully processed
     await page.waitForFunction(() => {
       return document.readyState === 'complete';
     }, { timeout: timeout / 2 });
   }
 
-  /**
-   * Handles large content by streaming it in chunks to prevent memory issues
-   */
   private async handleLargeContentStreaming(page: Page, content: string, timeout: number): Promise<void> {
     const STREAM_CHUNK_SIZE = 5 * 1024 * 1024; // 5MB chunks
     const totalChunks = Math.ceil(content.length / STREAM_CHUNK_SIZE);
@@ -699,38 +741,35 @@ export default class PotraceService {
       await page.evaluate((chunkData, chunkIndex) => {
         (window as any).__CONTENT_CHUNKS__[chunkIndex] = chunkData;
         
-        // Force garbage collection if available
         if ((window as any).gc) {
           (window as any).gc();
         }
       }, chunk, i);
 
       // Monitor memory usage every few chunks
-      if (i % 5 === 0) {
-        const metrics = await page.metrics();
-        const heapUsed = metrics.JSHeapUsedSize ? Math.round(metrics.JSHeapUsedSize / 1024 / 1024) : 0;
-        console.log(`Memory usage at chunk ${i}: ${heapUsed}MB`);
+      // if (i % 5 === 0) {
+      //   const metrics = await page.metrics();
+      //   const heapUsed = metrics.JSHeapUsedSize ? Math.round(metrics.JSHeapUsedSize / 1024 / 1024) : 0;
+      //   console.log(`Memory usage at chunk ${i}: ${heapUsed}MB`);
         
-        // If memory usage is too high, force garbage collection
-        if (heapUsed > 6000) { // 6GB threshold
-          console.log('High memory usage detected, forcing garbage collection...');
-          await page.evaluate(() => {
-            if ((window as any).gc) {
-              (window as any).gc();
-            }
-          });
-        }
-      }
+      //   // If memory usage is too high, force garbage collection
+      //   if (heapUsed > 6000) { // 6GB threshold
+      //     console.log('High memory usage detected, forcing garbage collection...');
+      //     await page.evaluate(() => {
+      //       if ((window as any).gc) {
+      //         (window as any).gc();
+      //       }
+      //     });
+      //   }
+      // }
 
       await new Promise(resolve => setTimeout(resolve, 50));
     }
 
-    // Combine all chunks
     await page.evaluate(() => {
       const combinedContent = (window as any).__CONTENT_CHUNKS__.join('');
       document.body.innerHTML = combinedContent;
       
-      // Clean up
       delete (window as any).__CONTENT_CHUNKS__;
       
       if ((window as any).gc) {
@@ -738,15 +777,11 @@ export default class PotraceService {
       }
     });
 
-    // Wait for content to be fully processed
     await page.waitForFunction(() => {
       return document.readyState === 'complete';
     }, { timeout: timeout / 2 });
   }
 
-  /**
-   * Alternative method using file-based approach for extremely large content
-   */
   private async handleLargeContentViaFile(page: Page, content: string, timeout: number): Promise<void> {
     const tempFile = `/tmp/large-content-${Date.now()}.html`;
     
@@ -760,8 +795,6 @@ export default class PotraceService {
         waitUntil: ['load', 'networkidle0'],
         timeout: timeout,
       });
-
-      const buffer = page.screenshot()
 
     } catch(error) {
       console.log(error, 'Eror when load image...');
