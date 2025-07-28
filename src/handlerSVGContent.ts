@@ -51,7 +51,7 @@ class HandlerSVGContent {
   private styles: string[];
   private replacementMap = new Map<string, string>();
   private elementsFilePathTmp = new Map<string, string[]>;
-  private groupElementFilePathTmp: string[];
+  private declare elementLength: number;
 
   constructor(svgContent: string, styles: any, data: any, options: OptionsExportSVG) {
     this.styles = styles;
@@ -69,7 +69,7 @@ class HandlerSVGContent {
     this.shapeClipPaths = getShapeClipPathTags(defsContent) as string[];
     this.shapeClipPathsExluceText = this.shapeClipPaths.filter((shapeClipPath) => !shapeClipPath.includes('text'));
     this.shapeClipPathsByText = this.shapeClipPaths.filter((shapeClipPath) => shapeClipPath.includes('text'));
-    this.textRectangles = getTextRectanglesTag(svgContent);
+    // this.textRectangles = getTextRectanglesTag(svgContent);
     this.data = data;
 
     if (this.filterGradientTags?.length) {
@@ -101,7 +101,6 @@ class HandlerSVGContent {
       });
     }
 
-    // Apply all replacements at once
     for (const [key, value] of this.replacementMap.entries()) {
       svgContent = svgContent.replace(key, value);
     }
@@ -113,39 +112,40 @@ class HandlerSVGContent {
     this.backupSvgContent = svgContent;
 
     this.elements = [];
-    this.groupElement = {
-      outerHTML: '',
-      innerHTML: '',
-    };
     this.elementsFilePathTmp = options.elementsFilePathTmp;
-    this.groupElementFilePathTmp = options.groupElementFilePathTmp;
+    this.getElementLength();
   }
 
-  private chunkSize(content: string, callback: Function): Promise<void> {
-    return new Promise(resolve => {
-      const CHUNK_SIZE = 1024 * 1024 * 5;
-      const totalChunks = Math.ceil(content.length / CHUNK_SIZE);
-      let nextChunk = 0;
-      function sendNextChunk() {
-        if (nextChunk >= totalChunks) {
-          resolve();
-        }
-        let start = CHUNK_SIZE * nextChunk;
-        let end = Math.min(start + CHUNK_SIZE, content.length);
-        const subContent = content.substring(start, end);
-        callback(subContent);
-        nextChunk++;
-        setTimeout(sendNextChunk, 0);
-      }
-      sendNextChunk();
-    })
+  private getElementLength() {
+    this.elementLength = this.elementsFilePathTmp.get('innerHTML')?.length || 0;
+    return this.elementLength;
   }
 
-  private async initGroupElementContent() {
-    this.groupElement = {
-      outerHTML: '',
-      innerHTML: '',
-    };
+  // private chunkSize(content: string, callback: Function): Promise<void> {
+  //   return new Promise(resolve => {
+  //     const CHUNK_SIZE = 1024 * 1024 * 5;
+  //     const totalChunks = Math.ceil(content.length / CHUNK_SIZE);
+  //     let nextChunk = 0;
+  //     function sendNextChunk() {
+  //       if (nextChunk >= totalChunks) {
+  //         resolve();
+  //       }
+  //       let start = CHUNK_SIZE * nextChunk;
+  //       let end = Math.min(start + CHUNK_SIZE, content.length);
+  //       const subContent = content.substring(start, end);
+  //       callback(subContent);
+  //       nextChunk++;
+  //       setTimeout(sendNextChunk, 0);
+  //     }
+  //     sendNextChunk();
+  //   })
+  // }
+
+  // private async initGroupElementContent() {
+    // this.groupElement = {
+    //   outerHTML: '',
+    //   innerHTML: '',
+    // };
 
     // this.groupElementFilePathTmp.forEach((fileTemp: string, index: number) => {
     //   if (index === 0) {
@@ -159,114 +159,116 @@ class HandlerSVGContent {
     // const ps1 = this.groupElementFilePathTmp.map((fileTemp: string, index: number) => {
 
     // })
-    const content1 = fs.readFileSync(this.groupElementFilePathTmp[0], { encoding: 'utf8' });
-    const content2 = fs.readFileSync(this.groupElementFilePathTmp[1], { encoding: 'utf8' });
-    const ps1 = [
-      this.chunkSize(content1, (data: string) => { this.groupElement.outerHTML += data }),
-      this.chunkSize(content2, (data: string) => { this.groupElement.innerHTML += data }),
-    ];
-    await Promise.all(ps1);
-    this.groupElementFilePathTmp = [];
-  }
+    // const content1 = fs.readFileSync(this.groupElementFilePathTmp[0], { encoding: 'utf8' });
+    // const content2 = fs.readFileSync(this.groupElementFilePathTmp[1], { encoding: 'utf8' });
+    // const ps1 = [
+    //   this.chunkSize(content1, (data: string) => { this.groupElement.outerHTML += data }),
+    //   this.chunkSize(content2, (data: string) => { this.groupElement.innerHTML += data }),
+    // ];
+    // await Promise.all(ps1);
+    // this.groupElementFilePathTmp = [];
+  // }
 
-  private async initElementsContent() {
-    this.elements = [];
-    // this.elementsFilePathTmp.get('innerHTML')?.forEach((fileTemp: string, index: number) => {
-    //   if (!this.elements[index]) {
-    //     this.elements[index] = { outerHTML: '', innerHTML: '' };
-    //   }
-    //   const content = fs.readFileSync(fileTemp, { encoding: 'utf8' });
-    //   // this.elements[index].innerHTML = content;
-    //   this.elements[index].innerHTML = this.chunkSize(content, this.elements[index].innerHTML);
-    // });
+  // private async initElementsContent() {
+  //   this.elements = [];
+  //   // this.elementsFilePathTmp.get('innerHTML')?.forEach((fileTemp: string, index: number) => {
+  //   //   if (!this.elements[index]) {
+  //   //     this.elements[index] = { outerHTML: '', innerHTML: '' };
+  //   //   }
+  //   //   const content = fs.readFileSync(fileTemp, { encoding: 'utf8' });
+  //   //   // this.elements[index].innerHTML = content;
+  //   //   this.elements[index].innerHTML = this.chunkSize(content, this.elements[index].innerHTML);
+  //   // });
 
-    // this.elementsFilePathTmp.get('outerHTML')?.forEach((fileTemp: string, index: number) => {
-    //   const content = fs.readFileSync(fileTemp, { encoding: 'utf8' });
-    //   // this.elements[index].outerHTML = content;
-    //   this.elements[index].outerHTML = this.chunkSize(content, this.elements[index].outerHTML);
-    // });
+  //   // this.elementsFilePathTmp.get('outerHTML')?.forEach((fileTemp: string, index: number) => {
+  //   //   const content = fs.readFileSync(fileTemp, { encoding: 'utf8' });
+  //   //   // this.elements[index].outerHTML = content;
+  //   //   this.elements[index].outerHTML = this.chunkSize(content, this.elements[index].outerHTML);
+  //   // });
 
-    const ps1 = this.elementsFilePathTmp.get('innerHTML')?.map((fileTemp: string, index: number) => {
-      if (!this.elements[index]) {
-        this.elements[index] = { outerHTML: '', innerHTML: '' };
-      }
-      const content = fs.readFileSync(fileTemp, { encoding: 'utf8' });
-      return this.chunkSize(content, (data: string) => {
-        this.elements[index].innerHTML += data;
-      });
-    }) as any[];
-    await Promise.all(ps1);
+  //   const ps1 = this.elementsFilePathTmp.get('innerHTML')?.map((fileTemp: string, index: number) => {
+  //     if (!this.elements[index]) {
+  //       this.elements[index] = { outerHTML: '', innerHTML: '' };
+  //     }
+  //     const content = fs.readFileSync(fileTemp, { encoding: 'utf8' });
+  //     return this.chunkSize(content, (data: string) => {
+  //       this.elements[index].innerHTML += data;
+  //     });
+  //   }) as any[];
+  //   await Promise.all(ps1);
 
-    const ps2 = this.elementsFilePathTmp.get('outerHTML')?.map((fileTemp: string, index: number) => {
-      const content = fs.readFileSync(fileTemp, { encoding: 'utf8' });
-      return this.chunkSize(content, (data: string) => {
-        this.elements[index].outerHTML += data;
-      });
-    }) as any[];
-    await Promise.all(ps2);
-    console.log('By pass load elements...')
-    this.elementsFilePathTmp.clear();
-  }
+  //   const ps2 = this.elementsFilePathTmp.get('outerHTML')?.map((fileTemp: string, index: number) => {
+  //     const content = fs.readFileSync(fileTemp, { encoding: 'utf8' });
+  //     return this.chunkSize(content, (data: string) => {
+  //       this.elements[index].outerHTML += data;
+  //     });
+  //   }) as any[];
+  //   await Promise.all(ps2);
+  //   console.log('By pass load elements...');
+  // }
 
-  private removeFileTemp() {
-    try {
-      // Remove group element temp files
-      this.groupElementFilePathTmp.forEach((fileTemp: string) => {
-        try {
-          if (fs.existsSync(fileTemp)) {
-            fs.unlinkSync(fileTemp);
-            console.log(`Removed group temp file: ${fileTemp}`);
-          }
-        } catch (error) {
-          console.warn(`Failed to remove group temp file ${fileTemp}:`, error);
-        }
-      });
+  // private removeFileTemp() {
+  //   try {
+  //     // Remove group element temp files
+  //     this.groupElementFilePathTmp.forEach((fileTemp: string) => {
+  //       try {
+  //         if (fs.existsSync(fileTemp)) {
+  //           fs.unlinkSync(fileTemp);
+  //           console.log(`Removed group temp file: ${fileTemp}`);
+  //         }
+  //       } catch (error) {
+  //         console.warn(`Failed to remove group temp file ${fileTemp}:`, error);
+  //       }
+  //     });
 
-      // Remove elements temp files
-      for (const [_, filePaths] of this.elementsFilePathTmp.entries()) {
-        filePaths.forEach((fileTemp: string) => {
-          try {
-            if (fs.existsSync(fileTemp)) {
-              fs.unlinkSync(fileTemp);
-              console.log(`Removed element temp file: ${fileTemp}`);
-            }
-          } catch (error) {
-            console.warn(`Failed to remove element temp file ${fileTemp}:`, error);
-          }
-        });
-      }
+  //     // Remove elements temp files
+  //     for (const [_, filePaths] of this.elementsFilePathTmp.entries()) {
+  //       filePaths.forEach((fileTemp: string) => {
+  //         try {
+  //           if (fs.existsSync(fileTemp)) {
+  //             fs.unlinkSync(fileTemp);
+  //             console.log(`Removed element temp file: ${fileTemp}`);
+  //           }
+  //         } catch (error) {
+  //           console.warn(`Failed to remove element temp file ${fileTemp}:`, error);
+  //         }
+  //       });
+  //     }
 
-      // Try to remove the temp directory if it's empty
-      // try {
-      //   const tempDir = 'temp';
-      //   if (fs.existsSync(tempDir)) {
-      //     const files = fs.readdirSync(tempDir);
-      //     if (files.length === 0) {
-      //       fs.rmdirSync(tempDir);
-      //       console.log('Removed empty temp directory');
-      //     } else {
-      //       console.log(`Temp directory still contains ${files.length} files`);
-      //     }
-      //   }
-      // } catch (error) {
-      //   console.warn('Failed to remove temp directory:', error);
-      // }
+  //     // Try to remove the temp directory if it's empty
+  //     // try {
+  //     //   const tempDir = 'temp';
+  //     //   if (fs.existsSync(tempDir)) {
+  //     //     const files = fs.readdirSync(tempDir);
+  //     //     if (files.length === 0) {
+  //     //       fs.rmdirSync(tempDir);
+  //     //       console.log('Removed empty temp directory');
+  //     //     } else {
+  //     //       console.log(`Temp directory still contains ${files.length} files`);
+  //     //     }
+  //     //   }
+  //     // } catch (error) {
+  //     //   console.warn('Failed to remove temp directory:', error);
+  //     // }
 
-      console.log('Temp file cleanup completed successfully!');
-    } catch (error) {
-      console.error('Error during temp file cleanup:', error);
-    }
-  }
+  //     console.log('Temp file cleanup completed successfully!');
+  //   } catch (error) {
+  //     console.error('Error during temp file cleanup:', error);
+  //   }
+  // }
 
-  getFileTempById(index: number, tag: string, format = 'txt') {
-    return `temp/element-${index}-${tag}.${format}`;
+  // getFileTempById(index: number, tag: string, format = 'txt') {
+  //   return `temp/element-${index}-${tag}.${format}`;
+  // }
+
+  getFileTempById(index: number, tag: string) {
+    return (this.elementsFilePathTmp.get(tag) as string[])[index];
   }
 
   getContentWithFileTemp(index: number, tag: string) {
     const fileTmp = this.getFileTempById(index, tag);
     let content = fs.readFileSync(fileTmp, { encoding: 'utf8' });
-    content = this.removeBoundingRectElements(content);
-    return content.replace(/<rect[^>]*fill="none"[^>]*\/?><\/rect>/g, '');
+    return this.removeReduntdantRect(content);
   }
 
   getContentGroupWithTemp(tag: string) {
@@ -275,8 +277,7 @@ class HandlerSVGContent {
       fileTmp = 'temp/groupInnerHTML.txt';
     }
     let content = fs.readFileSync(fileTmp, { encoding: 'utf8' });
-    content = this.removeBoundingRectElements(content);
-    return content.replace(/<rect[^>]*fill="none"[^>]*\/?><\/rect>/g, '');
+    return this.removeReduntdantRect(content);
   }
 
   isTextElement(elementHtml: string) {
@@ -296,7 +297,8 @@ class HandlerSVGContent {
   }
 
   hasClipPath(index: number) {
-    return this.isClipPath(this.elements[index + 1]?.outerHTML ?? '');
+    const outerHTML = this.getContentWithFileTemp(index + 1, 'outerHTML');
+    return this.isClipPath(outerHTML);
   }
 
   hasAdobe(elementHtml: string) {
@@ -305,6 +307,26 @@ class HandlerSVGContent {
 
   hasFilter(elementHtml: string) {
     return elementHtml.indexOf('filter') !== -1;
+  }
+
+
+  private isMultiStyles(masterElement?: MasterElement) {
+    if (!masterElement) {
+      return false;
+    }
+    return masterElement.type === 'textbox' && Boolean(Object.keys((masterElement as any)?.styles || {}).length);
+  }
+
+  private isHasGradient(masterElement?: MasterElement) {
+    if (!masterElement) {
+      return false;
+    }
+    const { backstage = {} } = masterElement;
+    if (!Object.keys(backstage).length)  {
+      return false;
+    }
+    const { gradient = {} } = backstage;
+    return masterElement.type === 'textbox' && Boolean(gradient?.enabled);
   }
 
   private isCurvedText(content: string) {
@@ -323,99 +345,107 @@ class HandlerSVGContent {
   }
 
   async convertImage(elementTag: string) {
-    const imageElements = getContentByTag(elementTag, 'image');
-    const svgImages = [];
-    
-    for (let imageElement of imageElements) {
-      const imageStyles = getElemAttributesByImage(imageElement);
-      let imageContent = imageStyles?.href as string;
-      if (!imageContent) {
-        continue;
-      }
-
-      // fs.writeFileSync(`temp/image-${randomString(false, 5)}.txt`, imageContent);
+    try {
+      const imageElements = getContentByTag(elementTag, 'image');
+      const svgImages = [];
       
-      if (imageContent.startsWith('data:image/svg+xml')) {
-        imageContent = decodeURIComponent(imageContent.split(',')[1]);
-        if (imageContent.indexOf('svg_has_been_converted') !== -1) {
-          console.log('CASE SVG UNCODING');
-          // console.log('Case svg uncode3');
-          const xml = '<?xml version="1.0"?>';
-          imageContent = imageContent.replace(xml, '');
-          svgImages.push({ imageElement, imageContent: this.removeMetadata(imageContent) });
+      for (let imageElement of imageElements) {
+        const imageStyles = getElemAttributesByImage(imageElement);
+        let imageContent = imageStyles?.href as string;
+        if (!imageContent) {
           continue;
         }
-
-        const classSvg = `svg-${imageStyles.id}`.replace(/_/g, '-');
-        const styles = getContentByTag(imageContent, 'style');
-        
-        // Process styles in a single iteration where possible
-        let tmpContent = imageContent;
-        for (const style of styles) {
-          const allStyle = style.replace(/<style[^>]*>/g, '').match(/.(.*?){(.*?)}/g) || [];
-          let tmpStyle = style;
-          
-          // Build modified style string in one go
-          const modifiedStyles = allStyle.map(item => `.${classSvg} ${item}`).join('');
-          tmpStyle = tmpStyle.replace(allStyle.join(''), modifiedStyles);
-          tmpContent = tmpContent.replace(style, tmpStyle);
-        }
-        imageContent = tmpContent;
   
-        const imageStylesBySvg = getElemAttributesByImage(imageContent);
-        imageContent = imageContent.replace(/<\/svg>/g, '').replace(/<svg[^>]*>/g, '');
-        imageContent = removeDOCTYPE(imageContent);
-        imageContent = this.removeMetadata(imageContent);
+        // fs.writeFileSync(`temp/image-${randomString(false, 5)}.txt`, imageContent);
         
-        // Build SVG content using template string (more efficient)
-        imageContent = `
-          <g filter="${imageStyles.filter || ''}">
-            <svg
-              xmlns:xlink="http://www.w3.org/1999/xlink"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="${imageStylesBySvg.viewBox}"
-              width="${imageStyles.width}"
-              height="${imageStyles.height}"
-              x="${imageStyles.x}"
-              y="${imageStyles.y}"
-              fill="${imageStylesBySvg.fill || ''}"
-              preserveAspectRatio="${imageStyles.preserveAspectRatio || ''}"
-              class="${classSvg} svg_has_been_converted"
-              style="${imageStyles.style || ''}"
-            >
-              ${imageContent}
-            </svg>
-          </g>
-        `;
-      } else {
-        imageContent = imageElement.replace(/xlink:href="([^"]*)"/, `xlink:href="${imageContent}"`);
-      }
-      svgImages.push({ imageElement, imageContent });
-    }
+        if (imageContent.startsWith('data:image/svg+xml')) {
+          imageContent = decodeURIComponent(imageContent.split(',')[1]);
+          if (imageContent.indexOf('svg_has_been_converted') !== -1) {
+            console.log('CASE SVG UNCODING');
+            // console.log('Case svg uncode3');
+            const xml = '<?xml version="1.0"?>';
+            imageContent = imageContent.replace(xml, '');
+            svgImages.push({ imageElement, imageContent: this.removeMetadata(imageContent) });
+            continue;
+          }
+  
+          const classSvg = `svg-${imageStyles.id}`.replace(/_/g, '-');
+          const styles = getContentByTag(imageContent, 'style');
+          
+          // Process styles in a single iteration where possible
+          let tmpContent = imageContent;
+          for (const style of styles) {
+            const allStyle = style.replace(/<style[^>]*>/g, '').match(/.(.*?){(.*?)}/g) || [];
+            let tmpStyle = style;
+            
+            // Build modified style string in one go
+            const modifiedStyles = allStyle.map(item => `.${classSvg} ${item}`).join('');
+            tmpStyle = tmpStyle.replace(allStyle.join(''), modifiedStyles);
+            tmpContent = tmpContent.replace(style, tmpStyle);
+          }
+          imageContent = tmpContent;
     
-    return {
-      elementTag,
-      path: '',
-      type: 'IMAGE',
-      svgImages,
-    };
+          const imageStylesBySvg = getElemAttributesByImage(imageContent);
+          imageContent = imageContent.replace(/<\/svg>/g, '').replace(/<svg[^>]*>/g, '');
+          imageContent = removeDOCTYPE(imageContent);
+          imageContent = this.removeMetadata(imageContent);
+          
+          // Build SVG content using template string (more efficient)
+          imageContent = `
+            <g filter="${imageStyles.filter || ''}">
+              <svg
+                xmlns:xlink="http://www.w3.org/1999/xlink"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="${imageStylesBySvg.viewBox}"
+                width="${imageStyles.width}"
+                height="${imageStyles.height}"
+                x="${imageStyles.x}"
+                y="${imageStyles.y}"
+                fill="${imageStylesBySvg.fill || ''}"
+                preserveAspectRatio="${imageStyles.preserveAspectRatio || ''}"
+                class="${classSvg} svg_has_been_converted"
+                style="${imageStyles.style || ''}"
+              >
+                ${imageContent}
+              </svg>
+            </g>
+          `;
+        } else {
+          imageContent = imageElement.replace(/xlink:href="([^"]*)"/, `xlink:href="${imageContent}"`);
+        }
+        svgImages.push({ imageElement, imageContent });
+      }
+      return {
+        elementTag,
+        path: '',
+        type: 'IMAGE',
+        svgImages,
+      };
+    } catch (error) {
+      return {
+        elementTag,
+        path: '',
+        type: 'IMAGE',
+        svgImages: [],
+      };
+    }
   }
 
-  private async convertTextByPosterize(elementTag: string, outerHTML: string, element?: MasterElement): Promise<SVGElement> {
+  private async convertTextByPosterize(elementTag: string, outerHTML: string, isMultiStyles = false): Promise<SVGElement> {
     const groupElementContent = this.getContentGroupWithTemp('innerHTML') || '';
-    const hasGroupElementContent = this.backupSvgContent.includes(groupElementContent);
-    console.log(groupElementContent.slice(0, 100), 'convertTextByPosterize.. groupElementContent.slice');
-    console.log('Group element content found:', hasGroupElementContent);
+    // const hasGroupElementContent = this.backupSvgContent.includes(groupElementContent);
+    // console.log(groupElementContent.slice(0, 100), 'convertTextByPosterize.. groupElementContent.slice');
+    // console.log('Group element content found:', hasGroupElementContent);
 
     const currentOnlyTextHtml = this.backupSvgContent.replace(groupElementContent, outerHTML);
 
-    const path = await this.potraceService.converTextByPotraceNew({
-        textHTML: currentOnlyTextHtml,
-        innerHTML: elementTag,
-      },
-      { styles: this.styles, element });
-    // fs.writeFileSync('temp/elementTag.txt', elementTag);
-    // fs.writeFileSync('temp/path.txt', path);
+    // const path = await this.potraceService.converTextByPotraceNew({
+    //     textHTML: currentOnlyTextHtml,
+    //     innerHTML: elementTag,
+    //   },
+    //   { styles: this.styles, element });
+
+    const path = await this.potraceService.convertTextByPotrace(currentOnlyTextHtml, elementTag, this.styles, isMultiStyles);
     return {
       type: 'TEXT',
       elementTag,
@@ -526,8 +556,10 @@ class HandlerSVGContent {
     return svgContent.replace(/<sodipodi:namedview[^>]*\/?>/g, '');
   }
 
-  removeBoundingRectElements(svgContent: string) {
-    return svgContent.replace(/<rect[^>]*class="[^"]*svg_select_boundingRect[^"]*"[^>]*><\/rect>/g, '');
+  removeReduntdantRect(svgContent: string) {
+    svgContent = svgContent.replace(/<rect[^>]*class="[^"]*svg_select_boundingRect[^"]*"[^>]*><\/rect>/g, '');
+    svgContent = svgContent.replace(/<rect[^>]*fill="none"[^>]*\/?><\/rect>/g, '')
+    return svgContent;
   }
 
   getBleedSize() {
@@ -560,9 +592,9 @@ class HandlerSVGContent {
     return this.data.find((item: any) => innerHTML.includes(item.elementKey));
   }
 
-  getTextRectByElementKey(key: string) {
-    return this.textRectangles.find((textRectangle) => textRectangle.match(key));
-  }
+  // getTextRectByElementKey(key: string) {
+  //   return this.textRectangles.find((textRectangle) => textRectangle.match(key));
+  // }
 
   private getClipPathId(html: string): string {
     const regex = /clip-path="url\(#([^)]+)\)"/;
@@ -811,8 +843,8 @@ class HandlerSVGContent {
   }
 
   async export() {
-    await this.initGroupElementContent();
-    await this.initElementsContent();
+    // await this.initGroupElementContent();
+    // await this.initElementsContent();
     // this.removeFileTemp();
     console.time('export SVG');
     const col = 1;
@@ -820,20 +852,24 @@ class HandlerSVGContent {
     const bleedSize = 0;
     const BATCH_SIZE = 4;
     const elementsResult = [];
-    for (let i = 0; i < this.elements.length; i += BATCH_SIZE) {
-      const batch = this.elements.slice(i, i + BATCH_SIZE);
+    console.log(this.elementLength, 'this.eleemtnLength..');
+    const elements = Array.from({ length: this.elementLength }).fill(1);
+    for (let i = 0; i < this.elementLength; i += BATCH_SIZE) {
+      const batch = elements.slice(i, i + BATCH_SIZE);
       const batchResult = await Promise.all(
         batch.map((_, index: number) => {
           const outerHTML = this.getContentWithFileTemp(i + index, 'outerHTML');
           const innerHTML = this.getContentWithFileTemp(i + index, 'innerHTML');
+
           if (this.isTextElement(innerHTML)) {
             const masterElement = this.getMasterElement(innerHTML);
             if (this.hasClipPath(i + index)) {
-              console.log('hasClipPath...');
+              // console.log(innerHTML, 'innerHTML clippath...');
+              // console.log(outerHTML, 'outerHTML clippath...');
               return this.convertTextClippingMaskByPosterize(i + index, innerHTML, outerHTML);
             }
             console.log('isTextElement...');
-            return this.convertTextByPosterize(innerHTML, outerHTML, masterElement);
+            return this.convertTextByPosterize(innerHTML, outerHTML, this.isMultiStyles(masterElement) && !this.isHasGradient(masterElement));
           }
 
           if (this.isImageElement(innerHTML)) {
@@ -880,6 +916,7 @@ class HandlerSVGContent {
       const translateY = (row === 1) ? bleedSize : 0;
       transform[4] = transform[4] + translateX;
       transform[5] = transform[5] + translateY;
+      // console.log(transform.join(' '));
       newImageParentTag = imageParentTag.replace(/transform="[^"]*"/, `transform="matrix(${transform.join(',')})"`);
       this.svgContent = this.svgContent.replace(imageParentTag, newImageParentTag);
     });
@@ -888,7 +925,6 @@ class HandlerSVGContent {
     this.svgContent = this.removeMetadata(this.svgContent);
     this.svgContent = this.removeInkscapeAttributes(this.svgContent);
     this.svgContent = this.removeSodipodiNamedview(this.svgContent);
-    // this.svgContent = this.removeBoundingRectElements(this.svgContent);
     this.svgContent = this.convertBackground(this.svgContent);
     this.svgContent = this.convertShape(this.svgContent);
     this.svgContent = this.convertFillTransparent(this.svgContent);
@@ -896,6 +932,7 @@ class HandlerSVGContent {
     this.svgContent = removeXMLContent(this.svgContent);
     
     this.removeAllTempFiles();
+    this.elementsFilePathTmp.clear();
     
     console.timeEnd('export SVG');
     return this.svgContent;

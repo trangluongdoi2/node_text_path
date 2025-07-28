@@ -310,9 +310,10 @@ export default class PotraceService {
     style: SVGTextStyles
   ): Promise<{ png: Buffer; content: string; clip: ScreenshotClip }> {
     const browserPool = new BrowserPool();
+    // console.log(style.id, 'style.id...');
     const path = this.prepareWorkingDir(style.id);
     const viewport = getSvgDimensions(content);
-    // fs.writeFileSync('temp/convertTextByPosterize.svg', content);
+    fs.writeFileSync(`temp/${style.id}.svg`, content);
     // TODO: Need refactor
     const page = await this.createPageContent(browserPool, content, viewport);
 
@@ -332,6 +333,7 @@ export default class PotraceService {
         screenshotClip.width = elementBox['width'];
         screenshotClip.height = elementBox['height'];
         await page.screenshot({ path, clip: screenshotClip });
+        console.log(screenshotClip, 'screenshotClip..');
       }
     }
     await page.close();
@@ -516,38 +518,38 @@ export default class PotraceService {
     return svgo.optimize(svg).data;
   }
 
-  public async convertTextByPotrace(textHtml: string, innerHTML: string, styles?: string[]): Promise<string> {
-    const index: number = [...(textHtml.match(/<svg(.*?)>/g) ?? [])][0].length;
+  // public async convertTextByPotrace(textHtml: string, innerHTML: string, styles?: string[]): Promise<string> {
+  //   const index: number = [...(textHtml.match(/<svg(.*?)>/g) ?? [])][0].length;
 
-    textHtml = insertStringAt(textHtml, styles?.join('') || '', index);
-    const texts = getContentByTag(innerHTML, 'text') as string[];
-    let pathGroup = '<g>';
+  //   textHtml = insertStringAt(textHtml, styles?.join('') || '', index);
+  //   const texts = getContentByTag(innerHTML, 'text') as string[];
+  //   let pathGroup = '<g>';
 
-    for (const text of texts) {
-      const style = getElemAttributesByText(text);
-      if (style.filter || style.stroke) {
-        const strokeWidth = style.strokeWidth ?? 0;
-        const strokeOpacity = style.strokeOpacity ?? 0;
-        const textPath = `<path d="" fill-rule="evenodd" fill="${style.fill}" stroke="${style.stroke}" stroke-width="${strokeWidth}" stroke-opacity="${strokeOpacity}" />`;
-        pathGroup = `${pathGroup}<g filter="${style.filter}">${textPath}</g>`;
-        continue;
-      }
-      const content = this.replaceOnlyText(textHtml, text).replace(/#ffffff/g, '#fdfdfd');
-      const multiStylesTextService = new MultiStyleTextService(content, text, style);
-      const textPath = await multiStylesTextService.getPathByPotrace();
-      pathGroup = `${pathGroup}<g>${textPath.join('')}</g>`;
-    }
+  //   for (const text of texts) {
+  //     const style = getElemAttributesByText(text);
+  //     if (style.filter || style.stroke) {
+  //       const strokeWidth = style.strokeWidth ?? 0;
+  //       const strokeOpacity = style.strokeOpacity ?? 0;
+  //       const textPath = `<path d="" fill-rule="evenodd" fill="${style.fill}" stroke="${style.stroke}" stroke-width="${strokeWidth}" stroke-opacity="${strokeOpacity}" />`;
+  //       pathGroup = `${pathGroup}<g filter="${style.filter}">${textPath}</g>`;
+  //       continue;
+  //     }
+  //     const content = this.replaceOnlyText(textHtml, text).replace(/#ffffff/g, '#fdfdfd');
+  //     const multiStylesTextService = new MultiStyleTextService(content, text, style);
+  //     const textPath = await multiStylesTextService.getPathByPotrace();
+  //     pathGroup = `${pathGroup}<g>${textPath.join('')}</g>`;
+  //   }
 
-    pathGroup = `${pathGroup}</g>`;
-    const d = pathGroup.match(/d="M.*?"/g) || [];
-    const pathShadows = pathGroup.match(/<path (d="".*?)\/>/g) || [];
-    if (d.length > 0 && pathShadows.length > 0) {
-      for (let index = 0; index < pathShadows.length; index++) {
-        pathGroup = pathGroup.replace(pathShadows[index], pathShadows[index].replace('d=""', `${d[0]}`));
-      }
-    }
-    return replacePathToGroup(innerHTML, pathGroup);
-  }
+  //   pathGroup = `${pathGroup}</g>`;
+  //   const d = pathGroup.match(/d="M.*?"/g) || [];
+  //   const pathShadows = pathGroup.match(/<path (d="".*?)\/>/g) || [];
+  //   if (d.length > 0 && pathShadows.length > 0) {
+  //     for (let index = 0; index < pathShadows.length; index++) {
+  //       pathGroup = pathGroup.replace(pathShadows[index], pathShadows[index].replace('d=""', `${d[0]}`));
+  //     }
+  //   }
+  //   return replacePathToGroup(innerHTML, pathGroup);
+  // }
 
   isMultiSyles(element?: MasterElement) {
     if (!element) {
@@ -560,16 +562,10 @@ export default class PotraceService {
     return Object.keys(styles)?.length >= 1;
   }
 
-  public async converTextByPotraceNew(content: { textHTML: string, innerHTML: string }, convertData: {
-    styles?: string[],
-    element?: MasterElement,
-  }) {
-    let { textHTML = '', innerHTML = '' } = content;
-    const { styles = [''], element } = convertData;
+  public async convertTextByPotrace(textHtml: string, innerHTML: string, styles: string[], isMultiStyles = false): Promise<string> {
+    const index: number = [...(textHtml.match(/<svg(.*?)>/g) ?? [])][0].length;
 
-    const index: number = [...(textHTML.match(/<svg(.*?)>/g) ?? [])][0].length;
-
-    textHTML = insertStringAt(textHTML, styles?.join('') || '', index);
+    textHtml = insertStringAt(textHtml, styles.join(''), index);
     const texts = getContentByTag(innerHTML, 'text') as string[];
     let pathGroup = '<g>';
 
@@ -582,15 +578,15 @@ export default class PotraceService {
         pathGroup = `${pathGroup}<g filter="${style.filter}">${textPath}</g>`;
         continue;
       }
-      const content = this.replaceOnlyText(textHTML, text).replace(/#ffffff/g, '#fdfdfd');
 
-      let textPath;
-      if (this.isMultiSyles(element)) {
-        console.log('Case 1');
+      const content = this.replaceOnlyText(textHtml, text).replace(/#ffffff/g, '#fdfdfd');
+      let textPath: string[] = [];
+      if (isMultiStyles) {
+        console.log('Case multi styles');
         const multiStylesTextService = new MultiStyleTextService(content, text, style);
-        textPath = await multiStylesTextService.getPathByPotrace();
+        textPath = await multiStylesTextService.getPathByPotrace() as string[];
       } else {
-        console.log('Dont have multi styles..');
+        console.log('Case no multi styles');
         const svg = await this.convertTextByTrace(content, style);
         textPath = svg.match(/<path(.*?)\/>/g) || [];
       }
@@ -608,6 +604,55 @@ export default class PotraceService {
     }
     return replacePathToGroup(innerHTML, pathGroup);
   }
+
+  // public async converTextByPotraceNew(content: { textHTML: string, innerHTML: string }, convertData: {
+  //   styles?: string[],
+  //   element?: MasterElement,
+  // }) {
+  //   let { textHTML = '', innerHTML = '' } = content;
+  //   const { styles = [''], element } = convertData;
+
+  //   const index: number = [...(textHTML.match(/<svg(.*?)>/g) ?? [])][0].length;
+
+  //   textHTML = insertStringAt(textHTML, styles?.join('') || '', index);
+  //   const texts = getContentByTag(innerHTML, 'text') as string[];
+  //   let pathGroup = '<g>';
+
+  //   for (const text of texts) {
+  //     const style = getElemAttributesByText(text);
+  //     if (style.filter || style.stroke) {
+  //       const strokeWidth = style.strokeWidth ?? 0;
+  //       const strokeOpacity = style.strokeOpacity ?? 0;
+  //       const textPath = `<path d="" fill-rule="evenodd" fill="${style.fill}" stroke="${style.stroke}" stroke-width="${strokeWidth}" stroke-opacity="${strokeOpacity}" />`;
+  //       pathGroup = `${pathGroup}<g filter="${style.filter}">${textPath}</g>`;
+  //       continue;
+  //     }
+  //     const content = this.replaceOnlyText(textHTML, text).replace(/#ffffff/g, '#fdfdfd');
+
+  //     let textPath;
+  //     if (this.isMultiSyles(element)) {
+  //       console.log('Case 1');
+  //       const multiStylesTextService = new MultiStyleTextService(content, text, style);
+  //       textPath = await multiStylesTextService.getPathByPotrace();
+  //     } else {
+  //       console.log('Dont have multi styles..');
+  //       const svg = await this.convertTextByTrace(content, style);
+  //       textPath = svg.match(/<path(.*?)\/>/g) || [];
+  //     }
+
+  //     pathGroup = `${pathGroup}<g>${textPath.join('')}</g>`;
+  //   }
+
+  //   pathGroup = `${pathGroup}</g>`;
+  //   const d = pathGroup.match(/d="M.*?"/g) || [];
+  //   const pathShadows = pathGroup.match(/<path (d="".*?)\/>/g) || [];
+  //   if (d.length > 0 && pathShadows.length > 0) {
+  //     for (let index = 0; index < pathShadows.length; index++) {
+  //       pathGroup = pathGroup.replace(pathShadows[index], pathShadows[index].replace('d=""', `${d[0]}`));
+  //     }
+  //   }
+  //   return replacePathToGroup(innerHTML, pathGroup);
+  // }
 
   public async convertTextClipPathByPotrace(textHtml: string, innerHTML: string, styles?: string[]): Promise<string> {
     function removeOpacityStylesInParentTextTag(content: string) {
@@ -627,8 +672,8 @@ export default class PotraceService {
 
     const element = innerHTML.match(/<g(.*?)>/g) || [];
     innerHTML = removeOpacityStylesInParentTextTag(innerHTML);
-    // fs.writeFileSync('temp/innerHTML.txt', innerHTML);
     const style = getElemAttributesByText(String(element[0]));
+    console.log(style, 'getElemAttributesByText..');
     const result = await this.convertTextByPosterize(textHtml, style);
     const fileName = `${randomString(false, 5)}`;
     // fs.writeFileSync(`temp/ClipPathByPotrace-${fileName}.png`, result.png);
@@ -640,6 +685,7 @@ export default class PotraceService {
     // fs.writeFileSync(`temp/ClipPathByPotrace-${fileName}-3.svg`, svg);
     // fs.writeFileSync(`temp/ClipPathByPotrace-${fileName}-4.txt`, innerHTML);
     let pathGroup = `<g transform="matrix(1,0,0,1,${result.clip.x},${result.clip.y})">`;
+    // console.log(result.clip, 'result.clip...');
     const textPath: string[] = svg.match(/<path(.*?)\/>/g) || [];
     pathGroup += textPath.join('');
     pathGroup += '</g>';

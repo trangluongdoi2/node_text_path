@@ -10,6 +10,7 @@ import { getContentByTag, removeXMLContent } from './utils-svg';
 import DesignService from './services/designService'
 import { FileGeneratorInput } from './services/svgFilter';
 import { prepareWorkingDir } from './helper/file';
+import { randomString } from './helper/string';
 
 const PORT = 3000;
 export const CHROMIUM_DEFAULT_PPI = 96;
@@ -219,14 +220,16 @@ app.listen(PORT, async () => {
       try {
         // Case element
         if (typeof data.index === 'number') {
-          const elementFileTmp = `${workingDirTmp}/element-${data.index}-${data.tag}.txt`;
-          if (!writeStreamElementMap.has(elementFileTmp)) {
+          // const elementFileTmp = `${workingDirTmp}/element-${data.index}-${data.tag}.txt`;
+          const elementFileTmp = `${workingDirTmp}/element-${data.index}-${data.tag}-${randomString(false, 5)}.txt`;
+          const key = `element-${data.index}-${data.tag}`;
+          if (!writeStreamElementMap.has(key)) {
             const arrayFilePath = elementsFilePathTmp.get(data.tag) || [];
             arrayFilePath.push(elementFileTmp);
-            writeStreamElementMap.set(elementFileTmp, createWriteStream(elementFileTmp));
+            writeStreamElementMap.set(key, createWriteStream(elementFileTmp));
             elementsFilePathTmp.set(data.tag, arrayFilePath);
           }
-          const stream = writeStreamElementMap.get(elementFileTmp);
+          const stream = writeStreamElementMap.get(key);
           stream.write(data.content || '');
           return;
         }
@@ -248,13 +251,8 @@ app.listen(PORT, async () => {
 
     await page.exposeFunction('finishWriting', (data: any) => {
       if (typeof data.index === 'number') {
-        const keyPattern = `element-${data.index}-${data.tag}`;
-        for (const [_, key] of elementsFilePathTmp.entries()) {
-          if (key.includes(keyPattern)) {
-            writeStreamElementMap.get(key).end();
-            console.log('end with file ' + key);
-          }
-        }
+        const key = `element-${data.index}-${data.tag}`;
+        writeStreamElementMap.get(key).end();
       }
       if (data.tag === 'outerHTML') {
         writeStreamGroupOuterHTML.end();
@@ -270,7 +268,7 @@ app.listen(PORT, async () => {
       const svgNodeBySections = [...svgEditorBySections];
       const result: string[] = [];
 
-      function setChunkSize(content: string, tag: TagType, chunkSize = 1024 * 1024 * 5, fn1: Function, fn2?: Function) {
+      function setChunkSize(content: string, tag: TagType, chunkSize = CHUNK_SIZE, fn1: Function, fn2?: Function) {
         const totalChunks = Math.ceil(content.length / chunkSize);
         let sendChunks = 0;
         function sendNextChunk() {
@@ -292,7 +290,7 @@ app.listen(PORT, async () => {
         sendNextChunk();
       }
 
-      function setChunkSizePs(content: string, tag: TagType, chunkSize = 1024 * 1024 * 5, fn1: Function, fn2?: Function): Promise<void> {
+      function setChunkSizePs(content: string, tag: TagType, chunkSize = CHUNK_SIZE, fn1: Function, fn2?: Function): Promise<void> {
         return new Promise(resolve => {
           const totalChunks = Math.ceil(content.length / chunkSize);
           let sendChunks = 0;
@@ -510,7 +508,7 @@ app.listen(PORT, async () => {
         svgContent,
         styles,
         elementsBySection[index],
-        { elementsFilePathTmp, groupElementFilePathTmp }
+        { elementsFilePathTmp, groupElementFilePathTmp },
       );
       return await exportSvgService.export();
     })
