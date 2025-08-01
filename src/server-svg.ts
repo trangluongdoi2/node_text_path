@@ -11,6 +11,10 @@ import DesignService from './services/designService'
 import { FileGeneratorInput } from './services/svgFilter';
 import { prepareWorkingDir } from './helper/file';
 import { randomString } from './helper/string';
+const os = require('os');
+const path = require('path');
+
+console.log(os, 'os..')
 
 const PORT = 3000;
 export const CHROMIUM_DEFAULT_PPI = 96;
@@ -182,45 +186,92 @@ app.listen(PORT, async () => {
   };
 
   function createWriteStream(fileTemp: string) {
-    return fs.createWriteStream(fileTemp, {
+    const stream = fs.createWriteStream(fileTemp, {
       flags: 'w',
       encoding: 'utf8',
+      highWaterMark: 64 * 1024, // 64KB buffer for better performance
     });
+    
+    // Add error handling
+    stream.on('error', (error) => {
+      console.error(`Write stream error for ${fileTemp}:`, error);
+    });
+    
+    return stream;
   }
 
+
   async function getDataFromLargePage(page: Page): Promise<{
-    styles: string[],
-    data: any,
-    svgContents: string[],
+    svgContentsFilePathTmp: string[],
     groupElementFilePathTmp: string[],
     elementsFilePathTmp: Map<string, string[]>
   }> {
-    const [data, styles] = await Promise.all([getDataDesignPageFromPage(page), getStylesFromPage(page)]);
-    const workingDirTmp = 'temp';
+    type TagType = 'outerHTML' | 'innerHTML';
+    type EntityType = 'svgContent' | 'element' | 'group';
+    type ChunkSizeInput = {
+      content: string,
+      type: EntityType,
+      tag?: TagType,
+      index?: number,
+    }
+    // Use OS-aware temp directory with fallback for better cross-platform support
+    const workingDirTmp = process.env.TEMP_DIR || path.join(os.tmpdir(), 'chromiumFile');
+    console.log(`Using temp directory: ${workingDirTmp}`);
     prepareWorkingDir(workingDirTmp);
+    
+    // Setup cleanup on process exit
+    const cleanup = () => {
+      try {
+        prepareWorkingDir(workingDirTmp, true);
+        console.log('Temp directory cleaned up on exit');
+      } catch (error) {
+        console.warn('Failed to cleanup temp directory:', error);
+      }
+    };
+    
+    process.on('exit', cleanup);
+    process.on('SIGINT', () => { cleanup(); process.exit(1); });
+    process.on('SIGTERM', () => { cleanup(); process.exit(1); });
+    process.on('uncaughtException', (error) => { 
+      console.error('Uncaught exception:', error);
+      cleanup(); 
+      process.exit(1); 
+    });
     // const groupOuterHTMLFileTmp = `${workingDirTmp}/groupOuterHTML-${randomString(false, 5)}.txt`;
     // const groupInnerHTMLFileTmp = `${workingDirTmp}/groupInnerHTML-${randomString(false, 5)}.txt`;
     const groupOuterHTMLFileTmp = `${workingDirTmp}/groupOuterHTML.txt`;
     const groupInnerHTMLFileTmp = `${workingDirTmp}/groupInnerHTML.txt`;
 
+    const writeStreamSVGContents: Array<fs.WriteStream> = [];
+    const svgContentsFilePathTmp: string[] = [];
+
     const writeStreamGroupOuterHTML = createWriteStream(groupOuterHTMLFileTmp);
     const writeStreamGroupInnerHTML = createWriteStream(groupInnerHTMLFileTmp);
+
     const writeStreamElementMap = new Map();
     const elementsFilePathTmp = new Map();
     elementsFilePathTmp.set('outerHTML', []);
     elementsFilePathTmp.set('innerHTML', []);
-
-    // const content: string = await page.content();
-    // const headTag = getContentByTag(content, 'head', 0) as string;
-    // const styles2 = getContentByTag(headTag, 'style') as string[];
-    // console.log(styles2, 'styles2..');
-    // console.log(styles, 'styles..');
   
-    await page.exposeFunction('setChunkSize', async (data: any) => {
+    await page.exposeFunction('setChunkSize', async (data: ChunkSizeInput) => {
       try {
+        if (data.type === 'svgContent') {
+          const index = data.index as number;
+          const elementFileTmp = `${workingDirTmp}/svg-${data.index}-${randomString(false, 5)}.txt`;
+          if (!writeStreamSVGContents[index]) {
+            writeStreamSVGContents[index] = createWriteStream(elementFileTmp);
+            svgContentsFilePathTmp[index] = elementFileTmp;
+          }
+          const stream = writeStreamSVGContents[index] as fs.WriteStream;
+          
+          // Use streaming write with backpressure handling
+          if (!stream.write(data.content || '')) {
+            await new Promise<void>(resolve => stream.once('drain', resolve));
+          }
+          return;
+        }
         // Case element
-        if (typeof data.index === 'number') {
-          // const elementFileTmp = `${workingDirTmp}/element-${data.index}-${data.tag}.txt`;
+        if (data.type === 'element') {
           const elementFileTmp = `${workingDirTmp}/element-${data.index}-${data.tag}-${randomString(false, 5)}.txt`;
           const key = `element-${data.index}-${data.tag}`;
           if (!writeStreamElementMap.has(key)) {
@@ -230,14 +281,19 @@ app.listen(PORT, async () => {
             elementsFilePathTmp.set(data.tag, arrayFilePath);
           }
           const stream = writeStreamElementMap.get(key);
-          stream.write(data.content || '');
+          
+          // Use streaming write with backpressure handling
+          if (!stream.write(data.content || '')) {
+            await new Promise<void>(resolve => stream.once('drain', resolve));
+          }
           return;
         }
-        if (data && data.content) {
-          if (data.tag === 'outerHTML') {
-            writeStreamGroupOuterHTML.write(data.content);
-          } else {
-            writeStreamGroupInnerHTML.write(data.content);
+        if (data.type === 'group') {
+          const stream = data.tag === 'outerHTML' ? writeStreamGroupOuterHTML : writeStreamGroupInnerHTML;
+          
+          // Use streaming write with backpressure handling
+          if (!stream.write(data.content)) {
+            await new Promise<void>(resolve => stream.once('drain', resolve));
           }
         }
       } catch (error) {
@@ -245,74 +301,105 @@ app.listen(PORT, async () => {
       }
     });
 
-    await page.exposeFunction('setSVGContent', (data: any) => {
-      svgContents.push(data);
+    await page.exposeFunction('finishWriting', (data: ChunkSizeInput) => {
+      if (data.type === 'svgContent') {
+        const stream = writeStreamSVGContents[data.index as number];
+        if (stream) {
+          stream.end();
+        }
+        return;
+      }
+      if (data.type === 'element') {
+        const keyPattern = `element-${data.index}-${data.tag}`;
+        const stream = writeStreamElementMap.get(keyPattern);
+        if (stream) {
+          stream.end();
+        }
+        return;
+      }
+      if (data.type === 'group') {
+        if (data.tag === 'outerHTML') {
+          writeStreamGroupOuterHTML.end();
+        } else {
+          writeStreamGroupInnerHTML.end();
+        }
+      }
     });
 
-    await page.exposeFunction('finishWriting', (data: any) => {
-      if (typeof data.index === 'number') {
-        const key = `element-${data.index}-${data.tag}`;
-        writeStreamElementMap.get(key).end();
-      }
-      if (data.tag === 'outerHTML') {
-        writeStreamGroupOuterHTML.end();
-      } else {
-        writeStreamGroupInnerHTML.end();
-      }
-    });
-
-    const svgContents = await page.evaluate(async () => {
+    await page.evaluate(async () => {
       type TagType = 'outerHTML' | 'innerHTML';
-      const CHUNK_SIZE = 1024 * 1024 * 5;
+      type EntityType = 'svgContent' | 'element' | 'group';
+      type ChunkSizeInput = {
+        content: string,
+        type: EntityType,
+        tag?: TagType,
+        index?: number,
+      }
+      // Memory-adaptive chunk size calculation
+      const availableMemory = os.freemem();
+      const totalMemory = os.totalmem();
+      const memoryUsageRatio = (totalMemory - availableMemory) / totalMemory;
+      
+      // Adaptive chunk size: smaller chunks when memory is constrained
+      const baseChunkSize = 1024 * 1024 * 5; // 5MB default
+      const CHUNK_SIZE = memoryUsageRatio > 0.8 
+        ? Math.max(1024 * 1024, baseChunkSize * 0.5) // Reduce to 2.5MB if memory usage > 80%
+        : Math.min(baseChunkSize, Math.floor(availableMemory * 0.01)); // Use 1% of available memory
+      
+      console.log(`Memory usage: ${(memoryUsageRatio * 100).toFixed(1)}%, Using chunk size: ${(CHUNK_SIZE / 1024 / 1024).toFixed(1)}MB`);
       const svgEditorBySections = document.querySelectorAll('svg.svg-main-canvas');
       const svgNodeBySections = [...svgEditorBySections];
-      const result: string[] = [];
 
-      function setChunkSize(content: string, tag: TagType, chunkSize = CHUNK_SIZE, fn1: Function, fn2?: Function) {
-        const totalChunks = Math.ceil(content.length / chunkSize);
-        let sendChunks = 0;
-        function sendNextChunk() {
-          if (sendChunks >= totalChunks) {
-            if (fn2) {
-              fn2();
-              return;
-            }
-            (window as any).finishWriting({ tag });
-            return;
-          }
-          const start = sendChunks * chunkSize;
-          const end = Math.min(start + chunkSize, content.length);
-          const chunk = content.substring(start, end);
-          fn1({ content: chunk, tag });
-          sendChunks++;
-          setTimeout(sendNextChunk, 10);
-        }
-        sendNextChunk();
-      }
-
-      function setChunkSizePs(content: string, tag: TagType, chunkSize = CHUNK_SIZE, fn1: Function, fn2?: Function): Promise<void> {
+      function processChunksOptimized(input: ChunkSizeInput, chunkSize = CHUNK_SIZE): Promise<void> {
         return new Promise(resolve => {
+          const { content, type, tag } = input;
           const totalChunks = Math.ceil(content.length / chunkSize);
           let sendChunks = 0;
-          function sendNextChunk() {
+          function sendChunk() {
             if (sendChunks >= totalChunks) {
-              if (fn2) {
-                fn2();
-                resolve();
-                return;
-              }
-              (window as any).finishWriting({ tag });
+              (window as any).finishWriting(input);
               resolve();
-              return;
+              return;        
             }
             const start = sendChunks * chunkSize;
             const end = Math.min(start + chunkSize, content.length);
             const chunk = content.substring(start, end);
-            fn1({ content: chunk, tag });
+            if (type === 'svgContent') {
+              (window as any).setChunkSize({
+                content: chunk,
+                type,
+                index: input.index,
+              });
+            } else if (type === 'element') {
+              (window as any).setChunkSize({
+                content: chunk,
+                tag,
+                type,
+                index: input.index,
+              });
+            } else if (type === 'group') {
+              (window as any).setChunkSize({
+                content: chunk,
+                tag,
+                type,
+              });
+            }
+  
             sendChunks++;
-            setTimeout(sendNextChunk, 0);
+            setTimeout(sendChunk, 10);
           }
-          sendNextChunk();
+          sendChunk();
+        });
+      }
+
+      async function executeSVGElement(node: any, index: number) {
+        if (!node) {
+          return;
+        }
+        await processChunksOptimized({
+          type: 'svgContent',
+          content: node.outerHTML,
+          index
         });
       }
 
@@ -320,110 +407,85 @@ app.listen(PORT, async () => {
         if (!node) {
           return;
         }
-        const groupPromise = [
-          setChunkSizePs(node.outerHTML, 'outerHTML', CHUNK_SIZE, (data: any) => {
-            (window as any).setChunkSize({ ...data, type: 'group' });
-          }),
-          setChunkSizePs(node.innerHTML, 'innerHTML', CHUNK_SIZE, (data: any) => {
-            (window as any).setChunkSize({ ...data, type: 'group' });
-          }),
-        ];
-        await Promise.all(groupPromise);
+        const input1: ChunkSizeInput = {
+          type: 'group',
+          content: node.outerHTML,
+          tag: 'outerHTML',
+        }
+        const input2: ChunkSizeInput = {
+          type: 'group',
+          content: node.innerHTML,
+          tag: 'innerHTML',
+        }
+        await Promise.all([
+          processChunksOptimized(input1),
+          processChunksOptimized(input2),
+        ]);
       }
 
       async function executeElements(node: any) {
         const elements = node.getElementsByClassName('not-select');
-        const ps1 = [...elements].map((element: any, index: number) => {
-          return setChunkSizePs(element.outerHTML, 'outerHTML', CHUNK_SIZE, (data: any) => {
-            (window as any).setChunkSize({
-              ...data,
+        const elementArray = [...elements];
+        const BATCH_SIZE = 5;
+        // Sequential batch processing to prevent memory overflow
+        for (let i = 0; i < elementArray.length; i += BATCH_SIZE) {
+          const batch = elementArray.slice(i, i + BATCH_SIZE);
+          console.log(`Processing batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(elementArray.length/BATCH_SIZE)} (${batch.length} elements)`);
+          
+          const batchPromises = batch.map((element: any, batchIndex: number) => {
+            const index = i + batchIndex;
+            const inputOuterHTML: ChunkSizeInput = {
               type: 'element',
+              content: element.outerHTML,
+              tag: 'outerHTML',
               index,
-            })
-          }, () => (window as any).finishWriting({ index, tag: 'outerHTML' }));
-        });
-        const ps2 = [...elements].map((element: any, index: number) => {
-          return setChunkSizePs(element.innerHTML, 'innerHTML', CHUNK_SIZE, (data: any) => {
-            (window as any).setChunkSize({
-              ...data,
+            };
+            const inputInnerHTML: ChunkSizeInput = {
               type: 'element',
+              content: element.innerHTML,
+              tag: 'innerHTML',
               index,
-            })
-          }, () => (window as any).finishWriting({ index, tag: 'innerHTML' }));
-        });
+            };
 
-        await Promise.all(ps1);
-        await Promise.all(ps2);
-
-        // for (let i = 0; i < elements.length; i++) {
-        //   const element = elements[i];
-        //   setChunkSize(element.outerHTML, 'outerHTML', CHUNK_SIZE, (data: any) => {
-        //     (window as any).setChunkSize({
-        //       ...data,
-        //       type: 'element',
-        //       index: i,
-        //     })
-        //   }, () => (window as any).finishWriting({ index: i, tag: 'outerHTML' }));
-        //   setChunkSize(element.innerHTML, 'innerHTML', CHUNK_SIZE, (data: any) => {
-        //     (window as any).setChunkSize({
-        //       ...data,
-        //       type: 'element',
-        //       index: i,
-        //     })
-        //   }, () => (window as any).finishWriting({ index: i, tag: 'innerHTML' }));
-        // }
+            return Promise.all([
+              processChunksOptimized(inputOuterHTML),
+              processChunksOptimized(inputInnerHTML),
+            ]);
+          });
+          
+          // Process batch sequentially and trigger garbage collection
+          await Promise.all(batchPromises);
+          
+          // Force garbage collection if available (run with --expose-gc flag)
+          if (global.gc) {
+            global.gc();
+          }
+          
+          // Log memory usage after each batch
+          const memUsage = process.memoryUsage();
+          console.log(`Batch completed. Memory: ${Math.round(memUsage.heapUsed / 1024 / 1024)}MB heap, ${Math.round(memUsage.rss / 1024 / 1024)}MB RSS`);
+        }
       }
 
       for (let i = 0; i < svgNodeBySections.length; i++) {
         const nodeSVGSection = svgNodeBySections[i];
-        result.push(nodeSVGSection.outerHTML);
+        // result.push(nodeSVGSection.outerHTML);
+        await executeSVGElement(nodeSVGSection, i);
         const groupElement = nodeSVGSection.getElementsByClassName('group_elements')[0];
         await executeGroupElement(groupElement);
         await executeElements(nodeSVGSection);
-        // if (groupElement) {
-        //   setChunkSize(groupElement.outerHTML, 'outerHTML', CHUNK_SIZE, (data: any) => {
-        //     (window as any).setChunkSize({
-        //       ...data,
-        //       type: 'group',
-        //     });
-        //   });
-        //   setChunkSize(groupElement.innerHTML, 'innerHTML', CHUNK_SIZE, (data: any) => {
-        //     (window as any).setChunkSize({
-        //       ...data,
-        //       type: 'group',
-        //     });
-        //   });
-        // }
-        // const groupPromise = [
-        //   setChunkSizePs(groupElement.outerHTML, 'outerHTML', CHUNK_SIZE, (data: any) => {
-        //     (window as any).setChunkSize({
-        //       ...data,
-        //       type: 'group',
-        //     });
-        //   }),
-        //   setChunkSizePs(groupElement.innerHTML, 'innerHTML', CHUNK_SIZE, (data: any) => {
-        //     (window as any).setChunkSize({
-        //       ...data,
-        //       type: 'group',
-        //     });
-        //   }),
-        // ];
-        // await Promise.all(groupPromise);
       }
-      return result;
+      // return result;
     });
 
     return {
-      styles,
-      svgContents,
-      data,
+      svgContentsFilePathTmp,
       groupElementFilePathTmp: [groupOuterHTMLFileTmp, groupInnerHTMLFileTmp],
       elementsFilePathTmp,
     }
   }
 
   console.log(`Server is running on port ${PORT} ` + `http://localhost:${PORT}/`);
-  // const WORKING_DIR = '/tmp/chromiumFile';
 
   let page: Page | undefined;
   try {
@@ -466,22 +528,36 @@ app.listen(PORT, async () => {
   // url = 'https://www.corjl.com/output/org/GE01HHPMGJAP6RWJCHKKTTD6TPQ9/downloads/DO01JVWQ53XKQZ4PKMP6MCYFWPVF/U01JXMC1ZGSZ12JM72SE3VTB2GR/html/1.html';
   // url = 'https://dev.korjl.com/output/org/GD01HHDZSMZQ57K00R3XXZ50CCT6/downloads/DC01HQ59V143VPYYB0NPFJKAP06G/U01JYJYWFXZT9Y1ETR517SY3JDH/html/1.html';
 
-  // Large SVG File
+  // Large SVG File 1
   url = 'https://dev.korjl.com/output/org/GD01HHDZT87PZVNN1AH165EPDC5F/downloads/DC01HM8PPXV9T12X7H66D9V0GH41/U01JZPGJSHT29CZGANSF9MHDX13/html/2.html';
   // url = 'https://dev.korjl.com/output/org/GD01HHDZT87PZVNN1AH165EPDC5F/downloads/DC01JYNH7G2WWPB6HCBF6NTDDJK0/U01K109HG6PCCJDR961Q52EP2F0/html/1.html';
-
+  // Large SVG FIle 2
+  // url = 'https://dev.korjl.com/output/org/GD01HHDZT87PZVNN1AH165EPDC5F/downloads/DC01HM8PED6PX8SED3XV5FJ4QSPC/U01K17EHAP79RR4TPMEE1E9C15M/html/1.html';
   // url = 'https://dev.korjl.com/output/org/GD01HHE0HGV05VPEJ5TGT5BF14CT/downloads/DC01K0X4RJSB4K17CPJRFTE3HAFT/U01K0XY8PQVD68XYP7H7FNARPQJ/html/13.html';
+
+  // url = 'https://dev.korjl.com/output/org/GD01HHDZT87PZVNN1AH165EPDC5F/downloads/DC01HM8PPXV9T12X7H66D9V0GH41/U01K183842B1FMPDR986QECRASQ/html/3.html';
+
+  // Case 4
+
+  // url = 'https://dev.korjl.com/output/org/GD01HHE0HGV05VPEJ5TGT5BF14CT/downloads/DC01JTT4YC8RHGBTY76TQNM0CQ1E/U01K187E67DN8VK5RN89F840DQG/html/1.html';
+
+  // url = 'https://dev.korjl.com/output/org/GD01HHE0HGV05VPEJ5TGT5BF14CT/downloads/DC01JWQPCKNK5BF42NRR9E09E51G/U01K188PXRYC90E9Y51NSS1PDCC/html/1.html';
   await page?.goto(url);
 
   await waitForSelector(page as any, '.canvas-loaded');
 
+  const [data, styles] = await Promise.all([
+    getDataDesignPageFromPage(page as Page),
+    getStylesFromPage(page as Page),
+  ]);
+
   const {
-    data,
-    styles,
-    svgContents,
+    svgContentsFilePathTmp,
     groupElementFilePathTmp,
     elementsFilePathTmp,
   } = await getDataFromLargePage(page as Page);
+
+  console.log(svgContentsFilePathTmp, 'svgContentsFilePathTmp.');
 
   // const input = {
   //   pageWidth: data.designPage.pageWidth,
@@ -503,12 +579,14 @@ app.listen(PORT, async () => {
 
   const finalSVGContents = await Promise.all(
     Array.from({ length: pageSections.length }, async (_, index: number) => {
-      const svgContent = svgContents[index];
       const exportSvgService = new HandlerSVGContent(
-        svgContent,
         styles,
         elementsBySection[index],
-        { elementsFilePathTmp, groupElementFilePathTmp },
+        {
+          elementsFilePathTmp,
+          groupElementFilePathTmp,
+          svgContentFilePathTmp: svgContentsFilePathTmp[index],
+        }
       );
       return await exportSvgService.export();
     })

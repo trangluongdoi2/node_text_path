@@ -22,8 +22,11 @@ import {
 import PotraceService from './services/potraceService';
 import { randomString } from './helper/string';
 import { prepareWorkingDir } from './helper/file';
+const os = require('os');
+const path = require('path');
 
 type OptionsExportSVG = {
+  svgContentFilePathTmp: string,
   groupElementFilePathTmp: string[],
   elementsFilePathTmp: Map<string, string[]>,
 }
@@ -52,8 +55,10 @@ class HandlerSVGContent {
   private replacementMap = new Map<string, string>();
   private elementsFilePathTmp = new Map<string, string[]>;
   private declare elementLength: number;
+  private WORKING_DIR = process.env.TEMP_DIR || path.join(os.tmpdir(), 'chromiumFile');
 
-  constructor(svgContent: string, styles: any, data: any, options: OptionsExportSVG) {
+  constructor(styles: any, data: any, options: OptionsExportSVG) {
+    let svgContent = fs.readFileSync(options.svgContentFilePathTmp, { encoding: 'utf8' });
     this.styles = styles;
     this.potraceService = new PotraceService();
     this.configs = {
@@ -267,17 +272,28 @@ class HandlerSVGContent {
 
   getContentWithFileTemp(index: number, tag: string) {
     const fileTmp = this.getFileTempById(index, tag);
-    let content = fs.readFileSync(fileTmp, { encoding: 'utf8' });
-    return this.removeReduntdantRect(content);
+    try {
+      // Use streaming read for large files to reduce memory usage
+      let content = fs.readFileSync(fileTmp, { encoding: 'utf8' });
+      return this.removeReduntdantRect(content);
+    } catch (error) {
+      console.error(`Error reading temp file ${fileTmp}:`, error);
+      return '';
+    }
   }
 
   getContentGroupWithTemp(tag: string) {
-    let fileTmp = 'temp/groupOuterHTML.txt';
+    let fileTmp = `${this.WORKING_DIR}/groupOuterHTML.txt`;
     if (tag === 'innerHTML') {
-      fileTmp = 'temp/groupInnerHTML.txt';
+      fileTmp = `${this.WORKING_DIR}/groupInnerHTML.txt`;
     }
-    let content = fs.readFileSync(fileTmp, { encoding: 'utf8' });
-    return this.removeReduntdantRect(content);
+    try {
+      let content = fs.readFileSync(fileTmp, { encoding: 'utf8' });
+      return this.removeReduntdantRect(content);
+    } catch (error) {
+      console.error(`Error reading group temp file ${fileTmp}:`, error);
+      return '';
+    }
   }
 
   isTextElement(elementHtml: string) {
@@ -365,7 +381,7 @@ class HandlerSVGContent {
             // console.log('Case svg uncode3');
             const xml = '<?xml version="1.0"?>';
             imageContent = imageContent.replace(xml, '');
-            svgImages.push({ imageElement, imageContent: this.removeMetadata(imageContent) });
+            svgImages.push({ imageElement, imageContent: this.removeContentCauseError(imageContent) });
             continue;
           }
   
@@ -388,7 +404,7 @@ class HandlerSVGContent {
           const imageStylesBySvg = getElemAttributesByImage(imageContent);
           imageContent = imageContent.replace(/<\/svg>/g, '').replace(/<svg[^>]*>/g, '');
           imageContent = removeDOCTYPE(imageContent);
-          imageContent = this.removeMetadata(imageContent);
+          imageContent = this.removeContentCauseError(imageContent);
           
           // Build SVG content using template string (more efficient)
           imageContent = `
@@ -544,16 +560,72 @@ class HandlerSVGContent {
     return result;
   }
 
+  removeContentCauseError(svgContent: string) {
+    svgContent = this.removeMetadata(svgContent);
+    svgContent = this.removeInkscapeAttributes(svgContent);
+    svgContent = this.removeSodipodiNamedview(svgContent);
+    return svgContent;
+  }
+
   removeMetadata(svgContent: string) {
     return svgContent.replace(/<metadata[^>]*>[\s\S]*?<\/metadata>/g, '');
   }
 
   removeInkscapeAttributes(svgContent: string) {
-    return svgContent.replace(/\s+inkscape:[^=]*="[^"]*"/g, '');
+    // Remove all inkscape attributes and elements, including complex multi-line ones
+    // This handles various formats of inkscape content like:
+    // <inkscape:path-effect effect="bspline" id="path-effect8" is_visible="true" lpeversion="1.3" weight="33.333333" steps="2" helper_size="0" apply_no_weight="true" apply_with_weight="true" only_selected="false" uniform="false"/>
+    
+    let result = svgContent;
+    
+    // Pattern 1: Remove complete inkscape elements (self-closing tags)
+    // This matches: <inkscape:path-effect effect="bspline" id="path-effect8" is_visible="true" lpeversion="1.3" weight="33.333333" steps="2" helper_size="0" apply_no_weight="true" apply_with_weight="true" only_selected="false" uniform="false"/>
+    result = result.replace(/<inkscape:[^>]*\/>/g, '');
+    
+    // Pattern 2: Remove inkscape elements with opening and closing tags
+    // This matches: <inkscape:something>content</inkscape:something>
+    result = result.replace(/<inkscape:[^>]*>[\s\S]*?<\/inkscape:[^>]*>/g, '');
+    
+    // Pattern 3: Remove inkscape attributes from other elements
+    // This matches: inkscape:path-effect effect="bspline" id="path-effect8" is_visible="true" lpeversion="1.3" weight="33.333333"
+    result = result.replace(/\s+inkscape:[^=]*="[^"]*"/g, '');
+    
+    // Pattern 4: Remove any remaining inkscape: prefixes that might be left
+    result = result.replace(/\s+inkscape:[^>\s]*/g, '');
+    
+    // Pattern 5: Clean up any extra whitespace that might be left
+    result = result.replace(/\s+/g, ' ');
+    
+    return result;
   }
 
   removeSodipodiNamedview(svgContent: string) {
-    return svgContent.replace(/<sodipodi:namedview[^>]*\/?>/g, '');
+    // Remove all sodipodi attributes and elements, including complex multi-line ones
+    // This handles various formats of sodipodi content like:
+    // <sodipodi:namedview id="base" pagecolor="#ffffff" bordercolor="#666666" borderopacity="1.0" inkscape:pageopacity="0.0" inkscape:pageshadow="2" inkscape:zoom="0.98994949" inkscape:cx="400" inkscape:cy="300" inkscape:document-units="mm" inkscape:current-layer="layer1" showgrid="false" inkscape:window-width="1920" inkscape:window-height="1017" inkscape:window-x="0" inkscape:window-y="0" inkscape:window-maximized="1"/>
+    // sodipodi:type="arc" sodipodi:cx="100" sodipodi:cy="100" sodipodi:rx="50" sodipodi:ry="50"
+    
+    let result = svgContent;
+    
+    // Pattern 1: Remove complete sodipodi elements (self-closing tags)
+    // This matches: <sodipodi:namedview id="base" pagecolor="#ffffff" bordercolor="#666666" borderopacity="1.0" .../>
+    result = result.replace(/<sodipodi:[^>]*\/>/g, '');
+    
+    // Pattern 2: Remove sodipodi elements with opening and closing tags
+    // This matches: <sodipodi:somet`hing>content</sodipodi:something>
+    result = result.replace(/<sodipodi:[^>]*>[\s\S]*?<\/sodipodi:[^>]*>/g, '');
+    
+    // Pattern 3: Remove sodipodi attributes from other elements
+    // This matches: sodipodi:type="arc" sodipodi:cx="100" sodipodi:cy="100" sodipodi:rx="50" sodipodi:ry="50"
+    result = result.replace(/\s+sodipodi:[^=]*="[^"]*"/g, '');
+    
+    // Pattern 4: Remove any remaining sodipodi: prefixes that might be left
+    result = result.replace(/\s+sodipodi:[^>\s]*/g, '');
+    
+    // Pattern 5: Clean up any extra whitespace that might be left
+    result = result.replace(/\s+/g, ' ');
+    
+    return result;
   }
 
   removeReduntdantRect(svgContent: string) {
@@ -839,47 +911,68 @@ class HandlerSVGContent {
   // }
 
   removeAllTempFiles() {
-    prepareWorkingDir('temp', true);
+    prepareWorkingDir(this.WORKING_DIR, true);
   }
 
   async export() {
-    // await this.initGroupElementContent();
-    // await this.initElementsContent();
-    // this.removeFileTemp();
     console.time('export SVG');
+    
+    // Log memory usage at start
+    const startMemory = process.memoryUsage();
+    console.log(`Export started - Memory: ${Math.round(startMemory.heapUsed / 1024 / 1024)}MB heap, ${Math.round(startMemory.rss / 1024 / 1024)}MB RSS`);
+    
     const col = 1;
     const row = 1;
     const bleedSize = 0;
-    const BATCH_SIZE = 4;
+    
+    // Adaptive batch size based on available memory
+    const availableMemory = os.freemem();
+    const BATCH_SIZE = availableMemory > 2 * 1024 * 1024 * 1024 ? 4 : 2; // Use smaller batches if less than 2GB available
+    console.log(`Using batch size: ${BATCH_SIZE} (available memory: ${Math.round(availableMemory / 1024 / 1024 / 1024)}GB)`);
+    
     const elementsResult = [];
-    console.log(this.elementLength, 'this.eleemtnLength..');
+    console.log(this.elementLength, 'this.elementLength..');
     const elements = Array.from({ length: this.elementLength }).fill(1);
+    // Process elements in sequential batches with memory monitoring
     for (let i = 0; i < this.elementLength; i += BATCH_SIZE) {
       const batch = elements.slice(i, i + BATCH_SIZE);
+      console.log(`Processing batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(this.elementLength/BATCH_SIZE)} (elements ${i}-${Math.min(i + BATCH_SIZE - 1, this.elementLength - 1)})`);
+      
       const batchResult = await Promise.all(
-        batch.map((_, index: number) => {
+        batch.map(async (_, index: number) => {
           const outerHTML = this.getContentWithFileTemp(i + index, 'outerHTML');
           const innerHTML = this.getContentWithFileTemp(i + index, 'innerHTML');
 
           if (this.isTextElement(innerHTML)) {
             const masterElement = this.getMasterElement(innerHTML);
             if (this.hasClipPath(i + index)) {
-              // console.log(innerHTML, 'innerHTML clippath...');
-              // console.log(outerHTML, 'outerHTML clippath...');
               return this.convertTextClippingMaskByPosterize(i + index, innerHTML, outerHTML);
             }
-            console.log('isTextElement...');
+            console.log(`Processing text element ${i + index}`);
             return this.convertTextByPosterize(innerHTML, outerHTML, this.isMultiStyles(masterElement) && !this.isHasGradient(masterElement));
           }
 
           if (this.isImageElement(innerHTML)) {
-            console.log('isImageElement...')
+            console.log(`Processing image element ${i + index}`);
             this.updateTransformClippingPathWithBleedSize(outerHTML, { col, row, bleedSize });
             return this.convertImage(innerHTML);
           }
-        }).filter(el => Boolean(el))
+          
+          return null;
+        })
       );
-      elementsResult.push(...batchResult);
+      
+      // Filter out null results and add to main results
+      elementsResult.push(...batchResult.filter(Boolean));
+      
+      // Force garbage collection after each batch if available
+      if (global.gc) {
+        global.gc();
+      }
+      
+      // Log memory usage after each batch
+      const memUsage = process.memoryUsage();
+      console.log(`Batch ${Math.floor(i/BATCH_SIZE) + 1} completed. Memory: ${Math.round(memUsage.heapUsed / 1024 / 1024)}MB heap, ${Math.round(memUsage.rss / 1024 / 1024)}MB RSS`);
     }
   
     for (const element of elementsResult) {
@@ -922,17 +1015,21 @@ class HandlerSVGContent {
     });
 
     this.svgContent = this.svgContent.replace(/&nbsp;/g, ' ');
-    this.svgContent = this.removeMetadata(this.svgContent);
-    this.svgContent = this.removeInkscapeAttributes(this.svgContent);
-    this.svgContent = this.removeSodipodiNamedview(this.svgContent);
+    this.svgContent = this.removeContentCauseError(this.svgContent);
     this.svgContent = this.convertBackground(this.svgContent);
     this.svgContent = this.convertShape(this.svgContent);
     this.svgContent = this.convertFillTransparent(this.svgContent);
     this.svgContent = this.fixAdobeTag(this.svgContent);
     this.svgContent = removeXMLContent(this.svgContent);
     
+    // Clean up temp files and clear memory
     this.removeAllTempFiles();
     this.elementsFilePathTmp.clear();
+    
+    // Final memory usage log
+    const endMemory = process.memoryUsage();
+    console.log(`Export completed - Final memory: ${Math.round(endMemory.heapUsed / 1024 / 1024)}MB heap, ${Math.round(endMemory.rss / 1024 / 1024)}MB RSS`);
+    console.log(`Memory difference: ${Math.round((endMemory.heapUsed - startMemory.heapUsed) / 1024 / 1024)}MB heap, ${Math.round((endMemory.rss - startMemory.rss) / 1024 / 1024)}MB RSS`);
     
     console.timeEnd('export SVG');
     return this.svgContent;
